@@ -34,7 +34,6 @@ lib_LTLIBRARIES = \
 	lib/libcirce-common.la
 
 lib_libcirce_common_la_SOURCES = \
-	src/encryption.cpp	\
 	src/mmain.cpp
 
 lib_libcirce_common_la_LDFLAGS = \
