@@ -22,7 +22,9 @@ pkgsysconf_DATA = \
 	etc/circe/main-template.conf	\
 	etc/circe/circe-common-template.conf
 
-pkginclude_HEADERS =
+pkginclude_HEADERS = \
+	src/cbpp_response.hpp	\
+	src/cbpp_servlet_map.hpp
 
 pkginclude_protocoldir = $(pkgincludedir)/protocol
 pkginclude_protocol_HEADERS = \
@@ -34,6 +36,8 @@ lib_LTLIBRARIES = \
 	lib/libcirce-common.la
 
 lib_libcirce_common_la_SOURCES = \
+	src/cbpp_response.cpp	\
+	src/cbpp_servlet_map.cpp	\
 	src/mmain.cpp
 
 lib_libcirce_common_la_LDFLAGS = \
