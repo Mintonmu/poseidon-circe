@@ -14,5 +14,7 @@ LT_INIT
 AC_CONFIG_FILES([
 	Makefile
 	circe-common/Makefile
+	circe-gate/Makefile
+	circe-foyer/Makefile
 ])
 AC_OUTPUT

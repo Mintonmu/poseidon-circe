@@ -12,8 +12,10 @@ namespace ErrorCodes {
 		ERR_NOT_FOUND                         =   -3,
 		ERR_REQUEST_TOO_LARGE                 =   -4,
 		ERR_JUNK_AFTER_PACKET                 =   -6,
+		ERR_FORBIDDEN                         =   -7,
 		ERR_AUTHORIZATION_FAILURE             =   -8,
 		ERR_LENGTH_ERROR                      =   -9,
+		ERR_UNKNOWN_CONTROL_CODE              =  -10,
 		ERR_DATA_CORRUPTED                    =  -11,
 
 		ERR_DNS_FAILURE                       = 9001,
