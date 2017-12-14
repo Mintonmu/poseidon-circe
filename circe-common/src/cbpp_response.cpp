@@ -9,12 +9,8 @@ namespace Common {
 
 CbppResponse::CbppResponse(long err_code, std::string err_msg)
 	: m_err_code(err_code), m_err_msg(STD_MOVE(err_msg))
-{
-	LOG_CIRCE_DEBUG("CbppResponse constructor: err_code = ", get_err_code(), ", err_msg = ", get_err_msg());
-}
-CbppResponse::~CbppResponse(){
-	LOG_CIRCE_DEBUG("CbppResponse destructor: err_code = ", get_err_code(), ", err_msg = ", get_err_msg());
-}
+{ }
+CbppResponse::~CbppResponse(){ }
 
 }
 }

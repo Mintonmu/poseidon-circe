@@ -24,7 +24,9 @@ pkgsysconf_DATA = \
 
 pkginclude_HEADERS = \
 	src/cbpp_response.hpp	\
-	src/cbpp_servlet_map.hpp
+	src/interserver_connection.hpp	\
+	src/interserver_connector.hpp	\
+	src/interserver_acceptor.hpp
 
 pkginclude_protocoldir = $(pkgincludedir)/protocol
 pkginclude_protocol_HEADERS = \
@@ -37,7 +39,9 @@ lib_LTLIBRARIES = \
 
 lib_libcirce_common_la_SOURCES = \
 	src/cbpp_response.cpp	\
-	src/cbpp_servlet_map.cpp	\
+	src/interserver_connection.cpp	\
+	src/interserver_connector.cpp	\
+	src/interserver_acceptor.cpp	\
 	src/mmain.cpp
 
 lib_libcirce_common_la_LDFLAGS = \
