@@ -114,7 +114,7 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 			LOG_CIRCE_TRACE("Inflate result: ", size_compressed, " / ", size_plain, " (", std::fixed, std::setprecision(3), size_compressed * 100.0 / size_plain, "%)");
 		}
 		Poseidon::JobDispatcher::enqueue(
-			boost::make_shared<SyncMessageJob>(connection, magic_number, STD_MOVE_IDN(payload)),
+			boost::make_shared<SyncMessageJob>(connection, magic_number, STD_MOVE(payload)),
 			VAL_INIT);
 	} catch(std::exception &e){
 		LOG_CIRCE_ERROR("std::exception thrown: ", e.what());
