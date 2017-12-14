@@ -114,7 +114,7 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 			LOG_CIRCE_TRACE("Inflate result: ", size_compressed, " / ", size_plain, " (", std::fixed, std::setprecision(3), size_compressed * 100.0 / size_plain, "%)");
 		}
 		Poseidon::JobDispatcher::enqueue(
-			boost::make_shared<SyncMessageJob>(connection, magic_number, STD_MOVE(payload)),
+			boost::make_shared<SyncMessageJob>(connection, magic_number, STD_MOVE_IDN(payload)),
 			VAL_INIT);
 	} catch(std::exception &e){
 		LOG_CIRCE_ERROR("std::exception thrown: ", e.what());
@@ -204,7 +204,7 @@ void InterserverConnection::layer5_on_receive_data(boost::uint16_t magic_number,
 	PROFILE_ME;
 
 	Poseidon::WorkhorseCamp::enqueue(VAL_INIT,
-		boost::bind(&InterserverConnection::inflate_and_dispatch, virtual_weak_from_this<InterserverConnection>(), magic_number, STD_MOVE(payload)),
+		boost::bind(&InterserverConnection::inflate_and_dispatch, virtual_weak_from_this<InterserverConnection>(), magic_number, STD_MOVE_IDN(payload)),
 		reinterpret_cast<std::size_t>(this));
 }
 void InterserverConnection::layer5_on_receive_control(long status_code, Poseidon::StreamBuffer param){
@@ -281,7 +281,7 @@ void InterserverConnection::send(const boost::shared_ptr<PromisedResponse> &prom
 		Poseidon::add_flags(magic_number, MSGFL_WANTS_RESPONSE);
 	}
 	Poseidon::WorkhorseCamp::enqueue(VAL_INIT,
-		boost::bind(&InterserverConnection::deflate_and_send, virtual_weak_from_this<InterserverConnection>(), magic_number, STD_MOVE(payload)),
+		boost::bind(&InterserverConnection::deflate_and_send, virtual_weak_from_this<InterserverConnection>(), magic_number, STD_MOVE_IDN(payload)),
 		reinterpret_cast<std::size_t>(this));
 	if(promise){
 		m_weak_promises.emplace(serial, promise);
