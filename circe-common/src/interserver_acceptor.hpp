@@ -9,8 +9,7 @@
 #include <poseidon/tcp_server_base.hpp>
 #include <poseidon/ip_port.hpp>
 #include <poseidon/mutex.hpp>
-#include <boost/function.hpp>
-#include <boost/container/flat_map.hpp>
+#include "interserver_servlet_container.hpp"
 
 namespace Circe {
 namespace Common {
@@ -18,34 +17,22 @@ namespace Common {
 class InterserverConnection;
 class CbppResponse;
 
-class InterserverAcceptor : public virtual Poseidon::VirtualSharedFromThis, public Poseidon::TcpServerBase {
+class InterserverAcceptor : public virtual Poseidon::VirtualSharedFromThis, public InterserverServletContainer, public Poseidon::TcpServerBase {
 private:
 	class InterserverSession;
-
-public:
-	typedef boost::function<
-		CbppResponse (const boost::shared_ptr<InterserverConnection> &connection, boost::uint16_t message_id, Poseidon::StreamBuffer payload)
-		> ServletCallback;
 
 private:
 	const std::string m_application_key;
 
-	mutable Poseidon::Mutex m_servlet_mutex;
-	boost::container::flat_map<boost::uint16_t, boost::shared_ptr<const ServletCallback> > m_servlet_map;
-
 public:
-	InterserverAcceptor(const Poseidon::IpPort &ip_port, const char *cert, const char *pkey, std::string application_key);
+	InterserverAcceptor(const char *bind, unsigned port, const char *cert, const char *pkey, std::string application_key);
 	~InterserverAcceptor() OVERRIDE;
 
-protected:
+private:
 	boost::shared_ptr<Poseidon::TcpSessionBase> on_client_connect(Poseidon::Move<Poseidon::UniqueFile> socket) OVERRIDE;
 
 public:
 	void activate();
-
-	boost::shared_ptr<const ServletCallback> get_servlet(boost::uint16_t message_id) const;
-	void insert_servlet(boost::uint16_t message_id, ServletCallback callback);
-	bool remove_servlet(boost::uint16_t message_id) NOEXCEPT;
 };
 
 }

@@ -89,8 +89,8 @@ protected:
 	}
 };
 
-InterserverAcceptor::InterserverAcceptor(const Poseidon::IpPort &ip_port, const char *cert, const char *pkey, std::string application_key)
-	: Poseidon::TcpServerBase(ip_port, cert, pkey)
+InterserverAcceptor::InterserverAcceptor(const char *bind, unsigned port, const char *cert, const char *pkey, std::string application_key)
+	: Poseidon::TcpServerBase(Poseidon::IpPort(bind, port), cert, pkey)
 	, m_application_key(STD_MOVE(application_key))
 {
 	LOG_CIRCE_INFO("InterserverAcceptor constructor: local = ", get_local_info());
@@ -111,31 +111,6 @@ boost::shared_ptr<Poseidon::TcpSessionBase> InterserverAcceptor::on_client_conne
 	AUTO(session, boost::make_shared<InterserverSession>(STD_MOVE(socket), m_application_key, virtual_shared_from_this<InterserverAcceptor>()));
 	session->set_no_delay();
 	return STD_MOVE_IDN(session);
-}
-
-boost::shared_ptr<const InterserverAcceptor::ServletCallback> InterserverAcceptor::get_servlet(boost::uint16_t message_id) const {
-	PROFILE_ME;
-
-	const Poseidon::Mutex::UniqueLock lock(m_servlet_mutex);
-	const AUTO(it, m_servlet_map.find(message_id));
-	if(it == m_servlet_map.end()){
-		return VAL_INIT;
-	}
-	return it->second;
-}
-void InterserverAcceptor::insert_servlet(boost::uint16_t message_id, ServletCallback callback){
-	PROFILE_ME;
-	DEBUG_THROW_UNLESS(InterserverConnection::is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
-
-	const Poseidon::Mutex::UniqueLock lock(m_servlet_mutex);
-	DEBUG_THROW_UNLESS(m_servlet_map.count(message_id) == 0, Poseidon::Exception, Poseidon::sslit("Duplicate servlet for message"));
-	m_servlet_map.emplace(message_id, boost::make_shared<ServletCallback>(STD_MOVE_IDN(callback)));
-}
-bool InterserverAcceptor::remove_servlet(boost::uint16_t message_id) NOEXCEPT {
-	PROFILE_ME;
-
-	const Poseidon::Mutex::UniqueLock lock(m_servlet_mutex);
-	return m_servlet_map.erase(message_id);
 }
 
 }
