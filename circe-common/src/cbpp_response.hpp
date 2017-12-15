@@ -13,19 +13,31 @@ namespace Common {
 
 class CbppResponse {
 private:
-	long m_status_code;
+	long m_err_code;
+	std::string m_err_msg;
+
 	boost::uint64_t m_message_id;
 	Poseidon::StreamBuffer m_payload;
 
 public:
-	CbppResponse(long status_code = 0);
+	CbppResponse(long err_code = 0, std::string err_msg = std::string());
 	CbppResponse(boost::uint64_t message_id, Poseidon::StreamBuffer payload);
 	CbppResponse(const Poseidon::Cbpp::MessageBase &msg);
 	~CbppResponse();
 
 public:
-	long get_status_code() const NOEXCEPT {
-		return m_status_code;
+	long get_err_code() const NOEXCEPT {
+		return m_err_code;
+	}
+	const std::string &get_err_msg() const NOEXCEPT {
+		return m_err_msg;
+	}
+	std::string &get_err_msg() NOEXCEPT {
+		return m_err_msg;
+	}
+
+	boost::uint64_t get_message_id() const NOEXCEPT {
+		return m_message_id;
 	}
 	const Poseidon::StreamBuffer &get_payload() const NOEXCEPT {
 		return m_payload;

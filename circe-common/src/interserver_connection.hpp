@@ -13,6 +13,7 @@
 #include <poseidon/stream_buffer.hpp>
 #include <poseidon/promise.hpp>
 #include <boost/container/flat_map.hpp>
+#include <boost/array.hpp>
 
 namespace Circe {
 namespace Common {
@@ -22,23 +23,24 @@ class CbppResponse;
 class InterserverConnection : public virtual Poseidon::VirtualSharedFromThis {
 public:
 	enum {
-		MESSAGE_ID_MIN  = 0x0040,
+		MESSAGE_ID_MIN  = 0x0001,
 		MESSAGE_ID_MAX  = 0x0FFF,
 	};
 
-	class SyncMessageJob;
+	class RequestMessageJob;
 
 	typedef Poseidon::PromiseContainer<CbppResponse> PromisedResponse;
 
 private:
-	static void inflate_and_dispatch(const boost::weak_ptr<InterserverConnection> &weak_connection, boost::uint16_t magic_number, Poseidon::StreamBuffer &payload);
-	static void deflate_and_send(const boost::weak_ptr<InterserverConnection> &weak_connection, boost::uint16_t magic_number, Poseidon::StreamBuffer &payload);
+	static void inflate_and_dispatch(const boost::weak_ptr<InterserverConnection> &weak_connection, boost::uint16_t magic_number, Poseidon::StreamBuffer &deflated_payload);
+	static void deflate_and_send(const boost::weak_ptr<InterserverConnection> &weak_connection, boost::uint16_t magic_number, Poseidon::StreamBuffer &magic_payload);
 
 private:
 	// These are protected by a mutex and can be accessed by any thread.
 	mutable Poseidon::Mutex m_mutex;
 	Poseidon::Uuid m_uuid;
-	boost::uint32_t m_serial;
+	boost::array<unsigned char, 12> m_nonce;
+	boost::uint32_t m_next_serial;
 	boost::container::flat_multimap<boost::uint32_t, boost::weak_ptr<PromisedResponse> > m_weak_promises;
 
 	// These are only used by the workhorse thread.
@@ -50,7 +52,13 @@ public:
 	~InterserverConnection() OVERRIDE;
 
 private:
-	void sync_do_dispatch(boost::uint16_t magic_number, Poseidon::StreamBuffer payload);
+	bool is_uuid_set() const NOEXCEPT;
+	void server_accept_hello(const Poseidon::Uuid &uuid, const boost::array<unsigned char, 12> &nonce);
+
+	void launch_inflate_and_dispatch(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload);
+	void launch_deflate_and_send(boost::uint16_t magic_number, Poseidon::StreamBuffer magic_payload);
+
+	void sync_dispatch_message(boost::uint16_t message_id, bool send_response, boost::uint32_t serial, Poseidon::StreamBuffer payload);
 
 protected:
 	virtual const Poseidon::IpPort &layer5_get_remote_info() const NOEXCEPT = 0;
@@ -58,12 +66,16 @@ protected:
 	virtual bool layer5_has_been_shutdown() const NOEXCEPT = 0;
 	virtual bool layer5_shutdown() NOEXCEPT = 0;
 	virtual void layer4_force_shutdown() NOEXCEPT = 0;
-	virtual void layer5_send_data(boost::uint16_t magic_number, Poseidon::StreamBuffer payload) = 0;
+	virtual void layer5_send_data(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload) = 0;
 	virtual void layer5_send_control(long status_code, Poseidon::StreamBuffer param) = 0;
 
-	void layer5_on_receive_data(boost::uint16_t magic_number, Poseidon::StreamBuffer payload);
+	void layer5_on_receive_data(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload);
 	void layer5_on_receive_control(long status_code, Poseidon::StreamBuffer param);
 	void layer5_on_close();
+
+	// The client shall call this function before sending anything else.
+	// The server shall not call this function.
+	void layer7_client_say_hello();
 
 	virtual CbppResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) = 0;
 
