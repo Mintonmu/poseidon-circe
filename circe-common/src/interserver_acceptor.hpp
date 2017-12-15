@@ -19,6 +19,9 @@ class InterserverConnection;
 class CbppResponse;
 
 class InterserverAcceptor : public virtual Poseidon::VirtualSharedFromThis, public Poseidon::TcpServerBase {
+private:
+	class InterserverSession;
+
 public:
 	typedef boost::function<
 		CbppResponse (const boost::shared_ptr<InterserverConnection> &connection, boost::uint16_t message_id, Poseidon::StreamBuffer payload)
