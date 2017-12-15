@@ -8,6 +8,7 @@
 #include "mmain.hpp"
 #include <poseidon/cbpp/low_level_session.hpp>
 #include <poseidon/cbpp/exception.hpp>
+#include <poseidon/singletons/epoll_daemon.hpp>
 
 namespace Circe {
 namespace Common {
@@ -97,6 +98,12 @@ InterserverAcceptor::InterserverAcceptor(const Poseidon::IpPort &ip_port, const 
 }
 InterserverAcceptor::~InterserverAcceptor(){
 	LOG_CIRCE_INFO("InterserverAcceptor destructor: local = ", get_local_info());
+}
+
+void InterserverAcceptor::activate(){
+	PROFILE_ME;
+
+	Poseidon::EpollDaemon::add_socket(virtual_shared_from_this<InterserverAcceptor>(), true);
 }
 
 boost::shared_ptr<Poseidon::TcpSessionBase> InterserverAcceptor::on_client_connect(Poseidon::Move<Poseidon::UniqueFile> socket){

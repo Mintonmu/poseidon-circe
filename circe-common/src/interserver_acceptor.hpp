@@ -36,6 +36,8 @@ protected:
 	boost::shared_ptr<Poseidon::TcpSessionBase> on_client_connect(Poseidon::Move<Poseidon::UniqueFile> socket) OVERRIDE;
 
 public:
+	void activate();
+
 	boost::shared_ptr<const ServletCallback> get_servlet(boost::uint16_t message_id) const;
 	void insert_servlet(boost::uint16_t message_id, ServletCallback callback);
 	bool remove_servlet(boost::uint16_t message_id) NOEXCEPT;
