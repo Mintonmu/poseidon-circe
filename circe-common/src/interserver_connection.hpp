@@ -41,6 +41,8 @@ public:
 	}
 
 private:
+	const std::string m_application_key;
+
 	// These are protected by a mutex and can be accessed by any thread.
 	mutable Poseidon::Mutex m_mutex;
 	Poseidon::Uuid m_uuid;
@@ -53,10 +55,13 @@ private:
 	boost::scoped_ptr<Poseidon::Deflator> m_deflator;
 
 public:
-	InterserverConnection();
+	explicit InterserverConnection(std::string application_key);
 	~InterserverConnection() OVERRIDE;
 
 private:
+	boost::array<unsigned char, 12> create_nonce() const;
+	boost::array<unsigned char, 32> calculate_checksum(const Poseidon::Uuid &uuid, const boost::array<unsigned char, 12> &nonce, bool response) const;
+
 	bool is_uuid_set() const NOEXCEPT;
 	void server_accept_hello(const Poseidon::Uuid &uuid, const boost::array<unsigned char, 12> &nonce);
 

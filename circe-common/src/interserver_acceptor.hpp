@@ -28,11 +28,13 @@ public:
 		> ServletCallback;
 
 private:
+	const std::string m_application_key;
+
 	mutable Poseidon::Mutex m_servlet_mutex;
 	boost::container::flat_map<boost::uint16_t, boost::shared_ptr<const ServletCallback> > m_servlet_map;
 
 public:
-	InterserverAcceptor(const Poseidon::IpPort &ip_port, const char *cert, const char *pkey);
+	InterserverAcceptor(const Poseidon::IpPort &ip_port, const char *cert, const char *pkey, std::string application_key);
 	~InterserverAcceptor() OVERRIDE;
 
 protected:

@@ -45,28 +45,6 @@ namespace {
 		return STD_CURRENT_EXCEPTION();
 	}
 	const AUTO(g_connection_lost_exception, make_connection_lost_exception());
-
-	boost::array<unsigned char, 12> create_nonce(){
-		PROFILE_ME;
-
-		boost::array<unsigned char, 12> nonce;
-		for(unsigned i = 0; i < 12; ++i){
-			nonce[i] = Poseidon::random_uint32();
-		}
-		return nonce;
-	}
-	boost::array<unsigned char, 32> calculate_checksum(const Poseidon::Uuid &uuid, const boost::array<unsigned char, 12> &nonce, bool response){
-		PROFILE_ME;
-
-		const AUTO(application_key, get_config<std::string>("interserver_application_key"));
-		Poseidon::Sha256_ostream sha_os;
-		sha_os.write((const char *)uuid.data(), 16)
-		      .put(response ? '!' : '?')
-		      .write((const char *)nonce.data(), 12)
-		      .put(':')
-		      .write(application_key.data(), (long)application_key.size());
-		return sha_os.finalize();
-	}
 }
 
 class InterserverConnection::RequestMessageJob : public Poseidon::JobBase {
@@ -145,7 +123,7 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_CLIENT_HELLO, expecting checksum_high"));
 			DEBUG_THROW_UNLESS(magic_payload.empty(), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_JUNK_AFTER_PACKET,
 				Poseidon::sslit("Junk after MSG_CLIENT_HELLO"));
-			const AUTO(checksum, calculate_checksum(uuid, nonce, false));
+			const AUTO(checksum, connection->calculate_checksum(uuid, nonce, false));
 			DEBUG_THROW_UNLESS(std::memcmp(checksum.data(), checksum_high.data(), 16) == 0, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE,
 				Poseidon::sslit("Request checksum mismatch"));
 			connection->server_accept_hello(uuid, nonce);
@@ -158,7 +136,7 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_SERVER_HELLO, expecting checksum_high"));
 			DEBUG_THROW_UNLESS(magic_payload.empty(), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_JUNK_AFTER_PACKET,
 				Poseidon::sslit("Junk after MSG_SERVER_HELLO"));
-			const AUTO(checksum, calculate_checksum(connection->m_uuid, connection->m_nonce, true));
+			const AUTO(checksum, connection->calculate_checksum(connection->m_uuid, connection->m_nonce, true));
 			DEBUG_THROW_UNLESS(std::memcmp(checksum.data(), checksum_high.data(), 16) == 0, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE,
 				Poseidon::sslit("Response hecksum mismatch"));
 			break; }
@@ -254,13 +232,35 @@ void InterserverConnection::deflate_and_send(const boost::weak_ptr<InterserverCo
 	}
 }
 
-InterserverConnection::InterserverConnection()
-	: m_uuid(), m_next_serial()
+InterserverConnection::InterserverConnection(std::string application_key)
+	: m_application_key(STD_MOVE(application_key))
+	, m_uuid(), m_next_serial()
 {
 	LOG_CIRCE_INFO("InterserverConnection constructor: this = ", (void *)this);
 }
 InterserverConnection::~InterserverConnection(){
 	LOG_CIRCE_INFO("InterserverConnection destructor: this = ", (void *)this);
+}
+
+boost::array<unsigned char, 12> InterserverConnection::create_nonce() const {
+	PROFILE_ME;
+
+	boost::array<unsigned char, 12> nonce;
+	for(unsigned i = 0; i < 12; ++i){
+		nonce[i] = Poseidon::random_uint32();
+	}
+	return nonce;
+}
+boost::array<unsigned char, 32> InterserverConnection::calculate_checksum(const Poseidon::Uuid &uuid, const boost::array<unsigned char, 12> &nonce, bool response) const {
+	PROFILE_ME;
+
+	Poseidon::Sha256_ostream sha_os;
+	sha_os.write((const char *)uuid.data(), 16)
+	      .put(response ? '!' : '?')
+	      .write((const char *)nonce.data(), 12)
+	      .put(':')
+	      .write(m_application_key.data(), (long)m_application_key.size());
+	return sha_os.finalize();
 }
 
 bool InterserverConnection::is_uuid_set() const NOEXCEPT {
