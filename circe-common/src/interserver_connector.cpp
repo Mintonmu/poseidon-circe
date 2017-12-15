@@ -29,6 +29,7 @@ public:
 		, m_weak_parent(parent)
 	{
 		LOG_CIRCE_INFO("InterserverClient constructor: remote = ", Poseidon::Cbpp::LowLevelClient::get_remote_info());
+		InterserverConnection::layer7_client_say_hello();
 	}
 	~InterserverClient(){
 		LOG_CIRCE_INFO("InterserverClient destructor: remote = ", Poseidon::Cbpp::LowLevelClient::get_remote_info());
@@ -87,13 +88,9 @@ protected:
 		const AUTO(parent, m_weak_parent.lock());
 		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 		const AUTO(servlet, parent->get_servlet(message_id));
-		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("Message not recognized"));
-		return (*servlet)(virtual_shared_from_this<InterserverClient>(), message_id, STD_MOVE(payload));
-	}
-
-public:
-	void say_hello(){
-		InterserverConnection::layer7_client_say_hello();
+		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("message_id not handled"));
+		AUTO(resp, (*servlet)(virtual_shared_from_this<InterserverClient>(), message_id, STD_MOVE(payload)));
+		return resp;
 	}
 };
 
@@ -122,11 +119,10 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 			client->Poseidon::TcpSessionBase::force_shutdown();
 		}
 		client = boost::make_shared<InterserverClient>(promised_sock_addr->get(), connector->m_use_ssl, connector);
+		client->set_no_delay();
 		Poseidon::EpollDaemon::add_socket(client, true);
 		connector->m_weak_client = client;
 	}
-	client->set_no_delay();
-	client->say_hello();
 }
 
 InterserverConnector::InterserverConnector(const char *host, unsigned port, bool use_ssl, std::string application_key)

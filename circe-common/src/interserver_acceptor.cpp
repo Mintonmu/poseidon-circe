@@ -6,6 +6,7 @@
 #include "interserver_connection.hpp"
 #include "cbpp_response.hpp"
 #include "mmain.hpp"
+#include <poseidon/singletons/main_config.hpp>
 #include <poseidon/cbpp/low_level_session.hpp>
 #include <poseidon/cbpp/exception.hpp>
 #include <poseidon/singletons/epoll_daemon.hpp>
@@ -84,8 +85,11 @@ protected:
 		const AUTO(parent, m_weak_parent.lock());
 		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 		const AUTO(servlet, parent->get_servlet(message_id));
-		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("Message not recognized"));
-		return (*servlet)(virtual_shared_from_this<InterserverSession>(), message_id, STD_MOVE(payload));
+		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("message_id not handled"));
+		AUTO(resp, (*servlet)(virtual_shared_from_this<InterserverSession>(), message_id, STD_MOVE(payload)));
+		const AUTO(timeout, Poseidon::MainConfig::get<boost::uint64_t>("cbpp_keep_alive_timeout", 30000));
+		set_timeout(timeout);
+		return resp;
 	}
 };
 

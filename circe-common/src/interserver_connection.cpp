@@ -240,6 +240,14 @@ InterserverConnection::InterserverConnection(std::string application_key)
 }
 InterserverConnection::~InterserverConnection(){
 	LOG_CIRCE_INFO("InterserverConnection destructor: this = ", (void *)this);
+
+	// Silence the warnings.
+	if(m_inflator){
+		m_inflator->clear();
+	}
+	if(m_deflator){
+		m_deflator->clear();
+	}
 }
 
 boost::array<unsigned char, 12> InterserverConnection::create_nonce() const {
