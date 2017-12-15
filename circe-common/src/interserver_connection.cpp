@@ -138,7 +138,7 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 				Poseidon::sslit("Junk after MSG_SERVER_HELLO"));
 			const AUTO(checksum, connection->calculate_checksum(connection->m_connection_uuid, connection->m_nonce, true));
 			DEBUG_THROW_UNLESS(std::memcmp(checksum.data(), checksum_high.data(), 16) == 0, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE,
-				Poseidon::sslit("Response hecksum mismatch"));
+				Poseidon::sslit("Response checksum mismatch"));
 			break; }
 
 		default: {
