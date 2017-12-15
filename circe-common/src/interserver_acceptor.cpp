@@ -120,7 +120,7 @@ boost::shared_ptr<Poseidon::TcpSessionBase> InterserverAcceptor::on_client_conne
 		for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); erase_it ? (it = m_weak_sessions.erase(it)) : ++it){
 			erase_it = it->second.expired();
 		}
-		DEBUG_THROW_UNLESS(m_weak_sessions.emplace(session->get_connection_uuid(), session).second, Poseidon::Exception, Poseidon::sslit("Duplicate InterserverAcceptor UUID"));
+		DEBUG_THROW_UNLESS(m_weak_sessions.emplace(session->get_connection_uuid(), session).second, Poseidon::Exception, Poseidon::sslit("Duplicate InterserverSession UUID"));
 	}
 	return STD_MOVE_IDN(session);
 }
