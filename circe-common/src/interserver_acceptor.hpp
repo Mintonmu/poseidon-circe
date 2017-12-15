@@ -5,6 +5,7 @@
 #define CIRCE_COMMON_INTERSERVER_ACCEPTOR_HPP_
 
 #include <poseidon/fwd.hpp>
+#include <poseidon/virtual_shared_from_this.hpp>
 #include <poseidon/tcp_server_base.hpp>
 #include <poseidon/ip_port.hpp>
 #include <poseidon/mutex.hpp>
@@ -17,7 +18,7 @@ namespace Common {
 class InterserverConnection;
 class CbppResponse;
 
-class InterserverAcceptor : public Poseidon::TcpServerBase {
+class InterserverAcceptor : public virtual Poseidon::VirtualSharedFromThis, public Poseidon::TcpServerBase {
 public:
 	typedef boost::function<
 		CbppResponse (const boost::shared_ptr<InterserverConnection> &connection, boost::uint16_t message_id, Poseidon::StreamBuffer payload)
