@@ -37,7 +37,7 @@ public:
 	~InterserverConnector() OVERRIDE;
 
 public:
-	bool is_connected() const;
+	boost::shared_ptr<InterserverConnection> get_client() const;
 	void activate();
 };
 

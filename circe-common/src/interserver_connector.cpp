@@ -139,11 +139,11 @@ InterserverConnector::~InterserverConnector(){
 	LOG_CIRCE_INFO("InterserverConnector constructor: host:port = ", m_host, ":", m_port, ", use_ssl = ", m_use_ssl);
 }
 
-bool InterserverConnector::is_connected() const {
+boost::shared_ptr<InterserverConnection> InterserverConnector::get_client() const {
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	return !m_weak_client.expired();
+	return m_weak_client.lock();
 }
 void InterserverConnector::activate(){
 	PROFILE_ME;
