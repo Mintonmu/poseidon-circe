@@ -112,9 +112,9 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 		// Dispatch it!
 		switch(magic_number){
 		case MSG_CLIENT_HELLO: {
-			Poseidon::Uuid uuid;
-			DEBUG_THROW_UNLESS(magic_payload.get(uuid.data(), 16) == 16, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_END_OF_STREAM,
-				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_CLIENT_HELLO, expecting UUID"));
+			Poseidon::Uuid connection_uuid;
+			DEBUG_THROW_UNLESS(magic_payload.get(connection_uuid.data(), 16) == 16, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_END_OF_STREAM,
+				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_CLIENT_HELLO, expecting connection_uuid"));
 			boost::array<unsigned char, 12> nonce;
 			DEBUG_THROW_UNLESS(magic_payload.get(nonce.data(), 12) == 12, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_END_OF_STREAM,
 				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_CLIENT_HELLO, expecting nonce"));
@@ -123,20 +123,20 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_CLIENT_HELLO, expecting checksum_high"));
 			DEBUG_THROW_UNLESS(magic_payload.empty(), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_JUNK_AFTER_PACKET,
 				Poseidon::sslit("Junk after MSG_CLIENT_HELLO"));
-			const AUTO(checksum, connection->calculate_checksum(uuid, nonce, false));
+			const AUTO(checksum, connection->calculate_checksum(connection_uuid, nonce, false));
 			DEBUG_THROW_UNLESS(std::memcmp(checksum.data(), checksum_high.data(), 16) == 0, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE,
 				Poseidon::sslit("Request checksum mismatch"));
-			connection->server_accept_hello(uuid, nonce);
+			connection->server_accept_hello(connection_uuid, nonce);
 			break; }
 
 		case MSG_SERVER_HELLO : {
-			DEBUG_THROW_ASSERT(connection->is_uuid_set());
+			DEBUG_THROW_ASSERT(connection->is_connection_uuid_set());
 			boost::array<unsigned char, 16> checksum_high;
 			DEBUG_THROW_UNLESS(magic_payload.get(checksum_high.data(), 16) == 16, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_END_OF_STREAM,
 				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_SERVER_HELLO, expecting checksum_high"));
 			DEBUG_THROW_UNLESS(magic_payload.empty(), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_JUNK_AFTER_PACKET,
 				Poseidon::sslit("Junk after MSG_SERVER_HELLO"));
-			const AUTO(checksum, connection->calculate_checksum(connection->m_uuid, connection->m_nonce, true));
+			const AUTO(checksum, connection->calculate_checksum(connection->m_connection_uuid, connection->m_nonce, true));
 			DEBUG_THROW_UNLESS(std::memcmp(checksum.data(), checksum_high.data(), 16) == 0, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE,
 				Poseidon::sslit("Response hecksum mismatch"));
 			break; }
@@ -234,7 +234,7 @@ void InterserverConnection::deflate_and_send(const boost::weak_ptr<InterserverCo
 
 InterserverConnection::InterserverConnection(std::string application_key)
 	: m_application_key(STD_MOVE(application_key))
-	, m_uuid(), m_next_serial()
+	, m_connection_uuid(), m_next_serial()
 {
 	LOG_CIRCE_INFO("InterserverConnection constructor: this = ", (void *)this);
 }
@@ -259,11 +259,11 @@ boost::array<unsigned char, 12> InterserverConnection::create_nonce() const {
 	}
 	return nonce;
 }
-boost::array<unsigned char, 32> InterserverConnection::calculate_checksum(const Poseidon::Uuid &uuid, const boost::array<unsigned char, 12> &nonce, bool response) const {
+boost::array<unsigned char, 32> InterserverConnection::calculate_checksum(const Poseidon::Uuid &connection_uuid, const boost::array<unsigned char, 12> &nonce, bool response) const {
 	PROFILE_ME;
 
 	Poseidon::Sha256_ostream sha_os;
-	sha_os.write((const char *)uuid.data(), 16)
+	sha_os.write((const char *)connection_uuid.data(), 16)
 	      .put(response ? '!' : '?')
 	      .write((const char *)nonce.data(), 12)
 	      .put(':')
@@ -271,27 +271,27 @@ boost::array<unsigned char, 32> InterserverConnection::calculate_checksum(const 
 	return sha_os.finalize();
 }
 
-bool InterserverConnection::is_uuid_set() const NOEXCEPT {
+bool InterserverConnection::is_connection_uuid_set() const NOEXCEPT {
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	return !!m_uuid;
+	return !!m_connection_uuid;
 }
-void InterserverConnection::server_accept_hello(const Poseidon::Uuid &uuid, const boost::array<unsigned char, 12> &nonce){
+void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection_uuid, const boost::array<unsigned char, 12> &nonce){
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!m_uuid, Poseidon::Exception, Poseidon::sslit("server_accept_hello() shall be called exactly once by the server and must not be called by the client"));
+	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("server_accept_hello() shall be called exactly once by the server and must not be called by the client"));
 	{
 		// Send the hello message to the client.
 		Poseidon::StreamBuffer magic_payload;
 		// Put the higher half of the response checksum (16 bytes).
-		const AUTO(checksum, calculate_checksum(uuid, nonce, true));
+		const AUTO(checksum, calculate_checksum(connection_uuid, nonce, true));
 		magic_payload.put(checksum.data(), 16);
 		// Send it!
 		launch_deflate_and_send(MSG_SERVER_HELLO, STD_MOVE(magic_payload));
 	}
-	m_uuid = uuid;
+	m_connection_uuid = connection_uuid;
 	m_nonce = nonce;
 }
 
@@ -353,7 +353,7 @@ void InterserverConnection::layer5_on_receive_data(boost::uint16_t magic_number,
 }
 void InterserverConnection::layer5_on_receive_control(long status_code, Poseidon::StreamBuffer param){
 	PROFILE_ME;
-	DEBUG_THROW_ASSERT(is_uuid_set());
+	DEBUG_THROW_ASSERT(is_connection_uuid_set());
 
 	switch(status_code){
 	case Poseidon::Cbpp::ST_SHUTDOWN:
@@ -398,30 +398,30 @@ void InterserverConnection::layer4_on_close(){
 void InterserverConnection::layer7_client_say_hello(){
 	PROFILE_ME;
 
-	const AUTO(uuid, Poseidon::Uuid::random());
+	const AUTO(connection_uuid, Poseidon::Uuid::random());
 	const AUTO(nonce, create_nonce());
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!m_uuid, Poseidon::Exception, Poseidon::sslit("layer7_client_say_hello() shall be called exactly once by the client and must not be called by the server"));
+	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("layer7_client_say_hello() shall be called exactly once by the client and must not be called by the server"));
 	{
 		Poseidon::StreamBuffer magic_payload;
-		// Put the UUID (16 bytes).
-		magic_payload.put(uuid.data(), 16);
+		// Put the connection UUID (16 bytes).
+		magic_payload.put(connection_uuid.data(), 16);
 		// Put the nonce (12 bytes).
 		magic_payload.put(nonce.data(), 12);
 		// Put the higher half of the request checksum (16 bytes).
-		const AUTO(checksum, calculate_checksum(uuid, nonce, false));
+		const AUTO(checksum, calculate_checksum(connection_uuid, nonce, false));
 		magic_payload.put(checksum.data(), 16);
 		// Send it!
 		launch_deflate_and_send(MSG_CLIENT_HELLO, STD_MOVE(magic_payload));
 	}
-	m_uuid = uuid;
+	m_connection_uuid = connection_uuid;
 	m_nonce = nonce;
 }
 
-const Poseidon::Uuid &InterserverConnection::get_uuid() const {
-	DEBUG_THROW_UNLESS(is_uuid_set(), Poseidon::Exception, Poseidon::sslit("InterserverConnection UUID has not been set"));
-	return m_uuid;
+const Poseidon::Uuid &InterserverConnection::get_connection_uuid() const {
+	DEBUG_THROW_UNLESS(is_connection_uuid_set(), Poseidon::Exception, Poseidon::sslit("InterserverConnection UUID has not been set"));
+	return m_connection_uuid;
 }
 
 void InterserverConnection::send(const boost::shared_ptr<PromisedResponse> &promise, boost::uint16_t message_id, Poseidon::StreamBuffer payload){

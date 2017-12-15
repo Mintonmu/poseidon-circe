@@ -37,8 +37,10 @@ public:
 	~InterserverConnector() OVERRIDE;
 
 public:
-	boost::shared_ptr<InterserverConnection> get_client() const;
 	void activate();
+
+	boost::shared_ptr<InterserverConnection> get_client() const;
+	void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 
 }

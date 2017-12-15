@@ -24,6 +24,9 @@ private:
 private:
 	const std::string m_application_key;
 
+	mutable Poseidon::Mutex m_mutex;
+	boost::container::flat_map<Poseidon::Uuid, boost::weak_ptr<InterserverSession> > m_weak_sessions;
+
 public:
 	InterserverAcceptor(const char *bind, unsigned port, const char *cert, const char *pkey, std::string application_key);
 	~InterserverAcceptor() OVERRIDE;
@@ -33,6 +36,9 @@ private:
 
 public:
 	void activate();
+
+	boost::shared_ptr<InterserverConnection> get_session(const Poseidon::Uuid &connection_uuid) const;
+	void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 
 }

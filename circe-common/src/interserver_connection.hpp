@@ -45,7 +45,7 @@ private:
 
 	// These are protected by a mutex and can be accessed by any thread.
 	mutable Poseidon::Mutex m_mutex;
-	Poseidon::Uuid m_uuid;
+	Poseidon::Uuid m_connection_uuid;
 	boost::array<unsigned char, 12> m_nonce;
 	boost::uint32_t m_next_serial;
 	boost::container::flat_multimap<boost::uint32_t, boost::weak_ptr<PromisedResponse> > m_weak_promises;
@@ -60,10 +60,10 @@ public:
 
 private:
 	boost::array<unsigned char, 12> create_nonce() const;
-	boost::array<unsigned char, 32> calculate_checksum(const Poseidon::Uuid &uuid, const boost::array<unsigned char, 12> &nonce, bool response) const;
+	boost::array<unsigned char, 32> calculate_checksum(const Poseidon::Uuid &connection_uuid, const boost::array<unsigned char, 12> &nonce, bool response) const;
 
-	bool is_uuid_set() const NOEXCEPT;
-	void server_accept_hello(const Poseidon::Uuid &uuid, const boost::array<unsigned char, 12> &nonce);
+	bool is_connection_uuid_set() const NOEXCEPT;
+	void server_accept_hello(const Poseidon::Uuid &connection_uuid, const boost::array<unsigned char, 12> &nonce);
 
 	void launch_inflate_and_dispatch(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload);
 	void launch_deflate_and_send(boost::uint16_t magic_number, Poseidon::StreamBuffer magic_payload);
@@ -90,8 +90,8 @@ protected:
 	virtual CbppResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) = 0;
 
 public:
-	// This function throws an exception if the UUID has not been set.
-	const Poseidon::Uuid &get_uuid() const;
+	// This function throws an exception if the connection UUID has not been set.
+	const Poseidon::Uuid &get_connection_uuid() const;
 
 	const Poseidon::IpPort &get_remote_info() const NOEXCEPT {
 		return layer5_get_remote_info();

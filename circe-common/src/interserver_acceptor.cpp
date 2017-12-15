@@ -106,6 +106,23 @@ InterserverAcceptor::InterserverAcceptor(const char *bind, unsigned port, const 
 }
 InterserverAcceptor::~InterserverAcceptor(){
 	LOG_CIRCE_INFO("InterserverAcceptor destructor: local = ", get_local_info());
+	clear(Poseidon::Cbpp::ST_GONE_AWAY);
+}
+
+boost::shared_ptr<Poseidon::TcpSessionBase> InterserverAcceptor::on_client_connect(Poseidon::Move<Poseidon::UniqueFile> socket){
+	PROFILE_ME;
+
+	AUTO(session, boost::make_shared<InterserverSession>(STD_MOVE(socket), virtual_shared_from_this<InterserverAcceptor>()));
+	session->set_no_delay();
+	{
+		const Poseidon::Mutex::UniqueLock lock(m_mutex);
+		bool erase_it;
+		for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); erase_it ? (it = m_weak_sessions.erase(it)) : ++it){
+			erase_it = it->second.expired();
+		}
+		DEBUG_THROW_UNLESS(m_weak_sessions.emplace(session->get_connection_uuid(), session).second, Poseidon::Exception, Poseidon::sslit("Duplicate InterserverAcceptor UUID"));
+	}
+	return STD_MOVE_IDN(session);
 }
 
 void InterserverAcceptor::activate(){
@@ -114,12 +131,31 @@ void InterserverAcceptor::activate(){
 	Poseidon::EpollDaemon::add_socket(virtual_shared_from_this<InterserverAcceptor>(), true);
 }
 
-boost::shared_ptr<Poseidon::TcpSessionBase> InterserverAcceptor::on_client_connect(Poseidon::Move<Poseidon::UniqueFile> socket){
+boost::shared_ptr<InterserverConnection> InterserverAcceptor::get_session(const Poseidon::Uuid &connection_uuid) const {
 	PROFILE_ME;
 
-	AUTO(session, boost::make_shared<InterserverSession>(STD_MOVE(socket), virtual_shared_from_this<InterserverAcceptor>()));
-	session->set_no_delay();
-	return STD_MOVE_IDN(session);
+	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	const AUTO(it, m_weak_sessions.find(connection_uuid));
+	if(it == m_weak_sessions.end()){
+		return VAL_INIT;
+	}
+	return it->second.lock();
+}
+void InterserverAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
+	PROFILE_ME;
+
+	VALUE_TYPE(m_weak_sessions) weak_sessions;
+	{
+		const Poseidon::Mutex::UniqueLock lock(m_mutex);
+		weak_sessions.swap(m_weak_sessions);
+	}
+	for(AUTO(it, weak_sessions.begin()); it != weak_sessions.end(); ++it){
+		const AUTO(session, it->second.lock());
+		if(session){
+			LOG_CIRCE_DEBUG("Disconnecting session: remote = ", session->Poseidon::Cbpp::LowLevelSession::get_remote_info());
+			session->Poseidon::Cbpp::LowLevelSession::shutdown(err_code, err_msg);
+		}
+	}
 }
 
 }

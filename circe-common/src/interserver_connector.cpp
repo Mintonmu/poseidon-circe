@@ -136,7 +136,16 @@ InterserverConnector::InterserverConnector(const char *host, unsigned port, bool
 	LOG_CIRCE_INFO("InterserverConnector constructor: host:port = ", m_host, ":", m_port, ", use_ssl = ", m_use_ssl);
 }
 InterserverConnector::~InterserverConnector(){
-	LOG_CIRCE_INFO("InterserverConnector constructor: host:port = ", m_host, ":", m_port, ", use_ssl = ", m_use_ssl);
+	LOG_CIRCE_INFO("InterserverConnector destructor: host:port = ", m_host, ":", m_port, ", use_ssl = ", m_use_ssl);
+	clear(Poseidon::Cbpp::ST_GONE_AWAY);
+}
+
+void InterserverConnector::activate(){
+	PROFILE_ME;
+
+	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	DEBUG_THROW_UNLESS(!m_timer, Poseidon::Exception, Poseidon::sslit("InterserverConnector is already activated"));
+	m_timer = Poseidon::TimerDaemon::register_timer(0, 5000, boost::bind(&timer_proc, virtual_weak_from_this<InterserverConnector>()));
 }
 
 boost::shared_ptr<InterserverConnection> InterserverConnector::get_client() const {
@@ -145,12 +154,19 @@ boost::shared_ptr<InterserverConnection> InterserverConnector::get_client() cons
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
 	return m_weak_client.lock();
 }
-void InterserverConnector::activate(){
+void InterserverConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!m_timer, Poseidon::Exception, Poseidon::sslit("InterserverConnector is already activated"));
-	m_timer = Poseidon::TimerDaemon::register_timer(0, 5000, boost::bind(&timer_proc, virtual_weak_from_this<InterserverConnector>()));
+	VALUE_TYPE(m_weak_client) weak_client;
+	{
+		const Poseidon::Mutex::UniqueLock lock(m_mutex);
+		weak_client.swap(m_weak_client);
+	}
+	const AUTO(client, weak_client.lock());
+	if(client){
+		LOG_CIRCE_DEBUG("Disconnecting client: remote = ", client->Poseidon::Cbpp::LowLevelClient::get_remote_info());
+		client->Poseidon::Cbpp::LowLevelClient::shutdown(err_code, err_msg);
+	}
 }
 
 }
