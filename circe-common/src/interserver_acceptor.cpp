@@ -87,9 +87,14 @@ protected:
 		const AUTO(servlet, parent->get_servlet(message_id));
 		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		AUTO(resp, (*servlet)(virtual_shared_from_this<InterserverSession>(), message_id, STD_MOVE(payload)));
+		reset_timeout();
+		return resp;
+	}
+
+public:
+	void reset_timeout(){
 		const AUTO(timeout, Poseidon::MainConfig::get<boost::uint64_t>("cbpp_keep_alive_timeout", 30000));
 		set_timeout(timeout);
-		return resp;
 	}
 };
 

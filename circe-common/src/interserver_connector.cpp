@@ -29,7 +29,6 @@ public:
 		, m_weak_parent(parent)
 	{
 		LOG_CIRCE_INFO("InterserverClient constructor: remote = ", Poseidon::Cbpp::LowLevelClient::get_remote_info());
-		InterserverConnection::layer7_client_say_hello();
 	}
 	~InterserverClient(){
 		LOG_CIRCE_INFO("InterserverClient destructor: remote = ", Poseidon::Cbpp::LowLevelClient::get_remote_info());
@@ -92,6 +91,11 @@ protected:
 		AUTO(resp, (*servlet)(virtual_shared_from_this<InterserverClient>(), message_id, STD_MOVE(payload)));
 		return resp;
 	}
+
+public:
+	void say_hello(){
+		InterserverConnection::layer7_client_say_hello();
+	}
 };
 
 void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector> &weak_connector){
@@ -120,6 +124,7 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 		}
 		client = boost::make_shared<InterserverClient>(promised_sock_addr->get(), connector->m_use_ssl, connector);
 		client->set_no_delay();
+		client->say_hello();
 		Poseidon::EpollDaemon::add_socket(client, true);
 		connector->m_weak_client = client;
 	}
