@@ -7,8 +7,7 @@
 #include <poseidon/fwd.hpp>
 #include <poseidon/virtual_shared_from_this.hpp>
 #include <poseidon/mutex.hpp>
-#include <boost/function.hpp>
-#include <boost/container/flat_map.hpp>
+#include "interserver_servlet_container.hpp"
 
 namespace Circe {
 namespace Common {
@@ -16,39 +15,29 @@ namespace Common {
 class InterserverConnection;
 class CbppResponse;
 
-class InterserverConnector : public virtual Poseidon::VirtualSharedFromThis {
+class InterserverConnector : public virtual Poseidon::VirtualSharedFromThis, public InterserverServletContainer {
 private:
 	class InterserverClient;
 
-public:
-	typedef boost::function<
-		CbppResponse (const boost::shared_ptr<InterserverConnection> &connection, boost::uint16_t message_id, Poseidon::StreamBuffer payload)
-		> ServletCallback;
-
 private:
-	static void on_low_level_timer(const boost::weak_ptr<InterserverConnector> &weak_connector);
+	static void timer_proc(const boost::weak_ptr<InterserverConnector> &weak_connector);
 
 private:
 	const std::string m_host;
 	const unsigned m_port;
 	const bool m_use_ssl;
+	const std::string m_application_key;
 
-	mutable Poseidon::Mutex m_connection_mutex;
-	boost::weak_ptr<InterserverClient> m_client;
-
-	mutable Poseidon::Mutex m_servlet_mutex;
-	boost::container::flat_map<boost::uint16_t, boost::shared_ptr<const ServletCallback> > m_servlet_map;
+	mutable Poseidon::Mutex m_mutex;
+	boost::shared_ptr<Poseidon::Timer> m_timer;
+	boost::weak_ptr<InterserverClient> m_weak_client;
 
 public:
-	InterserverConnector(const char *host, unsigned port, bool use_ssl);
+	InterserverConnector(const char *host, unsigned port, bool use_ssl, std::string application_key);
 	~InterserverConnector() OVERRIDE;
 
 public:
 	void activate();
-
-	boost::shared_ptr<const ServletCallback> get_servlet(boost::uint16_t message_id) const;
-	void insert_servlet(boost::uint16_t message_id, ServletCallback callback);
-	bool remove_servlet(boost::uint16_t message_id) NOEXCEPT;
 };
 
 }

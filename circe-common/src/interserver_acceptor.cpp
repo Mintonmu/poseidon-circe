@@ -21,8 +21,8 @@ private:
 	Poseidon::StreamBuffer m_deflated_payload;
 
 public:
-	InterserverSession(Poseidon::Move<Poseidon::UniqueFile> socket, std::string application_key, const boost::shared_ptr<InterserverAcceptor> &parent)
-		: Poseidon::Cbpp::LowLevelSession(STD_MOVE(socket)), InterserverConnection(STD_MOVE(application_key))
+	InterserverSession(Poseidon::Move<Poseidon::UniqueFile> socket, const boost::shared_ptr<InterserverAcceptor> &parent)
+		: Poseidon::Cbpp::LowLevelSession(STD_MOVE(socket)), InterserverConnection(parent->m_application_key)
 		, m_weak_parent(parent)
 	{
 		LOG_CIRCE_INFO("InterserverSession constructor: remote = ", Poseidon::Cbpp::LowLevelSession::get_remote_info());
@@ -108,7 +108,7 @@ void InterserverAcceptor::activate(){
 boost::shared_ptr<Poseidon::TcpSessionBase> InterserverAcceptor::on_client_connect(Poseidon::Move<Poseidon::UniqueFile> socket){
 	PROFILE_ME;
 
-	AUTO(session, boost::make_shared<InterserverSession>(STD_MOVE(socket), m_application_key, virtual_shared_from_this<InterserverAcceptor>()));
+	AUTO(session, boost::make_shared<InterserverSession>(STD_MOVE(socket), virtual_shared_from_this<InterserverAcceptor>()));
 	session->set_no_delay();
 	return STD_MOVE_IDN(session);
 }
