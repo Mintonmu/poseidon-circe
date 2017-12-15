@@ -37,6 +37,7 @@ public:
 	~InterserverConnector() OVERRIDE;
 
 public:
+	bool is_connected() const;
 	void activate();
 };
 
