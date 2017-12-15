@@ -108,7 +108,7 @@ public:
 
 	void send(const boost::shared_ptr<PromisedResponse> &promise, boost::uint16_t message_id, Poseidon::StreamBuffer payload);
 	void send(const boost::shared_ptr<PromisedResponse> &promise, const Poseidon::Cbpp::MessageBase &msg);
-	bool shutdown(long err_code, const char *err_msg) NOEXCEPT;
+	bool shutdown(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 
 }
