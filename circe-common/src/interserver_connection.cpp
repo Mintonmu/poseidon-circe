@@ -308,7 +308,7 @@ void InterserverConnection::sync_dispatch_message(boost::uint16_t message_id, bo
 	CbppResponse resp;
 	try {
 		resp = layer7_on_sync_message(message_id, STD_MOVE(payload));
-		DEBUG_THROW_UNLESS((MESSAGE_ID_MIN <= resp.get_message_id()) && (resp.get_message_id() <= MESSAGE_ID_MAX), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
+		DEBUG_THROW_UNLESS(is_message_id_valid(resp.get_message_id()), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 	} catch(Poseidon::Cbpp::Exception &e){
 		LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: mesasge_id = ", message_id, ", err_code = ", e.get_code(), ", err_msg = ", e.what());
 		resp = CbppResponse(e.get_code(), e.what());
@@ -365,7 +365,7 @@ void InterserverConnection::layer5_on_receive_control(long status_code, Poseidon
 		break;
 	}
 }
-void InterserverConnection::layer5_on_close(){
+void InterserverConnection::layer4_on_close(){
 	PROFILE_ME;
 
 	VALUE_TYPE(m_weak_promises) weak_promises;
@@ -420,7 +420,7 @@ void InterserverConnection::send(const boost::shared_ptr<PromisedResponse> &prom
 	PROFILE_ME;
 
 	LOG_CIRCE_DEBUG("Sending to ", layer5_get_remote_info(), ", message_id = ", message_id, ", payload.size() = ", payload.size());
-	DEBUG_THROW_UNLESS((MESSAGE_ID_MIN <= message_id) && (message_id <= MESSAGE_ID_MAX), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
+	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
 	if(layer5_has_been_shutdown()){
@@ -453,7 +453,7 @@ void InterserverConnection::send(const boost::shared_ptr<PromisedResponse> &prom
 
 	LOG_CIRCE_DEBUG("Sending to ", layer5_get_remote_info(), ", msg = ", msg);
 	const boost::uint64_t message_id = msg.get_id();
-	DEBUG_THROW_UNLESS((MESSAGE_ID_MIN <= message_id) && (message_id <= MESSAGE_ID_MAX), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
+	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 	send(promise, message_id, msg);
 }
 bool InterserverConnection::shutdown(long err_code, const char *err_msg) NOEXCEPT

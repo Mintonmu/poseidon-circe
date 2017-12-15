@@ -35,6 +35,11 @@ private:
 	static void inflate_and_dispatch(const boost::weak_ptr<InterserverConnection> &weak_connection, boost::uint16_t magic_number, Poseidon::StreamBuffer &deflated_payload);
 	static void deflate_and_send(const boost::weak_ptr<InterserverConnection> &weak_connection, boost::uint16_t magic_number, Poseidon::StreamBuffer &magic_payload);
 
+public:
+	static CONSTEXPR bool is_message_id_valid(boost::uint64_t message_id){
+		return (MESSAGE_ID_MIN <= message_id) && (message_id <= MESSAGE_ID_MAX);
+	}
+
 private:
 	// These are protected by a mutex and can be accessed by any thread.
 	mutable Poseidon::Mutex m_mutex;
@@ -71,7 +76,7 @@ protected:
 
 	void layer5_on_receive_data(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload);
 	void layer5_on_receive_control(long status_code, Poseidon::StreamBuffer param);
-	void layer5_on_close();
+	void layer4_on_close();
 
 	// The client shall call this function before sending anything else.
 	// The server shall not call this function.
