@@ -431,9 +431,7 @@ void InterserverConnection::send(const boost::shared_ptr<PromisedResponse> &prom
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	if(layer5_has_been_shutdown()){
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("InterserverConnection is lost"));
-	}
+	DEBUG_THROW_UNLESS(!layer5_has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("InterserverConnection is lost"));
 	AUTO(it, m_weak_promises.end());
 	try {
 		boost::uint16_t magic_number = message_id;
