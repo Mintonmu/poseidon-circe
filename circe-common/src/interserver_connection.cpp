@@ -96,7 +96,7 @@ public:
 		m_deflator.flush();
 		int ch;
 		while((ch = m_deflator.get_buffer().get()) >= 0){
-			ch ^= static_cast<int>(m_decrypt_rng());
+			ch ^= static_cast<int>(m_encrypt_rng());
 			deflated_payload.put(static_cast<unsigned char>(ch));
 		}
 		return deflated_payload;

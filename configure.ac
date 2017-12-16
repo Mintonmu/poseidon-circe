@@ -16,5 +16,6 @@ AC_CONFIG_FILES([
 	circe-common/Makefile
 	circe-gate/Makefile
 	circe-foyer/Makefile
+	circe-auth/Makefile
 ])
 AC_OUTPUT

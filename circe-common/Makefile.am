@@ -32,7 +32,9 @@ pkginclude_HEADERS = \
 pkginclude_protocoldir = $(pkgincludedir)/protocol
 pkginclude_protocol_HEADERS = \
 	protocol/messages_fwd.hpp	\
-	protocol/messages.hpp	\
+	protocol/messages_gate_foyer.hpp	\
+	protocol/messages_foyer_auth.hpp	\
+	protocol/messages_foyer_business.hpp	\
 	protocol/error_codes.hpp
 
 lib_LTLIBRARIES = \
