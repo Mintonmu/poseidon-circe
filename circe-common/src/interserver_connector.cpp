@@ -5,7 +5,6 @@
 #include "interserver_connector.hpp"
 #include "interserver_connection.hpp"
 #include "cbpp_response.hpp"
-#include "mmain.hpp"
 #include <poseidon/singletons/timer_daemon.hpp>
 #include <poseidon/singletons/dns_daemon.hpp>
 #include <poseidon/cbpp/low_level_client.hpp>
@@ -37,7 +36,7 @@ public:
 protected:
 	// Poseidon::Cbpp::LowLevelClient
 	void on_low_level_data_message_header(boost::uint16_t message_id, boost::uint64_t payload_size) OVERRIDE {
-		const AUTO(max_message_size, get_config<std::size_t>("interserver_max_message_size", 1048576));
+		const std::size_t max_message_size = InterserverConnection::get_max_message_size();
 		DEBUG_THROW_UNLESS(payload_size <= max_message_size, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_REQUEST_TOO_LARGE, Poseidon::sslit("Message is too large"));
 		m_magic_number = message_id;
 		m_deflated_payload.clear();

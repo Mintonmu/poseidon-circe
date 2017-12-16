@@ -3,15 +3,17 @@
 
 #include "precompiled.hpp"
 #include "interserver_connection.hpp"
-#include "mmain.hpp"
 #include "cbpp_response.hpp"
+#include "mmain.hpp"
 #include <poseidon/socket_base.hpp>
-#include <poseidon/zlib.hpp>
 #include <poseidon/sha256.hpp>
+#include <poseidon/crc32.hpp>
+#include <poseidon/zlib.hpp>
 #include <poseidon/cbpp/message_base.hpp>
 #include <poseidon/singletons/workhorse_camp.hpp>
 #include <poseidon/job_base.hpp>
 #include <poseidon/singletons/job_dispatcher.hpp>
+#include <boost/random/mersenne_twister.hpp>
 
 namespace Circe {
 namespace Common {
@@ -36,8 +38,6 @@ enum {
 };
 
 namespace {
-	const unsigned char g_deflated_suffix[] = { 0x00, 0x00, 0xFF, 0xFF };
-
 	STD_EXCEPTION_PTR make_connection_lost_exception()
 	try {
 		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("InterserverConnection is lost before a response could be received"));
@@ -46,6 +46,62 @@ namespace {
 	}
 	const AUTO(g_connection_lost_exception, make_connection_lost_exception());
 }
+
+class InterserverConnection::MessageFilter {
+private:
+	static boost::uint32_t hash_string(const std::string &s){
+		Poseidon::Crc32_ostream crc_os;
+		crc_os <<"@@@" <<s <<"!!!";
+		return crc_os.finalize();
+	}
+
+private:
+	boost::uint32_t m_seed;
+	// Receive
+	boost::mt19937 m_decrypt_rng;
+	Poseidon::Inflator m_inflator;
+	// Send
+	Poseidon::Deflator m_deflator;
+	boost::mt19937 m_encrypt_rng;
+
+public:
+	MessageFilter(const std::string &application_key, int compression_level)
+		: m_seed(hash_string(application_key))
+		, m_decrypt_rng(m_seed), m_inflator(false)
+		, m_deflator(false, compression_level), m_encrypt_rng(m_seed)
+	{ }
+	~MessageFilter(){
+		// Silence the warnings.
+		m_inflator.clear();
+		m_deflator.clear();
+	}
+
+public:
+	Poseidon::StreamBuffer decode(Poseidon::StreamBuffer deflated_payload){
+		Poseidon::StreamBuffer magic_payload;
+		// Decrypt then inflate.
+		int ch;
+		while((ch = deflated_payload.get()) >= 0){
+			ch ^= static_cast<int>(m_decrypt_rng());
+			m_inflator.put(static_cast<char>(ch));
+		}
+		m_inflator.flush();
+		magic_payload.swap(m_inflator.get_buffer());
+		return magic_payload;
+	}
+	Poseidon::StreamBuffer encode(Poseidon::StreamBuffer magic_payload){
+		Poseidon::StreamBuffer deflated_payload;
+		// Deflate then encrypt.
+		m_deflator.put(magic_payload);
+		m_deflator.flush();
+		int ch;
+		while((ch = m_deflator.get_buffer().get()) >= 0){
+			ch ^= static_cast<int>(m_decrypt_rng());
+			deflated_payload.put(static_cast<unsigned char>(ch));
+		}
+		return deflated_payload;
+	}
+};
 
 class InterserverConnection::RequestMessageJob : public Poseidon::JobBase {
 private:
@@ -98,17 +154,10 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 	}
 	LOG_CIRCE_TRACE("Inflate and dispatch: connection = ", (void *)connection.get());
 	try {
-		if(!connection->m_inflator){
-			LOG_CIRCE_INFO("Creating inflator: remote = ", connection->layer5_get_remote_info());
-			connection->m_inflator.reset(new Poseidon::Inflator(false));
-		}
-		connection->m_inflator->put(deflated_payload);
-		connection->m_inflator->put(g_deflated_suffix, sizeof(g_deflated_suffix));
-		connection->m_inflator->flush();
-		Poseidon::StreamBuffer magic_payload;
-		magic_payload.swap(connection->m_inflator->get_buffer());
-		LOG_CIRCE_TRACE("Inflate result: ", deflated_payload.size(), " / ", magic_payload.size(),
-			" (", std::fixed, std::setprecision(3), magic_payload.empty() ? 0.0 : deflated_payload.size() * 100.0 / magic_payload.size(), "%)");
+		const std::size_t size_deflated = deflated_payload.size();
+		Poseidon::StreamBuffer magic_payload = connection->m_message_filter->decode(STD_MOVE(deflated_payload));
+		const std::size_t size_inflated = magic_payload.size();
+		LOG_CIRCE_TRACE("Inflate result: ", size_deflated, " / ", size_inflated, " (", std::fixed, std::setprecision(3), magic_payload.empty() ? 0.0 : size_deflated * 100.0 / size_inflated, "%)");
 		// Dispatch it!
 		switch(magic_number){
 		case MSG_CLIENT_HELLO: {
@@ -207,20 +256,10 @@ void InterserverConnection::deflate_and_send(const boost::weak_ptr<InterserverCo
 	}
 	LOG_CIRCE_TRACE("Deflate and send: connection = ", (void *)connection.get());
 	try {
-		if(!connection->m_deflator){
-			const AUTO(level, get_config<int>("interserver_compression_level", 6));
-			LOG_CIRCE_INFO("Creating deflator: remote = ", connection->layer5_get_remote_info(), ", level = ", level);
-			connection->m_deflator.reset(new Poseidon::Deflator(false, level));
-		}
-		connection->m_deflator->put(magic_payload);
-		connection->m_deflator->flush();
-		Poseidon::StreamBuffer deflated_payload;
-		deflated_payload.swap(connection->m_deflator->get_buffer());
-		for(unsigned i = sizeof(g_deflated_suffix) - 1; i + 1 != 0; --i){
-			DEBUG_THROW_ASSERT(deflated_payload.unput() == g_deflated_suffix[i]);
-		}
-		LOG_CIRCE_TRACE("Deflate result: ", deflated_payload.size(), " / ", magic_payload.size(),
-			" (", std::fixed, std::setprecision(3), magic_payload.empty() ? 0.0 : deflated_payload.size() * 100.0 / magic_payload.size(), "%)");
+		const std::size_t size_inflated = magic_payload.size();
+		Poseidon::StreamBuffer deflated_payload = connection->m_message_filter->encode(STD_MOVE(magic_payload));
+		const std::size_t size_deflated = deflated_payload.size();
+		LOG_CIRCE_TRACE("Deflate result: ", size_deflated, " / ", size_inflated, " (", std::fixed, std::setprecision(3), magic_payload.empty() ? 0.0 : size_deflated * 100.0 / size_inflated, "%)");
 		// Send it!
 		connection->layer5_send_data(magic_number, STD_MOVE(deflated_payload));
 	} catch(Poseidon::Cbpp::Exception &e){
@@ -232,22 +271,21 @@ void InterserverConnection::deflate_and_send(const boost::weak_ptr<InterserverCo
 	}
 }
 
-InterserverConnection::InterserverConnection(std::string application_key)
-	: m_application_key(STD_MOVE(application_key))
+std::size_t InterserverConnection::get_max_message_size(){
+	return get_config<std::size_t>("interserver_max_message_size", 1048576);
+}
+int InterserverConnection::get_compression_level(){
+	return get_config<int>("interserver_compression_level", 6);
+}
+
+InterserverConnection::InterserverConnection(const std::string &application_key)
+	: m_application_key(application_key), m_message_filter(new MessageFilter(application_key, get_compression_level()))
 	, m_connection_uuid(), m_next_serial()
 {
 	LOG_CIRCE_INFO("InterserverConnection constructor: this = ", (void *)this);
 }
 InterserverConnection::~InterserverConnection(){
 	LOG_CIRCE_INFO("InterserverConnection destructor: this = ", (void *)this);
-
-	// Silence the warnings.
-	if(m_inflator){
-		m_inflator->clear();
-	}
-	if(m_deflator){
-		m_deflator->clear();
-	}
 }
 
 boost::array<unsigned char, 12> InterserverConnection::create_nonce() const {

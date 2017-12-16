@@ -21,13 +21,15 @@ namespace Common {
 class CbppResponse;
 
 class InterserverConnection : public virtual Poseidon::VirtualSharedFromThis {
+private:
+	class MessageFilter;
+	class RequestMessageJob;
+
 public:
 	enum {
 		MESSAGE_ID_MIN  = 0x0001,
 		MESSAGE_ID_MAX  = 0x0FFF,
 	};
-
-	class RequestMessageJob;
 
 	typedef Poseidon::PromiseContainer<CbppResponse> PromisedResponse;
 
@@ -40,8 +42,13 @@ public:
 		return (MESSAGE_ID_MIN <= message_id) && (message_id <= MESSAGE_ID_MAX);
 	}
 
+	static std::size_t get_max_message_size();
+	static int get_compression_level();
+
 private:
 	const std::string m_application_key;
+	// This is only used by the workhorse thread.
+	const boost::scoped_ptr<MessageFilter> m_message_filter;
 
 	// These are protected by a mutex and can be accessed by any thread.
 	mutable Poseidon::Mutex m_mutex;
@@ -50,12 +57,8 @@ private:
 	boost::uint32_t m_next_serial;
 	boost::container::flat_multimap<boost::uint32_t, boost::weak_ptr<PromisedResponse> > m_weak_promises;
 
-	// These are only used by the workhorse thread.
-	boost::scoped_ptr<Poseidon::Inflator> m_inflator;
-	boost::scoped_ptr<Poseidon::Deflator> m_deflator;
-
 public:
-	explicit InterserverConnection(std::string application_key);
+	explicit InterserverConnection(const std::string &application_key);
 	~InterserverConnection() OVERRIDE;
 
 private:
