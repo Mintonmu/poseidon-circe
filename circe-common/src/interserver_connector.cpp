@@ -16,6 +16,8 @@ namespace Circe {
 namespace Common {
 
 class InterserverConnector::InterserverClient : public Poseidon::Cbpp::LowLevelClient, public InterserverConnection {
+	friend InterserverConnector;
+
 private:
 	const boost::weak_ptr<InterserverConnector> m_weak_parent;
 
@@ -88,14 +90,10 @@ protected:
 
 		const AUTO(parent, m_weak_parent.lock());
 		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+
 		const AUTO(servlet, parent->get_servlet(message_id));
 		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverClient>(), message_id, STD_MOVE(payload));
-	}
-
-public:
-	void say_hello(){
-		InterserverConnection::layer7_client_say_hello();
 	}
 };
 
@@ -125,7 +123,7 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 		}
 		client = boost::make_shared<InterserverClient>(promised_sock_addr->get(), connector->m_use_ssl, connector);
 		client->set_no_delay();
-		client->say_hello();
+		client->layer7_client_say_hello();
 		Poseidon::EpollDaemon::add_socket(client, true);
 		connector->m_weak_client = client;
 	}

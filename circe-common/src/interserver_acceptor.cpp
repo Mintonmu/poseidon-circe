@@ -14,6 +14,8 @@ namespace Circe {
 namespace Common {
 
 class InterserverAcceptor::InterserverSession : public Poseidon::Cbpp::LowLevelSession, public InterserverConnection {
+	friend InterserverAcceptor;
+
 private:
 	const boost::weak_ptr<InterserverAcceptor> m_weak_parent;
 
@@ -74,17 +76,16 @@ protected:
 	}
 	void layer5_send_data(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload) OVERRIDE {
 		Poseidon::Cbpp::LowLevelSession::send(magic_number, STD_MOVE(deflated_payload));
-		reset_timeout();
 	}
 	void layer5_send_control(long status_code, Poseidon::StreamBuffer param) OVERRIDE {
 		Poseidon::Cbpp::LowLevelSession::send_status(status_code, STD_MOVE(param));
-		reset_timeout();
 	}
 	void layer7_post_set_connection_uuid() OVERRIDE {
 		PROFILE_ME;
 
 		const AUTO(parent, m_weak_parent.lock());
 		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+
 		const Poseidon::Mutex::UniqueLock lock(parent->m_mutex);
 		bool erase_it;
 		for(AUTO(it, parent->m_weak_sessions.begin()); it != parent->m_weak_sessions.end(); erase_it ? (it = parent->m_weak_sessions.erase(it)) : ++it){
@@ -98,15 +99,13 @@ protected:
 
 		const AUTO(parent, m_weak_parent.lock());
 		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+
+		const AUTO(timeout, Poseidon::MainConfig::get<boost::uint64_t>("cbpp_keep_alive_timeout", 30000));
+		set_timeout(timeout);
+
 		const AUTO(servlet, parent->get_servlet(message_id));
 		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverSession>(), message_id, STD_MOVE(payload));
-	}
-
-public:
-	void reset_timeout(){
-		const AUTO(timeout, Poseidon::MainConfig::get<boost::uint64_t>("cbpp_keep_alive_timeout", 30000));
-		set_timeout(timeout);
 	}
 };
 
