@@ -430,11 +430,7 @@ void InterserverConnection::layer4_on_close(){
 		if(!promise){
 			continue;
 		}
-		try {
-			promise->set_exception(g_connection_lost_exception);
-		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: ", e.what());
-		}
+		promise->set_exception(g_connection_lost_exception, false);
 	}
 }
 
