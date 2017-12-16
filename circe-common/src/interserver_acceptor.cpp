@@ -74,9 +74,24 @@ protected:
 	}
 	void layer5_send_data(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload) OVERRIDE {
 		Poseidon::Cbpp::LowLevelSession::send(magic_number, STD_MOVE(deflated_payload));
+		reset_timeout();
 	}
 	void layer5_send_control(long status_code, Poseidon::StreamBuffer param) OVERRIDE {
 		Poseidon::Cbpp::LowLevelSession::send_status(status_code, STD_MOVE(param));
+		reset_timeout();
+	}
+	void layer7_post_set_connection_uuid() OVERRIDE {
+		PROFILE_ME;
+
+		const AUTO(parent, m_weak_parent.lock());
+		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		const Poseidon::Mutex::UniqueLock lock(parent->m_mutex);
+		bool erase_it;
+		for(AUTO(it, parent->m_weak_sessions.begin()); it != parent->m_weak_sessions.end(); erase_it ? (it = parent->m_weak_sessions.erase(it)) : ++it){
+			erase_it = it->second.expired();
+		}
+		const AUTO(pair, parent->m_weak_sessions.emplace(get_connection_uuid(), virtual_shared_from_this<InterserverSession>()));
+		DEBUG_THROW_UNLESS(pair.second, Poseidon::Exception, Poseidon::sslit("Duplicate InterserverSession UUID"));
 	}
 	CbppResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) OVERRIDE {
 		PROFILE_ME;
@@ -85,9 +100,7 @@ protected:
 		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 		const AUTO(servlet, parent->get_servlet(message_id));
 		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("message_id not handled"));
-		AUTO(resp, (*servlet)(virtual_shared_from_this<InterserverSession>(), message_id, STD_MOVE(payload)));
-		reset_timeout();
-		return resp;
+		return (*servlet)(virtual_shared_from_this<InterserverSession>(), message_id, STD_MOVE(payload));
 	}
 
 public:
@@ -113,14 +126,6 @@ boost::shared_ptr<Poseidon::TcpSessionBase> InterserverAcceptor::on_client_conne
 
 	AUTO(session, boost::make_shared<InterserverSession>(STD_MOVE(socket), virtual_shared_from_this<InterserverAcceptor>()));
 	session->set_no_delay();
-	{
-		const Poseidon::Mutex::UniqueLock lock(m_mutex);
-		bool erase_it;
-		for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); erase_it ? (it = m_weak_sessions.erase(it)) : ++it){
-			erase_it = it->second.expired();
-		}
-		DEBUG_THROW_UNLESS(m_weak_sessions.emplace(session->get_connection_uuid(), session).second, Poseidon::Exception, Poseidon::sslit("Duplicate InterserverSession UUID"));
-	}
 	return STD_MOVE_IDN(session);
 }
 

@@ -157,7 +157,7 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 		const std::size_t size_deflated = deflated_payload.size();
 		Poseidon::StreamBuffer magic_payload = connection->m_message_filter->decode(STD_MOVE(deflated_payload));
 		const std::size_t size_inflated = magic_payload.size();
-		LOG_CIRCE_TRACE("Inflate result: ", size_deflated, " / ", size_inflated, " (", std::fixed, std::setprecision(3), magic_payload.empty() ? 0.0 : size_deflated * 100.0 / size_inflated, "%)");
+		LOG_CIRCE_TRACE("Inflate result: ", size_deflated, " / ", size_inflated, " (", std::fixed, std::setprecision(3), (size_inflated != 0) ? size_deflated * 100.0 / size_inflated : 0.0, "%)");
 		// Dispatch it!
 		switch(magic_number){
 		case MSG_CLIENT_HELLO: {
@@ -220,6 +220,7 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 						connection->m_weak_promises.erase(it);
 					}
 				}
+LOG_POSEIDON_FATAL("RESPONSE: ", resp.get_err_code(), ": ", resp.get_err_msg());
 				if(promise){
 					promise->set_success(STD_MOVE(resp));
 				}
@@ -259,7 +260,7 @@ void InterserverConnection::deflate_and_send(const boost::weak_ptr<InterserverCo
 		const std::size_t size_inflated = magic_payload.size();
 		Poseidon::StreamBuffer deflated_payload = connection->m_message_filter->encode(STD_MOVE(magic_payload));
 		const std::size_t size_deflated = deflated_payload.size();
-		LOG_CIRCE_TRACE("Deflate result: ", size_deflated, " / ", size_inflated, " (", std::fixed, std::setprecision(3), magic_payload.empty() ? 0.0 : size_deflated * 100.0 / size_inflated, "%)");
+		LOG_CIRCE_TRACE("Deflate result: ", size_deflated, " / ", size_inflated, " (", std::fixed, std::setprecision(3), (size_inflated != 0) ? size_deflated * 100.0 / size_inflated : 0.0, "%)");
 		// Send it!
 		connection->layer5_send_data(magic_number, STD_MOVE(deflated_payload));
 	} catch(Poseidon::Cbpp::Exception &e){
@@ -318,19 +319,23 @@ bool InterserverConnection::is_connection_uuid_set() const NOEXCEPT {
 void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection_uuid, const boost::array<unsigned char, 12> &nonce){
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("server_accept_hello() shall be called exactly once by the server and must not be called by the client"));
+	LOG_CIRCE_INFO("Accepted HELLO from ", layer5_get_remote_info());
 	{
-		// Send the hello message to the client.
-		Poseidon::StreamBuffer magic_payload;
-		// Put the higher half of the response checksum (16 bytes).
-		const AUTO(checksum, calculate_checksum(connection_uuid, nonce, true));
-		magic_payload.put(checksum.data(), 16);
-		// Send it!
-		launch_deflate_and_send(MSG_SERVER_HELLO, STD_MOVE(magic_payload));
+		const Poseidon::Mutex::UniqueLock lock(m_mutex);
+		DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("server_accept_hello() shall be called exactly once by the server and must not be called by the client"));
+		{
+			// Send the hello message to the client.
+			Poseidon::StreamBuffer magic_payload;
+			// Put the higher half of the response checksum (16 bytes).
+			const AUTO(checksum, calculate_checksum(connection_uuid, nonce, true));
+			magic_payload.put(checksum.data(), 16);
+			// Send it!
+			launch_deflate_and_send(MSG_SERVER_HELLO, STD_MOVE(magic_payload));
+		}
+		m_connection_uuid = connection_uuid;
+		m_nonce = nonce;
 	}
-	m_connection_uuid = connection_uuid;
-	m_nonce = nonce;
+	layer7_post_set_connection_uuid();
 }
 
 void InterserverConnection::launch_inflate_and_dispatch(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload){
@@ -438,23 +443,26 @@ void InterserverConnection::layer7_client_say_hello(){
 
 	const AUTO(connection_uuid, Poseidon::Uuid::random());
 	const AUTO(nonce, create_nonce());
-
-	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("layer7_client_say_hello() shall be called exactly once by the client and must not be called by the server"));
+	LOG_CIRCE_INFO("Sending HELLO to ", layer5_get_remote_info());
 	{
-		Poseidon::StreamBuffer magic_payload;
-		// Put the connection UUID (16 bytes).
-		magic_payload.put(connection_uuid.data(), 16);
-		// Put the nonce (12 bytes).
-		magic_payload.put(nonce.data(), 12);
-		// Put the higher half of the request checksum (16 bytes).
-		const AUTO(checksum, calculate_checksum(connection_uuid, nonce, false));
-		magic_payload.put(checksum.data(), 16);
-		// Send it!
-		launch_deflate_and_send(MSG_CLIENT_HELLO, STD_MOVE(magic_payload));
+		const Poseidon::Mutex::UniqueLock lock(m_mutex);
+		DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("layer7_client_say_hello() shall be called exactly once by the client and must not be called by the server"));
+		{
+			Poseidon::StreamBuffer magic_payload;
+			// Put the connection UUID (16 bytes).
+			magic_payload.put(connection_uuid.data(), 16);
+			// Put the nonce (12 bytes).
+			magic_payload.put(nonce.data(), 12);
+			// Put the higher half of the request checksum (16 bytes).
+			const AUTO(checksum, calculate_checksum(connection_uuid, nonce, false));
+			magic_payload.put(checksum.data(), 16);
+			// Send it!
+			launch_deflate_and_send(MSG_CLIENT_HELLO, STD_MOVE(magic_payload));
+		}
+		m_connection_uuid = connection_uuid;
+		m_nonce = nonce;
 	}
-	m_connection_uuid = connection_uuid;
-	m_nonce = nonce;
+	layer7_post_set_connection_uuid();
 }
 
 const Poseidon::Uuid &InterserverConnection::get_connection_uuid() const {

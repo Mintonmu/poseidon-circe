@@ -80,6 +80,9 @@ protected:
 	void layer5_send_control(long status_code, Poseidon::StreamBuffer param) OVERRIDE {
 		Poseidon::Cbpp::LowLevelClient::send_control(status_code, STD_MOVE(param));
 	}
+	void layer7_post_set_connection_uuid() OVERRIDE {
+		// There is nothing to do.
+	}
 	CbppResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) OVERRIDE {
 		PROFILE_ME;
 
@@ -87,8 +90,7 @@ protected:
 		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 		const AUTO(servlet, parent->get_servlet(message_id));
 		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("message_id not handled"));
-		AUTO(resp, (*servlet)(virtual_shared_from_this<InterserverClient>(), message_id, STD_MOVE(payload)));
-		return resp;
+		return (*servlet)(virtual_shared_from_this<InterserverClient>(), message_id, STD_MOVE(payload));
 	}
 
 public:

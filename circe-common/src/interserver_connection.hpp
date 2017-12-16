@@ -90,6 +90,7 @@ protected:
 	// The server shall not call this function.
 	void layer7_client_say_hello();
 
+	virtual void layer7_post_set_connection_uuid() = 0;
 	virtual CbppResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) = 0;
 
 public:
