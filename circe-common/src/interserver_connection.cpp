@@ -49,20 +49,19 @@ namespace {
 
 class InterserverConnection::MessageFilter {
 private:
-	// PRNG seed
-	boost::random::seed_seq m_seed_seq;
-	// Receive
+	// Decoder
+	boost::random::seed_seq m_decryptor_seed_seq;
 	boost::random::mt19937 m_decryptor_prng;
 	Poseidon::Inflator m_inflator;
-	// Send
-	Poseidon::Deflator m_deflator;
+	// Encoder
+	boost::random::seed_seq m_encryptor_seed_seq;
 	boost::random::mt19937 m_encryptor_prng;
+	Poseidon::Deflator m_deflator;
 
 public:
 	MessageFilter(const std::string &application_key, int compression_level)
-		: m_seed_seq(application_key.begin(), application_key.end())
-		, m_decryptor_prng(m_seed_seq), m_inflator(false)
-		, m_deflator(false, compression_level), m_encryptor_prng(m_seed_seq)
+		: m_decryptor_seed_seq(application_key.begin(), application_key.end()), m_decryptor_prng(m_decryptor_seed_seq), m_inflator(false)
+		, m_encryptor_seed_seq(application_key.begin(), application_key.end()), m_encryptor_prng(m_encryptor_seed_seq), m_deflator(false, compression_level)
 	{ }
 	~MessageFilter(){
 		// Silence the warnings.
