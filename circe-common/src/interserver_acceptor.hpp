@@ -28,7 +28,7 @@ private:
 	boost::container::flat_map<Poseidon::Uuid, boost::weak_ptr<InterserverSession> > m_weak_sessions;
 
 public:
-	InterserverAcceptor(const char *bind, unsigned port, const char *cert, const char *pkey, std::string application_key);
+	InterserverAcceptor(const char *bind, unsigned port, std::string application_key);
 	~InterserverAcceptor() OVERRIDE;
 
 private:

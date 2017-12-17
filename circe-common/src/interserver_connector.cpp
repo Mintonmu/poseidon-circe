@@ -25,8 +25,8 @@ private:
 	Poseidon::StreamBuffer m_deflated_payload;
 
 public:
-	InterserverClient(const Poseidon::SockAddr &sock_addr, bool use_ssl, const boost::shared_ptr<InterserverConnector> &parent)
-		: Poseidon::Cbpp::LowLevelClient(sock_addr, use_ssl), InterserverConnection(parent->m_application_key)
+	InterserverClient(const Poseidon::SockAddr &sock_addr, const boost::shared_ptr<InterserverConnector> &parent)
+		: Poseidon::Cbpp::LowLevelClient(sock_addr, false), InterserverConnection(parent->m_application_key)
 		, m_weak_parent(parent)
 	{
 		LOG_CIRCE_INFO("InterserverClient constructor: remote = ", Poseidon::Cbpp::LowLevelClient::get_remote_info());
@@ -121,7 +121,7 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 		if(client){
 			client->Poseidon::TcpSessionBase::force_shutdown();
 		}
-		client = boost::make_shared<InterserverClient>(promised_sock_addr->get(), connector->m_use_ssl, connector);
+		client = boost::make_shared<InterserverClient>(promised_sock_addr->get(), connector);
 		client->set_no_delay();
 		client->layer7_client_say_hello();
 		Poseidon::EpollDaemon::add_socket(client, true);
@@ -129,13 +129,13 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 	}
 }
 
-InterserverConnector::InterserverConnector(const char *host, unsigned port, bool use_ssl, std::string application_key)
-	: m_host(host), m_port(port), m_use_ssl(use_ssl), m_application_key(STD_MOVE(application_key))
+InterserverConnector::InterserverConnector(const char *host, unsigned port, std::string application_key)
+	: m_host(host), m_port(port), m_application_key(STD_MOVE(application_key))
 {
-	LOG_CIRCE_INFO("InterserverConnector constructor: host:port = ", m_host, ":", m_port, ", use_ssl = ", m_use_ssl);
+	LOG_CIRCE_INFO("InterserverConnector constructor: host:port = ", m_host, ":", m_port);
 }
 InterserverConnector::~InterserverConnector(){
-	LOG_CIRCE_INFO("InterserverConnector destructor: host:port = ", m_host, ":", m_port, ", use_ssl = ", m_use_ssl);
+	LOG_CIRCE_INFO("InterserverConnector destructor: host:port = ", m_host, ":", m_port);
 	clear(Poseidon::Cbpp::ST_GONE_AWAY);
 }
 

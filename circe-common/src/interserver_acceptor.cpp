@@ -109,8 +109,8 @@ protected:
 	}
 };
 
-InterserverAcceptor::InterserverAcceptor(const char *bind, unsigned port, const char *cert, const char *pkey, std::string application_key)
-	: Poseidon::TcpServerBase(Poseidon::IpPort(bind, port), cert, pkey)
+InterserverAcceptor::InterserverAcceptor(const char *bind, unsigned port, std::string application_key)
+	: Poseidon::TcpServerBase(Poseidon::IpPort(bind, port), "", "")
 	, m_application_key(STD_MOVE(application_key))
 {
 	LOG_CIRCE_INFO("InterserverAcceptor constructor: local = ", get_local_info());
