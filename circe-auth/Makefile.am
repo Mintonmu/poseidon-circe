@@ -10,6 +10,13 @@ pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	etc/circe/circe-auth-template.conf
 
+pkginclude_HEADERS =
+
+pkginclude_authdir = $(pkgincludedir)/auth
+pkginclude_auth_HEADERS = \
+	src/singletons/auth_acceptor.hpp	\
+	src/mmain.hpp
+
 lib_LTLIBRARIES = \
 	lib/libcirce-auth.la
 

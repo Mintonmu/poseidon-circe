@@ -10,6 +10,11 @@ pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	etc/circe/circe-foyer-template.conf
 
+pkginclude_HEADERS =
+
+pkginclude_foyerdir = $(pkgincludedir)/foyer
+pkginclude_foyer_HEADERS =
+
 lib_LTLIBRARIES = \
 	lib/libcirce-foyer.la
 

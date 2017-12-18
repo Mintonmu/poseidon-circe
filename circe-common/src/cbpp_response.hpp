@@ -4,7 +4,7 @@
 #ifndef CIRCE_COMMON_CBPP_RESPONSE_HPP_
 #define CIRCE_COMMON_CBPP_RESPONSE_HPP_
 
-#include <poseidon/cbpp/fwd.hpp>
+#include <poseidon/cbpp/message_base.hpp>
 #include <poseidon/stream_buffer.hpp>
 #include <boost/cstdint.hpp>
 
@@ -20,10 +20,18 @@ private:
 	Poseidon::StreamBuffer m_payload;
 
 public:
-	CbppResponse(long err_code = 0, std::string err_msg = std::string());
-	CbppResponse(boost::uint64_t message_id, Poseidon::StreamBuffer payload);
-	CbppResponse(const Poseidon::Cbpp::MessageBase &msg);
-	~CbppResponse();
+	CbppResponse(long err_code = Poseidon::Cbpp::ST_OK, std::string err_msg = std::string())
+		: m_err_code(err_code), m_err_msg(STD_MOVE(err_msg))
+		, m_message_id(), m_payload()
+	{ }
+	CbppResponse(boost::uint64_t message_id, Poseidon::StreamBuffer payload)
+		: m_err_code(Poseidon::Cbpp::ST_OK), m_err_msg()
+		, m_message_id(message_id), m_payload(STD_MOVE(payload))
+	{ }
+	CbppResponse(const Poseidon::Cbpp::MessageBase &msg)
+		: m_err_code(Poseidon::Cbpp::ST_OK), m_err_msg()
+		, m_message_id(msg.get_id()), m_payload(msg)
+	{ }
 
 public:
 	long get_err_code() const NOEXCEPT {

@@ -22,27 +22,22 @@ pkgsysconf_DATA = \
 	etc/circe/main-template.conf	\
 	etc/circe/circe-common-template.conf
 
-pkginclude_HEADERS = \
+pkginclude_HEADERS =
+
+pkginclude_commondir = $(pkgincludedir)/common
+pkginclude_common_HEADERS = \
 	src/cbpp_response.hpp	\
-	src/interserver_connection.hpp	\
 	src/interserver_servlet_callback.hpp	\
+	src/interserver_connection.hpp	\
 	src/interserver_servlet_container.hpp	\
 	src/interserver_connector.hpp	\
-	src/interserver_acceptor.hpp
-
-pkginclude_protocoldir = $(pkgincludedir)/protocol
-pkginclude_protocol_HEADERS = \
-	protocol/messages_fwd.hpp	\
-	protocol/messages_gate_foyer.hpp	\
-	protocol/messages_foyer_auth.hpp	\
-	protocol/messages_foyer_business.hpp	\
-	protocol/error_codes.hpp
+	src/interserver_acceptor.hpp	\
+	src/mmain.hpp
 
 lib_LTLIBRARIES = \
 	lib/libcirce-common.la
 
 lib_libcirce_common_la_SOURCES = \
-	src/cbpp_response.cpp	\
 	src/interserver_connection.cpp	\
 	src/interserver_servlet_container.cpp	\
 	src/interserver_connector.cpp	\

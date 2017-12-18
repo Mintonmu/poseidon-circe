@@ -10,6 +10,11 @@ pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	etc/circe/circe-gate-template.conf
 
+pkginclude_HEADERS =
+
+pkginclude_gatedir = $(pkgincludedir)/gate
+pkginclude_gate_HEADERS =
+
 lib_LTLIBRARIES = \
 	lib/libcirce-gate.la
 
