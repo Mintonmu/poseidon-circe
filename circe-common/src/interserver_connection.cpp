@@ -6,6 +6,7 @@
 #include "cbpp_response.hpp"
 #include "mmain.hpp"
 #include <poseidon/socket_base.hpp>
+#include <poseidon/crc32.hpp>
 #include <poseidon/sha256.hpp>
 #include <poseidon/zlib.hpp>
 #include <poseidon/cbpp/message_base.hpp>
@@ -31,9 +32,9 @@ enum {
 
 	// System Messages
 	MSG_CLIENT_HELLO      = 0x2001,  // byte[16]     connection_uuid
-	                                 // byte[12]     nonce
-	                                 // byte[16]     checksum_high = SHA-256(connection_uuid + '?' + nonce + ':' + application_key).slice(0, 16)
-	MSG_SERVER_HELLO      = 0x2002,  // byte[16]     checksum_high = SHA-256(connection_uuid + '!' + nonce + ':' + application_key).slice(0, 16)
+	                                 // uint64       timestamp_be
+	                                 // byte[32]     checksum = SHA-256('REQ:' + connection_uuid + timestamp + application_key)
+	MSG_SERVER_HELLO      = 0x2002,  // byte[32]     checksum = SHA-256('RES:' + connection_uuid + timestamp + application_key)
 };
 
 namespace {
@@ -52,8 +53,8 @@ private:
 	boost::uint64_t m_word;
 
 public:
-	RandomByteGenerator(const unsigned char *seed_data, std::size_t seed_size)
-		: m_prng(seed_data, seed_data + seed_size), m_word(1)
+	explicit RandomByteGenerator(boost::uint32_t seed)
+		: m_prng(seed), m_word(1)
 	{ }
 
 public:
@@ -65,14 +66,22 @@ public:
 		m_word = word >> 8;
 		return word & 0xFF;
 	}
-	void seed(const unsigned char *seed_data, std::size_t seed_size){
-		m_prng.seed(seed_data, seed_data + seed_size);
+	void seed(boost::uint32_t seed){
+		m_prng.seed(seed);
 		m_word = 1;
 	}
 };
 
 class InterserverConnection::MessageFilter {
 private:
+	static boost::uint32_t calculate_crc32(const void *data, std::size_t size){
+		Poseidon::Crc32_ostream crc32_os;
+		crc32_os.write(static_cast<const char *>(data), static_cast<std::streamsize>(size));
+		return crc32_os.finalize();
+	}
+
+private:
+	boost::uint32_t m_crc32;
 	// Decoder
 	RandomByteGenerator m_decryptor_prng;
 	Poseidon::Inflator m_inflator;
@@ -82,8 +91,9 @@ private:
 
 public:
 	MessageFilter(const std::string &application_key, int compression_level)
-		: m_decryptor_prng(reinterpret_cast<const unsigned char *>(application_key.c_str()), application_key.size() + 1), m_inflator(false)
-		, m_encryptor_prng(reinterpret_cast<const unsigned char *>(application_key.c_str()), application_key.size() + 1), m_deflator(false, compression_level)
+		: m_crc32(calculate_crc32(application_key.data(), application_key.size()))
+		, m_decryptor_prng(m_crc32), m_inflator(false)
+		, m_encryptor_prng(m_crc32), m_deflator(false, compression_level)
 	{ }
 	~MessageFilter(){
 		// Silence the warnings.
@@ -112,10 +122,15 @@ public:
 		m_inflator.get_buffer().clear();
 		return magic_payload;
 	}
-	void reseed_decoder_prng(const void *seed_data, std::size_t seed_size){
+	void reseed_decoder_prng(const Poseidon::Uuid &uuid, boost::uint64_t timestamp){
 		PROFILE_ME;
 
-		m_decryptor_prng.seed(static_cast<const unsigned char *>(seed_data), seed_size);
+		boost::array<unsigned char, 24> seed;
+		std::memcpy(seed.data(), uuid.data(), 16);
+		boost::uint64_t timestamp_be;
+		Poseidon::store_be(timestamp_be, timestamp);
+		std::memcpy(seed.data() + 16, &timestamp_be, 8);
+		return m_decryptor_prng.seed(calculate_crc32(seed.data(), seed.size()));
 	}
 	Poseidon::StreamBuffer encode(Poseidon::StreamBuffer magic_payload){
 		PROFILE_ME;
@@ -136,10 +151,15 @@ public:
 		Poseidon::StreamBuffer encoded_payload = Poseidon::StreamBuffer(temp);
 		return encoded_payload;
 	}
-	void reseed_encoder_prng(const void *seed_data, std::size_t seed_size){
+	void reseed_encoder_prng(const Poseidon::Uuid &uuid, boost::uint64_t timestamp){
 		PROFILE_ME;
 
-		m_encryptor_prng.seed(static_cast<const unsigned char *>(seed_data), seed_size);
+		boost::array<unsigned char, 24> seed;
+		std::memcpy(seed.data(), uuid.data(), 16);
+		boost::uint64_t timestamp_be;
+		Poseidon::store_be(timestamp_be, timestamp);
+		std::memcpy(seed.data() + 16, &timestamp_be, 8);
+		return m_encryptor_prng.seed(calculate_crc32(seed.data(), seed.size()));
 	}
 };
 
@@ -204,30 +224,31 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 			Poseidon::Uuid connection_uuid;
 			DEBUG_THROW_UNLESS(magic_payload.get(connection_uuid.data(), 16) == 16, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_END_OF_STREAM,
 				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_CLIENT_HELLO, expecting connection_uuid"));
-			boost::array<unsigned char, 12> nonce;
-			DEBUG_THROW_UNLESS(magic_payload.get(nonce.data(), 12) == 12, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_END_OF_STREAM,
-				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_CLIENT_HELLO, expecting nonce"));
-			boost::array<unsigned char, 16> checksum_high;
-			DEBUG_THROW_UNLESS(magic_payload.get(checksum_high.data(), 16) == 16, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_END_OF_STREAM,
-				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_CLIENT_HELLO, expecting checksum_high"));
+			boost::uint64_t timestamp_be;
+			DEBUG_THROW_UNLESS(magic_payload.get(&timestamp_be, 8) == 8, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_END_OF_STREAM,
+				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_CLIENT_HELLO, expecting timestamp_be"));
+			boost::uint64_t timestamp = Poseidon::load_be(timestamp_be);
+			DEBUG_THROW_UNLESS(static_cast<boost::uint64_t>(std::abs(static_cast<boost::int64_t>(timestamp - Poseidon::get_utc_time()))), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE,
+				Poseidon::sslit("Request timestamp inacceptable"));
+			boost::array<unsigned char, 32> checksum;
+			DEBUG_THROW_UNLESS(magic_payload.get(checksum.data(), 32) == 32, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_END_OF_STREAM,
+				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_CLIENT_HELLO, expecting checksum"));
+			DEBUG_THROW_UNLESS(checksum == connection->calculate_checksum(false, connection_uuid, timestamp), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE,
+				Poseidon::sslit("Request checksum mismatch"));
 			DEBUG_THROW_UNLESS(magic_payload.empty(), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_JUNK_AFTER_PACKET,
 				Poseidon::sslit("Junk after MSG_CLIENT_HELLO"));
-			const AUTO(checksum, connection->calculate_checksum(connection_uuid, nonce, false));
-			DEBUG_THROW_UNLESS(std::memcmp(checksum.data(), checksum_high.data(), 16) == 0, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE,
-				Poseidon::sslit("Request checksum mismatch"));
-			connection->server_accept_hello(connection_uuid, nonce);
+			connection->server_accept_hello(connection_uuid, timestamp);
 			break; }
 
 		case MSG_SERVER_HELLO : {
 			DEBUG_THROW_ASSERT(connection->is_connection_uuid_set());
-			boost::array<unsigned char, 16> checksum_high;
-			DEBUG_THROW_UNLESS(magic_payload.get(checksum_high.data(), 16) == 16, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_END_OF_STREAM,
-				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_SERVER_HELLO, expecting checksum_high"));
+			boost::array<unsigned char, 32> checksum;
+			DEBUG_THROW_UNLESS(magic_payload.get(checksum.data(), 32) == 32, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_END_OF_STREAM,
+				Poseidon::sslit("Unexpected end of stream encountered while parsing MSG_SERVER_HELLO, expecting checksum"));
+			DEBUG_THROW_UNLESS(checksum == connection->calculate_checksum(true, connection->m_connection_uuid, connection->m_timestamp), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE,
+				Poseidon::sslit("Response checksum mismatch"));
 			DEBUG_THROW_UNLESS(magic_payload.empty(), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_JUNK_AFTER_PACKET,
 				Poseidon::sslit("Junk after MSG_SERVER_HELLO"));
-			const AUTO(checksum, connection->calculate_checksum(connection->m_connection_uuid, connection->m_nonce, true));
-			DEBUG_THROW_UNLESS(std::memcmp(checksum.data(), checksum_high.data(), 16) == 0, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE,
-				Poseidon::sslit("Response checksum mismatch"));
 			break; }
 
 		default: {
@@ -281,7 +302,7 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 		}
 
 		if(magic_number == MSG_CLIENT_HELLO){
-			connection->m_message_filter->reseed_decoder_prng(connection->m_nonce.data(), connection->m_nonce.size());
+			connection->m_message_filter->reseed_decoder_prng(connection->m_connection_uuid, connection->m_timestamp);
 		}
 	} catch(Poseidon::Cbpp::Exception &e){
 		LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: ", e.get_code(), ": ", e.what());
@@ -308,7 +329,7 @@ void InterserverConnection::deflate_and_send(const boost::weak_ptr<InterserverCo
 		connection->layer5_send_data(magic_number, STD_MOVE(encoded_payload));
 
 		if(magic_number == MSG_CLIENT_HELLO){
-			connection->m_message_filter->reseed_encoder_prng(connection->m_nonce.data(), connection->m_nonce.size());
+			connection->m_message_filter->reseed_encoder_prng(connection->m_connection_uuid, connection->m_timestamp);
 		}
 	} catch(Poseidon::Cbpp::Exception &e){
 		LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: ", e.get_code(), ": ", e.what());
@@ -339,25 +360,25 @@ InterserverConnection::~InterserverConnection(){
 	LOG_CIRCE_INFO("InterserverConnection destructor: this = ", (void *)this);
 }
 
-boost::array<unsigned char, 12> InterserverConnection::create_nonce() const {
+boost::array<unsigned char, 32> InterserverConnection::calculate_checksum(bool response, const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp) const {
 	PROFILE_ME;
 
-	boost::array<unsigned char, 12> nonce;
-	for(unsigned i = 0; i < 12; ++i){
-		nonce[i] = Poseidon::random_uint32();
+	Poseidon::Sha256_ostream sha256_os;
+	// Write the prefix.
+	if(response){
+		sha256_os.write("RES:", 4);
+	} else {
+		sha256_os.write("REQ:", 4);
 	}
-	return nonce;
-}
-boost::array<unsigned char, 32> InterserverConnection::calculate_checksum(const Poseidon::Uuid &connection_uuid, const boost::array<unsigned char, 12> &nonce, bool response) const {
-	PROFILE_ME;
-
-	Poseidon::Sha256_ostream sha_os;
-	sha_os.write((const char *)connection_uuid.data(), 16)
-	      .put(response ? '!' : '?')
-	      .write((const char *)nonce.data(), 12)
-	      .put(':')
-	      .write(m_application_key.data(), (long)m_application_key.size());
-	return sha_os.finalize();
+	// Write the connection UUID.
+	sha256_os.write(reinterpret_cast<const char *>(connection_uuid.data()), 16);
+	// Write the timestamp in big-endian order.
+	boost::uint64_t timestamp_be;
+	Poseidon::store_be(timestamp_be, timestamp);
+	sha256_os.write(reinterpret_cast<const char *>(&timestamp_be), 8);
+	// Write the application key.
+	sha256_os.write(m_application_key.data(), static_cast<std::streamsize>(m_application_key.size()));
+	return sha256_os.finalize();
 }
 
 bool InterserverConnection::is_connection_uuid_set() const NOEXCEPT {
@@ -366,7 +387,7 @@ bool InterserverConnection::is_connection_uuid_set() const NOEXCEPT {
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
 	return !!m_connection_uuid;
 }
-void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection_uuid, const boost::array<unsigned char, 12> &nonce){
+void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp){
 	PROFILE_ME;
 
 	LOG_CIRCE_INFO("Accepted HELLO from ", layer5_get_remote_info());
@@ -376,14 +397,14 @@ void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection
 		{
 			// Send the hello message to the client.
 			Poseidon::StreamBuffer magic_payload;
-			// Put the higher half of the response checksum (16 bytes).
-			const AUTO(checksum, calculate_checksum(connection_uuid, nonce, true));
-			magic_payload.put(checksum.data(), 16);
+			// Put the response checksum (32 bytes).
+			const AUTO(checksum, calculate_checksum(true, connection_uuid, timestamp));
+			magic_payload.put(checksum.data(), 32);
 			// Send it!
 			launch_deflate_and_send(MSG_SERVER_HELLO, STD_MOVE(magic_payload));
 		}
 		m_connection_uuid = connection_uuid;
-		m_nonce = nonce;
+		m_timestamp = timestamp;
 	}
 	layer7_post_set_connection_uuid();
 }
@@ -488,7 +509,7 @@ void InterserverConnection::layer7_client_say_hello(){
 	PROFILE_ME;
 
 	const AUTO(connection_uuid, Poseidon::Uuid::random());
-	const AUTO(nonce, create_nonce());
+	const AUTO(timestamp, Poseidon::get_utc_time());
 	LOG_CIRCE_INFO("Sending HELLO to ", layer5_get_remote_info());
 	{
 		const Poseidon::Mutex::UniqueLock lock(m_mutex);
@@ -497,16 +518,18 @@ void InterserverConnection::layer7_client_say_hello(){
 			Poseidon::StreamBuffer magic_payload;
 			// Put the connection UUID (16 bytes).
 			magic_payload.put(connection_uuid.data(), 16);
-			// Put the nonce (12 bytes).
-			magic_payload.put(nonce.data(), 12);
-			// Put the higher half of the request checksum (16 bytes).
-			const AUTO(checksum, calculate_checksum(connection_uuid, nonce, false));
-			magic_payload.put(checksum.data(), 16);
+			// Put the timestamp (8 bytes).
+			boost::uint64_t timestamp_be;
+			Poseidon::store_be(timestamp_be, timestamp);
+			magic_payload.put(&timestamp_be, 8);
+			// Put the request checksum (32 bytes).
+			const AUTO(checksum, calculate_checksum(false, connection_uuid, timestamp));
+			magic_payload.put(checksum.data(), 32);
 			// Send it!
 			launch_deflate_and_send(MSG_CLIENT_HELLO, STD_MOVE(magic_payload));
 		}
 		m_connection_uuid = connection_uuid;
-		m_nonce = nonce;
+		m_timestamp = timestamp;
 	}
 	layer7_post_set_connection_uuid();
 }

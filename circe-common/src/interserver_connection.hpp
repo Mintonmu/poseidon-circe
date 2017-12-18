@@ -55,7 +55,7 @@ private:
 	// These are protected by a mutex and can be accessed by any thread.
 	mutable Poseidon::Mutex m_mutex;
 	Poseidon::Uuid m_connection_uuid;
-	boost::array<unsigned char, 12> m_nonce;
+	boost::uint64_t m_timestamp;
 	boost::uint32_t m_next_serial;
 	boost::container::flat_multimap<boost::uint32_t, boost::weak_ptr<PromisedResponse> > m_weak_promises;
 
@@ -64,11 +64,10 @@ public:
 	~InterserverConnection() OVERRIDE;
 
 private:
-	boost::array<unsigned char, 12> create_nonce() const;
-	boost::array<unsigned char, 32> calculate_checksum(const Poseidon::Uuid &connection_uuid, const boost::array<unsigned char, 12> &nonce, bool response) const;
+	boost::array<unsigned char, 32> calculate_checksum(bool response, const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp) const;
 
 	bool is_connection_uuid_set() const NOEXCEPT;
-	void server_accept_hello(const Poseidon::Uuid &connection_uuid, const boost::array<unsigned char, 12> &nonce);
+	void server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp);
 
 	void launch_inflate_and_dispatch(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload);
 	void launch_deflate_and_send(boost::uint16_t magic_number, Poseidon::StreamBuffer magic_payload);
