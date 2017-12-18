@@ -325,6 +325,9 @@ std::size_t InterserverConnection::get_max_message_size(){
 int InterserverConnection::get_compression_level(){
 	return get_config<int>("interserver_compression_level", 6);
 }
+boost::uint64_t InterserverConnection::get_hello_timeout(){
+	return get_config<boost::uint64_t>("interserver_hello_timeout", 60000);
+}
 
 InterserverConnection::InterserverConnection(const std::string &application_key)
 	: m_application_key(application_key), m_message_filter(new MessageFilter(application_key, get_compression_level()))

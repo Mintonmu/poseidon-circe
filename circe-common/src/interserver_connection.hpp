@@ -45,6 +45,7 @@ public:
 
 	static std::size_t get_max_message_size();
 	static int get_compression_level();
+	static boost::uint64_t get_hello_timeout();
 
 private:
 	const std::string m_application_key;
