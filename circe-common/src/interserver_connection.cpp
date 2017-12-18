@@ -5,8 +5,8 @@
 #include "interserver_connection.hpp"
 #include "cbpp_response.hpp"
 #include "mmain.hpp"
+#include <poseidon/tiny_exception.hpp>
 #include <poseidon/socket_base.hpp>
-#include <poseidon/crc32.hpp>
 #include <poseidon/sha256.hpp>
 #include <poseidon/zlib.hpp>
 #include <poseidon/cbpp/message_base.hpp>
@@ -37,51 +37,66 @@ enum {
 	MSG_SERVER_HELLO      = 0x2002,  // byte[32]     checksum = SHA-256('RES:' + connection_uuid + timestamp + application_key)
 };
 
-namespace {
-	STD_EXCEPTION_PTR make_connection_lost_exception()
-	try {
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("InterserverConnection is lost before a response could be received"));
-	} catch(...){
-		return STD_CURRENT_EXCEPTION();
-	}
-	const AUTO(g_connection_lost_exception, make_connection_lost_exception());
-}
-
-class InterserverConnection::RandomByteGenerator {
-private:
-	boost::random::mt19937 m_prng;
-	boost::uint64_t m_word;
-
-public:
-	explicit RandomByteGenerator(boost::uint32_t seed)
-		: m_prng(seed), m_word(1)
-	{ }
-
-public:
-	unsigned char get(){
-		boost::uint64_t word = m_word;
-		if(word == 1){
-			word = (word << 32) | m_prng();
-		}
-		m_word = word >> 8;
-		return word & 0xFF;
-	}
-	void seed(boost::uint32_t seed){
-		m_prng.seed(seed);
-		m_word = 1;
-	}
-};
-
 class InterserverConnection::MessageFilter {
 private:
-	static boost::uint32_t calculate_crc32(const void *data, std::size_t size){
-		Poseidon::Crc32_ostream crc32_os;
-		crc32_os.write(static_cast<const char *>(data), static_cast<std::streamsize>(size));
-		return crc32_os.finalize();
-	}
+	class ConstantSeedSequence {
+	private:
+		const void *m_data;
+		std::size_t m_size;
+
+	public:
+		CONSTEXPR ConstantSeedSequence(const void *data, std::size_t size)
+			: m_data(data), m_size(size)
+		{ }
+
+	public:
+		template<typename OutputIteratorT>
+		void generate(OutputIteratorT begin, OutputIteratorT end) const {
+			std::size_t n = 0;
+			for(AUTO(it, begin); it != end; ++it){
+				unsigned b = n;
+				if(m_size != 0){
+					b ^= static_cast<const unsigned char *>(m_data)[n];
+				}
+				if(++n == m_size){
+					n = 0;
+				}
+				*it = b;
+			}
+		}
+	};
+
+	class RandomByteGenerator {
+	private:
+		boost::random::mt19937 m_prng;
+		boost::uint64_t m_word;
+
+	public:
+		explicit RandomByteGenerator(const ConstantSeedSequence &seq)
+			: m_prng(seq), m_word(1)
+		{ }
+
+	public:
+		unsigned char get(){
+			boost::uint64_t word = m_word;
+			if(word == 1){
+				word = (word << 32) | m_prng();
+			}
+			m_word = word >> 8;
+			return word & 0xFF;
+		}
+		void seed(const ConstantSeedSequence &seq){
+			m_prng.seed(seq);
+			m_word = 1;
+		}
+	};
+
+	struct UuidAndTimestamp {
+		boost::array<unsigned char, 16> uuid_bytes;
+		boost::uint64_t timestamp_be;
+	};
 
 private:
-	boost::uint32_t m_crc32;
 	// Decoder
 	RandomByteGenerator m_decryptor_prng;
 	Poseidon::Inflator m_inflator;
@@ -91,9 +106,8 @@ private:
 
 public:
 	MessageFilter(const std::string &application_key, int compression_level)
-		: m_crc32(calculate_crc32(application_key.data(), application_key.size()))
-		, m_decryptor_prng(m_crc32), m_inflator(false)
-		, m_encryptor_prng(m_crc32), m_deflator(false, compression_level)
+		: m_decryptor_prng(ConstantSeedSequence(application_key.data(), application_key.size())), m_inflator(false)
+		, m_encryptor_prng(ConstantSeedSequence(application_key.data(), application_key.size())), m_deflator(false, compression_level)
 	{ }
 	~MessageFilter(){
 		// Silence the warnings.
@@ -125,12 +139,10 @@ public:
 	void reseed_decoder_prng(const Poseidon::Uuid &uuid, boost::uint64_t timestamp){
 		PROFILE_ME;
 
-		boost::array<unsigned char, 24> seed;
-		std::memcpy(seed.data(), uuid.data(), 16);
-		boost::uint64_t timestamp_be;
-		Poseidon::store_be(timestamp_be, timestamp);
-		std::memcpy(seed.data() + 16, &timestamp_be, 8);
-		return m_decryptor_prng.seed(calculate_crc32(seed.data(), seed.size()));
+		UuidAndTimestamp seed = { };
+		seed.uuid_bytes = uuid;
+		Poseidon::store_be(seed.timestamp_be, timestamp);
+		return m_decryptor_prng.seed(ConstantSeedSequence(&seed, sizeof(seed)));
 	}
 	Poseidon::StreamBuffer encode(Poseidon::StreamBuffer magic_payload){
 		PROFILE_ME;
@@ -154,12 +166,10 @@ public:
 	void reseed_encoder_prng(const Poseidon::Uuid &uuid, boost::uint64_t timestamp){
 		PROFILE_ME;
 
-		boost::array<unsigned char, 24> seed;
-		std::memcpy(seed.data(), uuid.data(), 16);
-		boost::uint64_t timestamp_be;
-		Poseidon::store_be(timestamp_be, timestamp);
-		std::memcpy(seed.data() + 16, &timestamp_be, 8);
-		return m_encryptor_prng.seed(calculate_crc32(seed.data(), seed.size()));
+		UuidAndTimestamp seed = { };
+		seed.uuid_bytes = uuid;
+		Poseidon::store_be(seed.timestamp_be, timestamp);
+		return m_encryptor_prng.seed(ConstantSeedSequence(&seed, sizeof(seed)));
 	}
 };
 
@@ -501,7 +511,8 @@ void InterserverConnection::layer4_on_close(){
 		if(!promise){
 			continue;
 		}
-		promise->set_exception(g_connection_lost_exception, false);
+		static const AUTO(s_exception, STD_MAKE_EXCEPTION_PTR(Poseidon::TinyException("Connection is lost before a response could be received")));
+		promise->set_exception(s_exception, false);
 	}
 }
 
