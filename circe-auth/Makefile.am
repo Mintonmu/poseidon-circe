@@ -14,6 +14,7 @@ lib_LTLIBRARIES = \
 	lib/libcirce-auth.la
 
 lib_libcirce_auth_la_SOURCES = \
+	src/singletons/auth_acceptor.cpp	\
 	src/mmain.cpp
 
 lib_libcirce_auth_la_LDFLAGS = \

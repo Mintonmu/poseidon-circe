@@ -25,6 +25,7 @@ pkgsysconf_DATA = \
 pkginclude_HEADERS = \
 	src/cbpp_response.hpp	\
 	src/interserver_connection.hpp	\
+	src/interserver_servlet_callback.hpp	\
 	src/interserver_servlet_container.hpp	\
 	src/interserver_connector.hpp	\
 	src/interserver_acceptor.hpp

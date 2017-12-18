@@ -129,7 +129,7 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 	}
 }
 
-InterserverConnector::InterserverConnector(const char *host, unsigned port, std::string application_key)
+InterserverConnector::InterserverConnector(const std::string &host, unsigned port, std::string application_key)
 	: m_host(host), m_port(port), m_application_key(STD_MOVE(application_key))
 {
 	LOG_CIRCE_INFO("InterserverConnector constructor: host:port = ", m_host, ":", m_port);
