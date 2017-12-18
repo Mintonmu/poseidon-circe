@@ -12,7 +12,6 @@
 #include <poseidon/singletons/workhorse_camp.hpp>
 #include <poseidon/job_base.hpp>
 #include <poseidon/singletons/job_dispatcher.hpp>
-#include <boost/random/seed_seq.hpp>
 #include <boost/random/mersenne_twister.hpp>
 
 namespace Circe {
@@ -47,21 +46,53 @@ namespace {
 	const AUTO(g_connection_lost_exception, make_connection_lost_exception());
 }
 
+class InterserverConnection::SimpleSeedSequence {
+private:
+	const void *m_data;
+	std::size_t m_size;
+	std::size_t m_next;
+
+public:
+	SimpleSeedSequence(const void *data, std::size_t size)
+		: m_data(data), m_size(size), m_next(0)
+	{ }
+
+public:
+	const SimpleSeedSequence &ref() const {
+		return *this;
+	}
+	SimpleSeedSequence &ref(){
+		return *this;
+	}
+
+	template<typename IteratorT>
+	void generate(IteratorT begin, IteratorT end){
+		for(AUTO(it, begin); it != end; ++it){
+			unsigned char by;
+			if(m_size == 0){
+				by = m_next;
+			} else {
+				by = static_cast<const unsigned char *>(m_data)[m_next % m_size];
+			}
+			*it = by;
+			++m_next;
+		}
+	}
+};
+
 class InterserverConnection::MessageFilter {
 private:
 	// Decoder
-	boost::random::seed_seq m_decryptor_seed_seq;
 	boost::random::mt19937 m_decryptor_prng;
 	Poseidon::Inflator m_inflator;
 	// Encoder
-	boost::random::seed_seq m_encryptor_seed_seq;
 	boost::random::mt19937 m_encryptor_prng;
 	Poseidon::Deflator m_deflator;
 
 public:
 	MessageFilter(const std::string &application_key, int compression_level)
-		: m_decryptor_seed_seq(application_key.begin(), application_key.end()), m_decryptor_prng(m_decryptor_seed_seq), m_inflator(false)
-		, m_encryptor_seed_seq(application_key.begin(), application_key.end()), m_encryptor_prng(m_encryptor_seed_seq), m_deflator(false, compression_level)
+		: m_decryptor_prng(SimpleSeedSequence(application_key.c_str(), application_key.size() + 1).ref()), m_inflator(false)
+		, m_encryptor_prng(SimpleSeedSequence(application_key.c_str(), application_key.size() + 1).ref()), m_deflator(false, compression_level)
 	{ }
 	~MessageFilter(){
 		// Silence the warnings.
@@ -90,11 +121,10 @@ public:
 		m_inflator.get_buffer().clear();
 		return magic_payload;
 	}
-	void reseed_decoder_prng(const unsigned char *seed_data, std::size_t seed_size){
+	void reseed_decoder_prng(const void *seed_data, std::size_t seed_size){
 		PROFILE_ME;
 
-		boost::random::seed_seq new_seed_seq(seed_data, seed_data + seed_size);
-		m_decryptor_prng.seed(new_seed_seq);
+		m_decryptor_prng.seed(SimpleSeedSequence(seed_data, seed_size).ref());
 	}
 	Poseidon::StreamBuffer encode(Poseidon::StreamBuffer magic_payload){
 		PROFILE_ME;
@@ -115,11 +145,10 @@ public:
 		Poseidon::StreamBuffer encoded_payload = Poseidon::StreamBuffer(temp);
 		return encoded_payload;
 	}
-	void reseed_encoder_prng(const unsigned char *seed_data, std::size_t seed_size){
+	void reseed_encoder_prng(const void *seed_data, std::size_t seed_size){
 		PROFILE_ME;
 
-		boost::random::seed_seq new_seed_seq(seed_data, seed_data + seed_size);
-		m_encryptor_prng.seed(new_seed_seq);
+		m_encryptor_prng.seed(SimpleSeedSequence(seed_data, seed_size).ref());
 	}
 };
 
