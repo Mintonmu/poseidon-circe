@@ -46,53 +46,44 @@ namespace {
 	const AUTO(g_connection_lost_exception, make_connection_lost_exception());
 }
 
-class InterserverConnection::SimpleSeedSequence {
+class InterserverConnection::RandomByteGenerator {
 private:
-	const void *m_data;
-	std::size_t m_size;
-	std::size_t m_next;
+	boost::random::mt19937 m_prng;
+	boost::uint64_t m_word;
 
 public:
-	SimpleSeedSequence(const void *data, std::size_t size)
-		: m_data(data), m_size(size), m_next(0)
+	RandomByteGenerator(const unsigned char *seed_data, std::size_t seed_size)
+		: m_prng(seed_data, seed_data + seed_size), m_word(1)
 	{ }
 
 public:
-	const SimpleSeedSequence &ref() const {
-		return *this;
-	}
-	SimpleSeedSequence &ref(){
-		return *this;
-	}
-
-	template<typename IteratorT>
-	void generate(IteratorT begin, IteratorT end){
-		for(AUTO(it, begin); it != end; ++it){
-			unsigned word = 0;
-			if(m_size != 0){
-				word = static_cast<const unsigned char *>(m_data)[m_next];
-			}
-			*it = word ^ m_next;
-			if(++m_next >= m_size){
-				m_next = 0;
-			}
+	unsigned char get(){
+		boost::uint64_t word = m_word;
+		if(word == 1){
+			word = (word << 32) | m_prng();
 		}
+		m_word = word >> 8;
+		return word & 0xFF;
+	}
+	void seed(const unsigned char *seed_data, std::size_t seed_size){
+		m_prng.seed(seed_data, seed_data + seed_size);
+		m_word = 1;
 	}
 };
 
 class InterserverConnection::MessageFilter {
 private:
 	// Decoder
-	boost::random::mt19937 m_decryptor_prng;
+	RandomByteGenerator m_decryptor_prng;
 	Poseidon::Inflator m_inflator;
 	// Encoder
-	boost::random::mt19937 m_encryptor_prng;
+	RandomByteGenerator m_encryptor_prng;
 	Poseidon::Deflator m_deflator;
 
 public:
 	MessageFilter(const std::string &application_key, int compression_level)
-		: m_decryptor_prng(SimpleSeedSequence(application_key.c_str(), application_key.size() + 1).ref()), m_inflator(false)
-		, m_encryptor_prng(SimpleSeedSequence(application_key.c_str(), application_key.size() + 1).ref()), m_deflator(false, compression_level)
+		: m_decryptor_prng(reinterpret_cast<const unsigned char *>(application_key.c_str()), application_key.size() + 1), m_inflator(false)
+		, m_encryptor_prng(reinterpret_cast<const unsigned char *>(application_key.c_str()), application_key.size() + 1), m_deflator(false, compression_level)
 	{ }
 	~MessageFilter(){
 		// Silence the warnings.
@@ -110,7 +101,7 @@ public:
 		temp.resize(encoded_payload.size());
 		DEBUG_THROW_ASSERT((encoded_payload.get(&*temp.begin(), temp.size()) == temp.size()) && encoded_payload.empty());
 		for(AUTO(it, temp.begin()); it != temp.end(); ++it){
-			*it ^= static_cast<char>(m_decryptor_prng());
+			*it ^= m_decryptor_prng.get();
 		}
 		// Step 2: Append the terminator bytes to this block.
 		temp.append("\x00\x00\xFF\xFF", 4);
@@ -124,7 +115,7 @@ public:
 	void reseed_decoder_prng(const void *seed_data, std::size_t seed_size){
 		PROFILE_ME;
 
-		m_decryptor_prng.seed(SimpleSeedSequence(seed_data, seed_size).ref());
+		m_decryptor_prng.seed(static_cast<const unsigned char *>(seed_data), seed_size);
 	}
 	Poseidon::StreamBuffer encode(Poseidon::StreamBuffer magic_payload){
 		PROFILE_ME;
@@ -140,7 +131,7 @@ public:
 		temp.erase(temp.size() - 4);
 		// Step 3: Encrypt the payload.
 		for(AUTO(it, temp.begin()); it != temp.end(); ++it){
-			*it ^= static_cast<char>(m_encryptor_prng());
+			*it ^= m_encryptor_prng.get();
 		}
 		Poseidon::StreamBuffer encoded_payload = Poseidon::StreamBuffer(temp);
 		return encoded_payload;
@@ -148,7 +139,7 @@ public:
 	void reseed_encoder_prng(const void *seed_data, std::size_t seed_size){
 		PROFILE_ME;
 
-		m_encryptor_prng.seed(SimpleSeedSequence(seed_data, seed_size).ref());
+		m_encryptor_prng.seed(static_cast<const unsigned char *>(seed_data), seed_size);
 	}
 };
 

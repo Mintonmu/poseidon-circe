@@ -22,7 +22,7 @@ class CbppResponse;
 
 class InterserverConnection : public virtual Poseidon::VirtualSharedFromThis {
 private:
-	class SimpleSeedSequence;
+	class RandomByteGenerator;
 	class MessageFilter;
 	class RequestMessageJob;
 
