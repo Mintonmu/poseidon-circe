@@ -68,14 +68,14 @@ public:
 	template<typename IteratorT>
 	void generate(IteratorT begin, IteratorT end){
 		for(AUTO(it, begin); it != end; ++it){
-			unsigned char by;
-			if(m_size == 0){
-				by = m_next;
-			} else {
-				by = static_cast<const unsigned char *>(m_data)[m_next % m_size];
+			unsigned word = 0;
+			if(m_size != 0){
+				word = static_cast<const unsigned char *>(m_data)[m_next];
 			}
-			*it = by;
-			++m_next;
+			*it = word ^ m_next;
+			if(++m_next >= m_size){
+				m_next = 0;
+			}
 		}
 	}
 };
