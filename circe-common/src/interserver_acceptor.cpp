@@ -37,7 +37,7 @@ protected:
 	// Poseidon::Cbpp::LowLevelSession
 	void on_low_level_data_message_header(boost::uint16_t message_id, boost::uint64_t payload_size) OVERRIDE {
 		const std::size_t max_message_size = InterserverConnection::get_max_message_size();
-		DEBUG_THROW_UNLESS(payload_size <= max_message_size, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_REQUEST_TOO_LARGE, Poseidon::sslit("Message is too large"));
+		DEBUG_THROW_UNLESS(payload_size <= max_message_size, Poseidon::Cbpp::Exception, Protocol::ERR_REQUEST_TOO_LARGE, Poseidon::sslit("Message is too large"));
 		m_magic_number = message_id;
 		m_deflated_payload.clear();
 	}
@@ -84,7 +84,7 @@ protected:
 		PROFILE_ME;
 
 		const AUTO(parent, m_weak_parent.lock());
-		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 
 		const Poseidon::Mutex::UniqueLock lock(parent->m_mutex);
 		bool erase_it;
@@ -98,13 +98,13 @@ protected:
 		PROFILE_ME;
 
 		const AUTO(parent, m_weak_parent.lock());
-		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 
 		const AUTO(timeout, Poseidon::MainConfig::get<boost::uint64_t>("cbpp_keep_alive_timeout", 30000));
 		set_timeout(timeout);
 
 		const AUTO(servlet, parent->get_servlet(message_id));
-		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("message_id not handled"));
+		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Protocol::ERR_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverSession>(), message_id, STD_MOVE(payload));
 	}
 };
@@ -117,7 +117,7 @@ InterserverAcceptor::InterserverAcceptor(const std::string &bind, unsigned port,
 }
 InterserverAcceptor::~InterserverAcceptor(){
 	LOG_CIRCE_INFO("InterserverAcceptor destructor: local = ", get_local_info());
-	clear(Poseidon::Cbpp::ST_GONE_AWAY);
+	clear(Protocol::ERR_GONE_AWAY);
 }
 
 boost::shared_ptr<Poseidon::TcpSessionBase> InterserverAcceptor::on_client_connect(Poseidon::Move<Poseidon::UniqueFile> socket){

@@ -23,10 +23,10 @@ namespace {
 // Magic Number Flags
 
 enum {
-	MFL_IS_RESPONSE     = 0x8000,
-	MFL_WANTS_RESPONSE  = 0x4000,
-	MFL_PREDEFINED      = 0x2000,
-	MFL_RESERVED        = 0x1000,
+	MFL_IS_RESPONSE    = 0x8000,
+	MFL_WANTS_RESPONSE = 0x4000,
+	MFL_PREDEFINED     = 0x2000,
+	MFL_RESERVED       = 0x1000,
 };
 
 // Predefined Messages
@@ -38,6 +38,9 @@ enum {
 	FIELD_FIXED        (connection_uuid, 16)	\
 	FIELD_VUINT        (timestamp)	\
 	FIELD_FIXED        (checksum_req, 32)	\
+	FIELD_LIST         (options_req,	\
+		FIELD_FLEXIBLE     (bytes)	\
+	)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
@@ -45,6 +48,9 @@ enum {
 #define MESSAGE_ID     0x2002
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (checksum_resp, 32)	\
+	FIELD_LIST         (options_resp,	\
+		FIELD_FLEXIBLE     (bytes)	\
+	)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
@@ -241,7 +247,7 @@ protected:
 				resp = CbppResponse(e.get_code(), e.what());
 			} catch(std::exception &e){
 				LOG_CIRCE_ERROR("std::exception thrown: mesasge_id = ", m_message_id, ", err_msg = ", e.what());
-				resp = CbppResponse(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
+				resp = CbppResponse(Protocol::ERR_INTERNAL_ERROR, e.what());
 			}
 			if(m_send_response){
 				boost::uint16_t magic_number = resp.get_message_id();
@@ -261,7 +267,7 @@ protected:
 			LOG_CIRCE_TRACE("Done dispatching message: message_id = ", m_message_id);
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: ", e.what());
-			conn->shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
+			conn->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
 		}
 	}
 };
@@ -285,7 +291,7 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 			IS_ClientHello msg(STD_MOVE(encoded_payload));
 			LOG_CIRCE_TRACE("Received client HELLO: remote = ", conn->get_remote_info(), ", msg = ", msg);
 			const AUTO(checksum_req, conn->calculate_checksum(false, Poseidon::Uuid(msg.connection_uuid), msg.timestamp));
-			DEBUG_THROW_UNLESS(msg.checksum_req == checksum_req, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE, Poseidon::sslit("ClientHello::checksum_req"));
+			DEBUG_THROW_UNLESS(msg.checksum_req == checksum_req, Poseidon::Cbpp::Exception, Protocol::ERR_AUTHORIZATION_FAILURE, Poseidon::sslit("Request checksum failed verification"));
 			conn->server_accept_hello(Poseidon::Uuid(msg.connection_uuid), msg.timestamp);
 			DEBUG_THROW_ASSERT(conn->is_connection_uuid_set());
 			conn->m_message_filter->reseed_decoder_prng(conn->m_connection_uuid, conn->m_timestamp);
@@ -296,10 +302,11 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 			IS_ServerHello msg(STD_MOVE(encoded_payload));
 			LOG_CIRCE_TRACE("Received server HELLO: remote = ", conn->get_remote_info(), ", msg = ", msg);
 			const AUTO(checksum_resp, conn->calculate_checksum(true, conn->m_connection_uuid, conn->m_timestamp));
-			DEBUG_THROW_UNLESS(msg.checksum_resp == checksum_resp, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE, Poseidon::sslit("ServerHello::checksum_resp"));
+			DEBUG_THROW_UNLESS(msg.checksum_resp == checksum_resp, Poseidon::Cbpp::Exception, Protocol::ERR_AUTHORIZATION_FAILURE, Poseidon::sslit("Response checksum failed verification"));
+			DEBUG_THROW_UNLESS(msg.options_resp.empty(), Poseidon::Cbpp::Exception, Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Server option not supported"));
 			return; }
 		}
-		DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED & MFL_RESERVED), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_BAD_REQUEST, Poseidon::sslit("Reserved bits set"));
+		DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED & MFL_RESERVED), Poseidon::Cbpp::Exception, Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
 
 		const std::size_t size_deflated = encoded_payload.size();
 		Poseidon::StreamBuffer magic_payload = conn->m_message_filter->decode(STD_MOVE(encoded_payload));
@@ -348,7 +355,7 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 		conn->shutdown(e.get_code(), e.what());
 	} catch(std::exception &e){
 		LOG_CIRCE_ERROR("std::exception thrown: ", e.what());
-		conn->shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
+		conn->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
 	}
 }
 void InterserverConnection::deflate_and_send(const boost::weak_ptr<InterserverConnection> &weak_connection, boost::uint16_t magic_number, Poseidon::StreamBuffer &magic_payload){
@@ -377,7 +384,7 @@ void InterserverConnection::deflate_and_send(const boost::weak_ptr<InterserverCo
 			conn->layer5_send_data(magic_number, STD_MOVE(magic_payload));
 			return; }
 		}
-		DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED & MFL_RESERVED), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_BAD_REQUEST, Poseidon::sslit("Reserved bits set"));
+		DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED & MFL_RESERVED), Poseidon::Cbpp::Exception, Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
 
 		const std::size_t size_inflated = magic_payload.size();
 		Poseidon::StreamBuffer encoded_payload = conn->m_message_filter->encode(STD_MOVE(magic_payload));
@@ -390,7 +397,7 @@ void InterserverConnection::deflate_and_send(const boost::weak_ptr<InterserverCo
 		conn->shutdown(e.get_code(), e.what());
 	} catch(std::exception &e){
 		LOG_CIRCE_ERROR("std::exception thrown: ", e.what());
-		conn->shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
+		conn->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
 	}
 }
 

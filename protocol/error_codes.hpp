@@ -22,6 +22,8 @@ namespace ErrorCodes {
 		ERR_UNKNOWN_CONTROL_CODE              =   -10,
 		ERR_DATA_CORRUPTED                    =   -11,
 		ERR_GONE_AWAY                         =   -12,
+		ERR_INVALID_ARGUMENT                  =   -13,
+		ERR_UNSUPPORTED                       =   -14,
 
 		ERR_FOYER_CONNECTION_LOST             = 50001,
 	};
