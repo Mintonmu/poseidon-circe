@@ -224,11 +224,13 @@ protected:
 		if(!conn){
 			return;
 		}
+
 		try {
 			LOG_CIRCE_TRACE("Dispatching message: message_id = ", m_message_id);
 			CbppResponse resp;
 			try {
 				resp = conn->layer7_on_sync_message(m_message_id, STD_MOVE(m_payload));
+				DEBUG_THROW_UNLESS(is_message_id_valid(resp.get_message_id()), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 			} catch(Poseidon::Cbpp::Exception &e){
 				LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: mesasge_id = ", m_message_id, ", err_code = ", e.get_code(), ", err_msg = ", e.what());
 				resp = CbppResponse(e.get_code(), e.what());
@@ -236,7 +238,6 @@ protected:
 				LOG_CIRCE_ERROR("std::exception thrown: mesasge_id = ", m_message_id, ", err_msg = ", e.what());
 				resp = CbppResponse(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
 			}
-			DEBUG_THROW_UNLESS(is_message_id_valid(resp.get_message_id()), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 			if(m_send_response){
 				boost::uint16_t magic_number = resp.get_message_id();
 				Poseidon::add_flags(magic_number, MFL_IS_RESPONSE);
@@ -268,6 +269,7 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 		return;
 	}
 	LOG_CIRCE_TRACE("Inflate and dispatch: conn = ", (void *)conn.get());
+
 	try {
 		const std::size_t size_deflated = encoded_payload.size();
 		Poseidon::StreamBuffer magic_payload = conn->m_message_filter->decode(STD_MOVE(encoded_payload));
@@ -345,6 +347,7 @@ void InterserverConnection::deflate_and_send(const boost::weak_ptr<InterserverCo
 		return;
 	}
 	LOG_CIRCE_TRACE("Deflate and send: conn = ", (void *)conn.get());
+
 	try {
 		const std::size_t size_inflated = magic_payload.size();
 		Poseidon::StreamBuffer encoded_payload = conn->m_message_filter->encode(STD_MOVE(magic_payload));
