@@ -25,6 +25,7 @@ public:
 
 protected:
 	boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers) OVERRIDE;
+
 	void on_sync_expect(Poseidon::Http::RequestHeaders request_headers) OVERRIDE;
 	void on_sync_request(Poseidon::Http::RequestHeaders request_headers, Poseidon::StreamBuffer request_entity) OVERRIDE;
 
