@@ -48,6 +48,9 @@ private:
 		CONSTEXPR ConstantSeedSequence(const void *data, std::size_t size)
 			: m_data(data), m_size(size)
 		{ }
+		explicit ConstantSeedSequence(const std::string &str)
+			: m_data(str.data()), m_size(str.size() + 1)
+		{ }
 
 	public:
 		template<typename OutputIteratorT>
@@ -106,8 +109,8 @@ private:
 
 public:
 	MessageFilter(const std::string &application_key, int compression_level)
-		: m_decryptor_prng(ConstantSeedSequence(application_key.data(), application_key.size())), m_inflator(false)
-		, m_encryptor_prng(ConstantSeedSequence(application_key.data(), application_key.size())), m_deflator(false, compression_level)
+		: m_decryptor_prng(ConstantSeedSequence(application_key)), m_inflator(false)
+		, m_encryptor_prng(ConstantSeedSequence(application_key)), m_deflator(false, compression_level)
 	{ }
 	~MessageFilter(){
 		// Silence the warnings.
