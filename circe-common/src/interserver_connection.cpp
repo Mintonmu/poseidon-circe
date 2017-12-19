@@ -49,7 +49,7 @@ private:
 			: m_data(data), m_size(size)
 		{ }
 		explicit ConstantSeedSequence(const std::string &str)
-			: m_data(str.data()), m_size(str.size() + 1)
+			: m_data(str.c_str()), m_size(str.size() + 1)
 		{ }
 
 	public:
