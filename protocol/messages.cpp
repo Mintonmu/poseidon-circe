@@ -2,4 +2,4 @@
 // Copyleft 2017, LH_Mouse. All wrongs reserved.
 
 #include "precompiled.hpp"
-#define MESSAGE_DEFINE_RTTI  1
+#define CBPP_MESSAGE_EMIT_EXTERNAL_DEFINITIONS  1

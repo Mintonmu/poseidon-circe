@@ -30,7 +30,7 @@ enum {
 };
 
 // Predefined Messages
-#define MESSAGE_DEFINE_RTTI  1
+#define CBPP_MESSAGE_EMIT_EXTERNAL_DEFINITIONS  1
 
 #define MESSAGE_NAME   IS_ClientHello
 #define MESSAGE_ID     0x2001
@@ -64,7 +64,7 @@ enum {
 	// payload
 #include <poseidon/cbpp/message_generator.hpp>
 
-#undef MESSAGE_DEFINE_RTTI
+#undef CBPP_MESSAGE_EMIT_EXTERNAL_DEFINITIONS
 }
 
 class InterserverConnection::MessageFilter {
