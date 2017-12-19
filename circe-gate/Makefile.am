@@ -13,12 +13,19 @@ pkgsysconf_DATA = \
 pkginclude_HEADERS =
 
 pkginclude_gatedir = $(pkgincludedir)/gate
-pkginclude_gate_HEADERS =
+pkginclude_gate_HEADERS = \
+	src/client_http_session.hpp	\
+	src/client_websocket_session.hpp	\
+	src/singletons/client_http_acceptor.hpp	\
+	src/mmain.hpp
 
 lib_LTLIBRARIES = \
 	lib/libcirce-gate.la
 
 lib_libcirce_gate_la_SOURCES = \
+	src/client_http_session.cpp	\
+	src/client_websocket_session.cpp	\
+	src/singletons/client_http_acceptor.cpp	\
 	src/mmain.cpp
 
 lib_libcirce_gate_la_LDFLAGS = \

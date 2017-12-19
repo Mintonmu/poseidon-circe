@@ -13,7 +13,8 @@ pkgsysconf_DATA = \
 pkginclude_HEADERS =
 
 pkginclude_foyerdir = $(pkgincludedir)/foyer
-pkginclude_foyer_HEADERS =
+pkginclude_foyer_HEADERS = \
+	src/mmain.hpp
 
 lib_LTLIBRARIES = \
 	lib/libcirce-foyer.la
