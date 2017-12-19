@@ -49,7 +49,7 @@ namespace {
 
 	MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 		const AUTO(bind, get_config<std::string>("client_http_acceptor_bind", "127.0.0.1"));
-		const AUTO(port, get_config<unsigned>("client_http_acceptor_port", 13701));
+		const AUTO(port, get_config<unsigned>("client_http_acceptor_port", 10810));
 		const AUTO(cert, get_config<std::string>("client_http_acceptor_certificate"));
 		const AUTO(pkey, get_config<std::string>("client_http_acceptor_private_key"));
 		const AUTO(server, boost::make_shared<ClientTcpServer>(bind, port, cert, pkey));
