@@ -271,65 +271,68 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 	LOG_CIRCE_TRACE("Inflate and dispatch: conn = ", (void *)conn.get());
 
 	try {
-		const std::size_t size_deflated = encoded_payload.size();
-		Poseidon::StreamBuffer magic_payload = conn->m_message_filter->decode(STD_MOVE(encoded_payload));
-		const std::size_t size_inflated = magic_payload.size();
-		LOG_CIRCE_TRACE("Inflate result: ", size_deflated, " / ", size_inflated, " (", std::fixed, std::setprecision(3), (size_inflated != 0) ? size_deflated * 100.0 / size_inflated : 0.0, "%)");
-
-		if(magic_number == IS_ClientHello::ID){
-			IS_ClientHello msg(STD_MOVE(magic_payload));
+		switch(magic_number){
+		case IS_ClientHello::ID: {
+			IS_ClientHello msg(STD_MOVE(encoded_payload));
 			LOG_CIRCE_TRACE("Received client HELLO: remote = ", conn->get_remote_info(), ", msg = ", msg);
 			const AUTO(checksum_req, conn->calculate_checksum(false, Poseidon::Uuid(msg.connection_uuid), msg.timestamp));
 			DEBUG_THROW_UNLESS(msg.checksum_req == checksum_req, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE, Poseidon::sslit("ClientHello::checksum_req"));
 			conn->server_accept_hello(Poseidon::Uuid(msg.connection_uuid), msg.timestamp);
 			DEBUG_THROW_ASSERT(conn->is_connection_uuid_set());
 			conn->m_message_filter->reseed_decoder_prng(conn->m_connection_uuid, conn->m_timestamp);
-		} else if(magic_number == IS_ServerHello::ID){
+			return; }
+
+		case IS_ServerHello::ID: {
 			DEBUG_THROW_ASSERT(conn->is_connection_uuid_set());
-			IS_ServerHello msg(STD_MOVE(magic_payload));
+			IS_ServerHello msg(STD_MOVE(encoded_payload));
 			LOG_CIRCE_TRACE("Received server HELLO: remote = ", conn->get_remote_info(), ", msg = ", msg);
 			const AUTO(checksum_resp, conn->calculate_checksum(true, conn->m_connection_uuid, conn->m_timestamp));
 			DEBUG_THROW_UNLESS(msg.checksum_resp == checksum_resp, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE, Poseidon::sslit("ServerHello::checksum_resp"));
-		} else {
-			DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED & MFL_RESERVED), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_BAD_REQUEST, Poseidon::sslit("Reserved bits set"));
-			BOOST_STATIC_ASSERT((MESSAGE_ID_MAX & (MESSAGE_ID_MAX + 1)) == 0);
-			boost::uint16_t message_id = magic_number & MESSAGE_ID_MAX;
-			if(Poseidon::has_any_flags_of(magic_number, MFL_IS_RESPONSE)){
-				IS_UserResponseHeader hdr;
-				hdr.deserialize(magic_payload);
-				LOG_CIRCE_TRACE("Received user-defined response: remote = ", conn->get_remote_info(), ", hdr = ", hdr, ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
-				CbppResponse resp;
-				if(message_id == 0){
-					resp = CbppResponse(hdr.err_code, STD_MOVE_IDN(hdr.err_msg));
-				} else {
-					resp = CbppResponse(message_id, STD_MOVE_IDN(magic_payload));
-				}
-				// Satisfy the promise.
-				boost::shared_ptr<PromisedResponse> promise;
-				{
-					const Poseidon::Mutex::UniqueLock lock(conn->m_mutex);
-					const AUTO(it, conn->m_weak_promises.find(hdr.serial));
-					if(it != conn->m_weak_promises.end()){
-						promise = it->second.lock();
-						conn->m_weak_promises.erase(it);
-					}
-				}
-				if(promise){
-					promise->set_success(STD_MOVE(resp));
-				}
-			} else if(Poseidon::has_any_flags_of(magic_number, MFL_WANTS_RESPONSE)){
-				IS_UserRequestHeader hdr;
-				hdr.deserialize(magic_payload);
-				LOG_CIRCE_TRACE("Received user-defined request: remote = ", conn->get_remote_info(), ", hdr = ", hdr, ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
-				Poseidon::JobDispatcher::enqueue(
-					boost::make_shared<RequestMessageJob>(conn, message_id, true, hdr.serial, STD_MOVE(magic_payload)),
-					VAL_INIT);
+			return; }
+		}
+		DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED & MFL_RESERVED), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_BAD_REQUEST, Poseidon::sslit("Reserved bits set"));
+
+		const std::size_t size_deflated = encoded_payload.size();
+		Poseidon::StreamBuffer magic_payload = conn->m_message_filter->decode(STD_MOVE(encoded_payload));
+		const std::size_t size_inflated = magic_payload.size();
+		LOG_CIRCE_TRACE("Inflate result: ", size_deflated, " / ", size_inflated, " (", std::fixed, std::setprecision(3), (size_inflated != 0) ? size_deflated * 100.0 / size_inflated : 0.0, "%)");
+
+		boost::uint16_t message_id = magic_number & MESSAGE_ID_MAX;
+		if(Poseidon::has_any_flags_of(magic_number, MFL_IS_RESPONSE)){
+			IS_UserResponseHeader hdr;
+			hdr.deserialize(magic_payload);
+			LOG_CIRCE_TRACE("Received user-defined response: remote = ", conn->get_remote_info(), ", hdr = ", hdr, ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
+			CbppResponse resp;
+			if(message_id == 0){
+				resp = CbppResponse(hdr.err_code, STD_MOVE_IDN(hdr.err_msg));
 			} else {
-				LOG_CIRCE_TRACE("Received user-defined notification: remote = ", conn->get_remote_info(), ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
-				Poseidon::JobDispatcher::enqueue(
-					boost::make_shared<RequestMessageJob>(conn, message_id, false, 0xDEADBEEF, STD_MOVE(magic_payload)),
-					VAL_INIT);
+				resp = CbppResponse(message_id, STD_MOVE_IDN(magic_payload));
 			}
+			// Satisfy the promise.
+			boost::shared_ptr<PromisedResponse> promise;
+			{
+				const Poseidon::Mutex::UniqueLock lock(conn->m_mutex);
+				const AUTO(it, conn->m_weak_promises.find(hdr.serial));
+				if(it != conn->m_weak_promises.end()){
+					promise = it->second.lock();
+					conn->m_weak_promises.erase(it);
+				}
+			}
+			if(promise){
+				promise->set_success(STD_MOVE(resp));
+			}
+		} else if(Poseidon::has_any_flags_of(magic_number, MFL_WANTS_RESPONSE)){
+			IS_UserRequestHeader hdr;
+			hdr.deserialize(magic_payload);
+			LOG_CIRCE_TRACE("Received user-defined request: remote = ", conn->get_remote_info(), ", hdr = ", hdr, ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
+			Poseidon::JobDispatcher::enqueue(
+				boost::make_shared<RequestMessageJob>(conn, message_id, true, hdr.serial, STD_MOVE(magic_payload)),
+				VAL_INIT);
+		} else {
+			LOG_CIRCE_TRACE("Received user-defined notification: remote = ", conn->get_remote_info(), ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
+			Poseidon::JobDispatcher::enqueue(
+				boost::make_shared<RequestMessageJob>(conn, message_id, false, 0xDEADBEEF, STD_MOVE(magic_payload)),
+				VAL_INIT);
 		}
 	} catch(Poseidon::Cbpp::Exception &e){
 		LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: ", e.get_code(), ": ", e.what());
@@ -349,17 +352,26 @@ void InterserverConnection::deflate_and_send(const boost::weak_ptr<InterserverCo
 	LOG_CIRCE_TRACE("Deflate and send: conn = ", (void *)conn.get());
 
 	try {
+		switch(magic_number){
+		case IS_ClientHello::ID: {
+			DEBUG_THROW_ASSERT(conn->is_connection_uuid_set());
+			conn->layer5_send_data(magic_number, STD_MOVE(magic_payload));
+			conn->m_message_filter->reseed_encoder_prng(conn->m_connection_uuid, conn->m_timestamp);
+			return; }
+
+		case IS_ServerHello::ID: {
+			DEBUG_THROW_ASSERT(conn->is_connection_uuid_set());
+			conn->layer5_send_data(magic_number, STD_MOVE(magic_payload));
+			return; }
+		}
+		DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED & MFL_RESERVED), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_BAD_REQUEST, Poseidon::sslit("Reserved bits set"));
+
 		const std::size_t size_inflated = magic_payload.size();
 		Poseidon::StreamBuffer encoded_payload = conn->m_message_filter->encode(STD_MOVE(magic_payload));
 		const std::size_t size_deflated = encoded_payload.size();
 		LOG_CIRCE_TRACE("Deflate result: ", size_deflated, " / ", size_inflated, " (", std::fixed, std::setprecision(3), (size_inflated != 0) ? size_deflated * 100.0 / size_inflated : 0.0, "%)");
 
 		conn->layer5_send_data(magic_number, STD_MOVE(encoded_payload));
-
-		if(magic_number == IS_ClientHello::ID){
-			DEBUG_THROW_ASSERT(conn->is_connection_uuid_set());
-			conn->m_message_filter->reseed_encoder_prng(conn->m_connection_uuid, conn->m_timestamp);
-		}
 	} catch(Poseidon::Cbpp::Exception &e){
 		LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: ", e.get_code(), ": ", e.what());
 		conn->shutdown(e.get_code(), e.what());

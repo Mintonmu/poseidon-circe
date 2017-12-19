@@ -30,6 +30,7 @@ public:
 		MESSAGE_ID_MIN  = 0x0001,
 		MESSAGE_ID_MAX  = 0x0FFF,
 	};
+	BOOST_STATIC_ASSERT((MESSAGE_ID_MAX & (MESSAGE_ID_MAX + 1)) == 0);
 
 	typedef Poseidon::PromiseContainer<CbppResponse> PromisedResponse;
 
