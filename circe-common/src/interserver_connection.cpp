@@ -98,7 +98,9 @@ private:
 	public:
 		explicit RandomByteGenerator(const ConstantSeedSequence &seq)
 			: m_prng(seq), m_word(1)
-		{ }
+		{
+			m_prng.discard(0x10001);
+		}
 
 	public:
 		unsigned char get(){
@@ -111,6 +113,7 @@ private:
 		}
 		void seed(const ConstantSeedSequence &seq){
 			m_prng.seed(seq);
+			m_prng.discard(0x10001);
 			m_word = 1;
 		}
 	};
@@ -273,6 +276,10 @@ void InterserverConnection::inflate_and_dispatch(const boost::weak_ptr<Interserv
 	LOG_CIRCE_TRACE("Inflate and dispatch: conn = ", (void *)conn.get());
 
 	try {
+		if(!conn->m_message_filter){
+			conn->m_message_filter.reset(new MessageFilter(conn->m_application_key, get_compression_level()));
+		}
+
 		switch(magic_number){
 		case IS_ClientHello::ID: {
 			IS_ClientHello msg(STD_MOVE(encoded_payload));
@@ -354,6 +361,10 @@ void InterserverConnection::deflate_and_send(const boost::weak_ptr<InterserverCo
 	LOG_CIRCE_TRACE("Deflate and send: conn = ", (void *)conn.get());
 
 	try {
+		if(!conn->m_message_filter){
+			conn->m_message_filter.reset(new MessageFilter(conn->m_application_key, get_compression_level()));
+		}
+
 		switch(magic_number){
 		case IS_ClientHello::ID: {
 			DEBUG_THROW_ASSERT(conn->is_connection_uuid_set());
@@ -394,7 +405,7 @@ boost::uint64_t InterserverConnection::get_hello_timeout(){
 }
 
 InterserverConnection::InterserverConnection(const std::string &application_key)
-	: m_application_key(application_key), m_message_filter(new MessageFilter(application_key, get_compression_level()))
+	: m_application_key(application_key)
 	, m_connection_uuid(), m_next_serial()
 {
 	LOG_CIRCE_INFO("InterserverConnection constructor: this = ", (void *)this);

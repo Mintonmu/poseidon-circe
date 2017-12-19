@@ -49,8 +49,9 @@ public:
 
 private:
 	const std::string m_application_key;
+
 	// This is only used by the workhorse thread.
-	const boost::scoped_ptr<MessageFilter> m_message_filter;
+	boost::scoped_ptr<MessageFilter> m_message_filter;
 
 	// These are protected by a mutex and can be accessed by any thread.
 	mutable Poseidon::Mutex m_mutex;
