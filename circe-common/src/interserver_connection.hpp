@@ -55,8 +55,8 @@ private:
 	mutable Poseidon::Mutex m_mutex;
 	Poseidon::Uuid m_connection_uuid;
 	boost::uint64_t m_timestamp;
-	boost::uint32_t m_next_serial;
-	boost::container::flat_multimap<boost::uint32_t, boost::weak_ptr<PromisedResponse> > m_weak_promises;
+	boost::uint64_t m_next_serial;
+	boost::container::flat_multimap<boost::uint64_t, boost::weak_ptr<PromisedResponse> > m_weak_promises;
 
 public:
 	explicit InterserverConnection(const std::string &application_key);
@@ -70,8 +70,6 @@ private:
 
 	void launch_inflate_and_dispatch(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload);
 	void launch_deflate_and_send(boost::uint16_t magic_number, Poseidon::StreamBuffer magic_payload);
-
-	void sync_dispatch_message(boost::uint16_t message_id, bool send_response, boost::uint32_t serial, Poseidon::StreamBuffer payload);
 
 protected:
 	virtual const Poseidon::IpPort &layer5_get_remote_info() const NOEXCEPT = 0;
