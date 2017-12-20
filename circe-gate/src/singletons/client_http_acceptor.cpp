@@ -53,8 +53,8 @@ namespace {
 		const AUTO(cert, get_config<std::string>("client_http_acceptor_certificate"));
 		const AUTO(pkey, get_config<std::string>("client_http_acceptor_private_key"));
 		const AUTO(server, boost::make_shared<ClientTcpServer>(bind, port, cert, pkey));
-		handles.push(server);
 		Poseidon::EpollDaemon::add_socket(server, false);
+		handles.push(server);
 	}
 }
 

@@ -123,10 +123,10 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 		}
 		client = boost::make_shared<InterserverClient>(promised_sock_addr->get(), connector);
 		client->set_no_delay();
-		client->layer7_client_say_hello();
 		Poseidon::EpollDaemon::add_socket(client, true);
 		connector->m_weak_client = client;
 	}
+	client->layer7_client_say_hello();
 }
 
 InterserverConnector::InterserverConnector(const std::string &host, unsigned port, std::string application_key)
