@@ -3,15 +3,89 @@
 
 #include "precompiled.hpp"
 #include "client_http_session.hpp"
+#include "client_websocket_session.hpp"
 #include "singletons/client_http_acceptor.hpp"
 #include "mmain.hpp"
+#include <poseidon/job_base.hpp>
 #include <poseidon/http/request_headers.hpp>
 #include <poseidon/http/response_headers.hpp>
+#include <poseidon/http/urlencoded.hpp>
 #include <poseidon/http/exception.hpp>
+#include <poseidon/websocket/handshake.hpp>
+#include <poseidon/websocket/exception.hpp>
 #include <poseidon/zlib.hpp>
 
 namespace Circe {
 namespace Gate {
+
+class ClientHttpSession::WebSocketHandshakeJob : public Poseidon::JobBase {
+private:
+	const TcpSessionBase::DelayedShutdownGuard m_guard;
+	const boost::weak_ptr<ClientHttpSession> m_weak_http_session;
+
+	Poseidon::Http::RequestHeaders m_request_headers;
+	boost::weak_ptr<ClientWebSocketSession> m_weak_ws_session;
+
+public:
+	WebSocketHandshakeJob(const boost::shared_ptr<ClientHttpSession> &http_session, Poseidon::Http::RequestHeaders request_headers, const boost::shared_ptr<ClientWebSocketSession> &ws_session)
+		: m_guard(http_session), m_weak_http_session(http_session)
+		, m_request_headers(STD_MOVE(request_headers)), m_weak_ws_session(ws_session)
+	{ }
+
+private:
+	boost::weak_ptr<const void> get_category() const FINAL {
+		return m_weak_http_session;
+	}
+	void perform() final {
+		PROFILE_ME;
+
+		const AUTO(http_session, m_weak_http_session.lock());
+		if(!http_session || http_session->has_been_shutdown_write()){
+			return;
+		}
+		const AUTO(ws_session, m_weak_ws_session.lock());
+		if(!ws_session){
+			http_session->force_shutdown();
+			return;
+		}
+		LOG_CIRCE_TRACE("Client WebSocket establishment: uri = ", m_request_headers.uri, ", headers = ", m_request_headers.headers);
+
+		std::string decoded_uri;
+		try {
+			const AUTO(enable_websocket, get_config<bool>("protocol_enable_websocket", false));
+			DEBUG_THROW_UNLESS(enable_websocket, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
+
+			Poseidon::Buffer_istream bis;
+			bis.set_buffer(Poseidon::StreamBuffer(m_request_headers.uri));
+			Poseidon::Http::url_decode(bis, decoded_uri);
+			DEBUG_THROW_UNLESS(bis, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_REQUEST);
+			LOG_CIRCE_TRACE("Decoded URI: ", decoded_uri);
+
+			AUTO(ws_resp, Poseidon::WebSocket::make_handshake_response(m_request_headers));
+			DEBUG_THROW_UNLESS(ws_resp.status_code == Poseidon::Http::ST_SWITCHING_PROTOCOLS, Poseidon::Http::Exception, ws_resp.status_code, STD_MOVE(ws_resp.headers));
+			http_session->send(STD_MOVE(ws_resp));
+		} catch(Poseidon::Http::Exception &e){
+			LOG_CIRCE_WARNING("Http::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
+			http_session->send_default_and_shutdown(e.get_status_code(), e.get_headers());
+			return;
+		} catch(std::exception &e){
+			LOG_CIRCE_WARNING("std::exception thrown: what = ", e.what());
+			http_session->send_default_and_shutdown(Poseidon::Http::ST_INTERNAL_SERVER_ERROR);
+			return;
+		}
+		try {
+			LOG_POSEIDON_FATAL("TODO WEBSOCKET ESTABLISHED");
+		} catch(Poseidon::WebSocket::Exception &e){
+			LOG_CIRCE_WARNING("Poseidon::WebSocket::Exception thrown: code = ", e.get_code(), ", what = ", e.what());
+			ws_session->shutdown(e.get_code(), e.what());
+			return;
+		} catch(std::exception &e){
+			LOG_CIRCE_WARNING("std::exception thrown: what = ", e.what());
+			ws_session->shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
+			return;
+		}
+	}
+};
 
 ClientHttpSession::ClientHttpSession(Poseidon::Move<Poseidon::UniqueFile> socket)
 	: Poseidon::Http::Session(STD_MOVE(socket))
@@ -26,13 +100,37 @@ ClientHttpSession::~ClientHttpSession(){
 void ClientHttpSession::sync_authenticate(const Poseidon::Http::RequestHeaders &request_headers){
 	PROFILE_ME;
 
-	m_decoded_uri = "aa";
+	std::string decoded_uri;
+	Poseidon::Buffer_istream bis;
+	bis.set_buffer(Poseidon::StreamBuffer(request_headers.uri));
+	Poseidon::Http::url_decode(bis, decoded_uri);
+	DEBUG_THROW_UNLESS(bis, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_REQUEST);
+	LOG_CIRCE_TRACE("Decoded URI: ", decoded_uri);
+
+	std::string auth_token;
+	LOG_POSEIDON_FATAL("TODO CHECK AUTHENTICATION");
+	auth_token = "meow";
+
+	m_decoded_uri = STD_MOVE(decoded_uri);
+	m_auth_token = STD_MOVE(auth_token);
 }
 
 boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers){
 	PROFILE_ME;
 
-	return Poseidon::Http::Session::on_low_level_request_end(content_length, STD_MOVE(headers));
+	const AUTO_REF(request_headers, Poseidon::Http::Session::get_low_level_request_headers());
+	LOG_CIRCE_TRACE("Client HTTP request: uri = ", request_headers.uri, ", headers = ", headers);
+
+	const AUTO_REF(upgrade_str, request_headers.headers.get("Upgrade"));
+	if(::strcasecmp(upgrade_str.c_str(), "websocket") == 0){
+		AUTO(ws_session, boost::make_shared<ClientWebSocketSession>(virtual_shared_from_this<ClientHttpSession>()));
+		Poseidon::enqueue(boost::make_shared<WebSocketHandshakeJob>(virtual_shared_from_this<ClientHttpSession>(), request_headers, ws_session));
+		return STD_MOVE(ws_session);
+	} else if(upgrade_str.empty()){
+		return Poseidon::Http::Session::on_low_level_request_end(content_length, STD_MOVE(headers));
+	} else {
+		DEBUG_THROW(Poseidon::Http::Exception, Poseidon::Http::ST_NOT_IMPLEMENTED);
+	}
 }
 
 void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders request_headers){
@@ -72,7 +170,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 	switch(request_headers.verb){
 	case Poseidon::Http::V_HEAD:
 	case Poseidon::Http::V_GET: {
-		const AUTO(enable_http, get_config<bool>("protocol_enable_http", true));
+		const AUTO(enable_http, get_config<bool>("protocol_enable_http", false));
 		DEBUG_THROW_UNLESS(enable_http, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
 
 		response_headers.status_code = Poseidon::Http::ST_OK;
@@ -82,7 +180,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		break; }
 
 	case Poseidon::Http::V_POST: {
-		const AUTO(enable_http, get_config<bool>("protocol_enable_http", true));
+		const AUTO(enable_http, get_config<bool>("protocol_enable_http", false));
 		DEBUG_THROW_UNLESS(enable_http, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
 
 		response_headers.status_code = Poseidon::Http::ST_OK;

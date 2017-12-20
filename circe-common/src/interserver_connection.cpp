@@ -12,7 +12,6 @@
 #include <poseidon/cbpp/message_base.hpp>
 #include <poseidon/singletons/workhorse_camp.hpp>
 #include <poseidon/job_base.hpp>
-#include <poseidon/singletons/job_dispatcher.hpp>
 #include <boost/random/mersenne_twister.hpp>
 
 namespace Circe {
@@ -389,14 +388,10 @@ try {
 		IS_UserRequestHeader hdr;
 		hdr.deserialize(magic_payload);
 		LOG_CIRCE_TRACE("Received user-defined request: remote = ", get_remote_info(), ", hdr = ", hdr, ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
-		Poseidon::JobDispatcher::enqueue(
-			boost::make_shared<RequestMessageJob>(virtual_shared_from_this<InterserverConnection>(), message_id, true, hdr.serial, STD_MOVE(magic_payload)),
-			VAL_INIT);
+		Poseidon::enqueue(boost::make_shared<RequestMessageJob>(virtual_shared_from_this<InterserverConnection>(), message_id, true, hdr.serial, STD_MOVE(magic_payload)));
 	} else {
 		LOG_CIRCE_TRACE("Received user-defined notification: remote = ", get_remote_info(), ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
-		Poseidon::JobDispatcher::enqueue(
-			boost::make_shared<RequestMessageJob>(virtual_shared_from_this<InterserverConnection>(), message_id, false, 0xDEADBEEF, STD_MOVE(magic_payload)),
-			VAL_INIT);
+		Poseidon::enqueue(boost::make_shared<RequestMessageJob>(virtual_shared_from_this<InterserverConnection>(), message_id, false, 0xDEADBEEF, STD_MOVE(magic_payload)));
 	}
 } catch(Poseidon::Cbpp::Exception &e){
 	LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: status_code = ", e.get_code(), ", what = ", e.what());

@@ -13,6 +13,8 @@ namespace Gate {
 class ClientWebSocketSession;
 
 class ClientHttpSession : public Poseidon::Http::Session {
+	friend ClientWebSocketSession;
+
 private:
 	class WebSocketHandshakeJob;
 
