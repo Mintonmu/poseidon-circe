@@ -4,9 +4,9 @@
 #ifndef CIRCE_GATE_CLIENT_WEBSOCKET_SESSION_HPP_
 #define CIRCE_GATE_CLIENT_WEBSOCKET_SESSION_HPP_
 
-#include <poseidon/http/fwd.hpp>
 #include <poseidon/websocket/session.hpp>
 #include <poseidon/uuid.hpp>
+#include <boost/optional.hpp>
 
 namespace Circe {
 namespace Gate {
@@ -19,12 +19,14 @@ class ClientWebSocketSession : public Poseidon::WebSocket::Session {
 private:
 	const Poseidon::Uuid m_session_uuid;
 
+	boost::optional<std::string> m_auth_token;
+
 public:
 	explicit ClientWebSocketSession(const boost::shared_ptr<ClientHttpSession> &parent);
 	~ClientWebSocketSession() OVERRIDE;
 
 private:
-	void sync_authenticate(const Poseidon::Http::RequestHeaders &request_headers);
+	std::string sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &headers) const;
 
 protected:
 	void on_sync_data_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload) OVERRIDE;

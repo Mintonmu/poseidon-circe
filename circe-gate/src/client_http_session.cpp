@@ -36,7 +36,7 @@ private:
 	boost::weak_ptr<const void> get_category() const FINAL {
 		return m_weak_http_session;
 	}
-	void perform() final {
+	void perform() FINAL {
 		PROFILE_ME;
 
 		const AUTO(http_session, m_weak_http_session.lock());
@@ -50,20 +50,16 @@ private:
 		}
 		LOG_CIRCE_TRACE("Client WebSocket establishment: uri = ", m_request_headers.uri, ", headers = ", m_request_headers.headers);
 
-		std::string decoded_uri;
 		try {
-			const AUTO(enable_websocket, get_config<bool>("protocol_enable_websocket", false));
-			DEBUG_THROW_UNLESS(enable_websocket, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
-
-			Poseidon::Buffer_istream bis;
-			bis.set_buffer(Poseidon::StreamBuffer(m_request_headers.uri));
-			Poseidon::Http::url_decode(bis, decoded_uri);
-			DEBUG_THROW_UNLESS(bis, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_REQUEST);
-			LOG_CIRCE_TRACE("Decoded URI: ", decoded_uri);
+			http_session->m_decoded_uri = safe_decode_uri(m_request_headers.uri);
+			LOG_CIRCE_TRACE("Decoded URI: ", http_session->m_decoded_uri);
 
 			AUTO(ws_resp, Poseidon::WebSocket::make_handshake_response(m_request_headers));
 			DEBUG_THROW_UNLESS(ws_resp.status_code == Poseidon::Http::ST_SWITCHING_PROTOCOLS, Poseidon::Http::Exception, ws_resp.status_code, STD_MOVE(ws_resp.headers));
 			http_session->send(STD_MOVE(ws_resp));
+
+			const AUTO(enable_websocket, get_config<bool>("protocol_enable_websocket", false));
+			DEBUG_THROW_UNLESS(enable_websocket, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
 		} catch(Poseidon::Http::Exception &e){
 			LOG_CIRCE_WARNING("Http::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
 			http_session->send_default_and_shutdown(e.get_status_code(), e.get_headers());
@@ -74,7 +70,10 @@ private:
 			return;
 		}
 		try {
-			LOG_POSEIDON_FATAL("TODO WEBSOCKET ESTABLISHED");
+			AUTO(auth_token, ws_session->sync_authenticate(http_session->m_decoded_uri, m_request_headers.headers));
+			LOG_CIRCE_DEBUG("WebSocket authentication succeeded: remote = ", ws_session->get_remote_info(), ", auth_token = ", auth_token);
+			DEBUG_THROW_ASSERT(!ws_session->m_auth_token);
+			ws_session->m_auth_token = STD_MOVE_IDN(auth_token);
 		} catch(Poseidon::WebSocket::Exception &e){
 			LOG_CIRCE_WARNING("Poseidon::WebSocket::Exception thrown: code = ", e.get_code(), ", what = ", e.what());
 			ws_session->shutdown(e.get_code(), e.what());
@@ -87,6 +86,17 @@ private:
 	}
 };
 
+std::string ClientHttpSession::safe_decode_uri(const std::string &uri){
+	PROFILE_ME;
+
+	std::string decoded_uri;
+	std::istringstream iss(uri);
+	Poseidon::Http::url_decode(iss, decoded_uri);
+	DEBUG_THROW_UNLESS(iss && !decoded_uri.empty(), Poseidon::Http::Exception, Poseidon::Http::ST_BAD_REQUEST);
+	LOG_CIRCE_TRACE("Decoded URI: ", decoded_uri);
+	return decoded_uri;
+}
+
 ClientHttpSession::ClientHttpSession(Poseidon::Move<Poseidon::UniqueFile> socket)
 	: Poseidon::Http::Session(STD_MOVE(socket))
 {
@@ -97,22 +107,11 @@ ClientHttpSession::~ClientHttpSession(){
 	ClientHttpAcceptor::remove_session(this);
 }
 
-void ClientHttpSession::sync_authenticate(const Poseidon::Http::RequestHeaders &request_headers){
+std::string ClientHttpSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &headers) const {
 	PROFILE_ME;
 
-	std::string decoded_uri;
-	Poseidon::Buffer_istream bis;
-	bis.set_buffer(Poseidon::StreamBuffer(request_headers.uri));
-	Poseidon::Http::url_decode(bis, decoded_uri);
-	DEBUG_THROW_UNLESS(bis, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_REQUEST);
-	LOG_CIRCE_TRACE("Decoded URI: ", decoded_uri);
-
-	std::string auth_token;
 	LOG_POSEIDON_FATAL("TODO CHECK AUTHENTICATION");
-	auth_token = "meow";
-
-	m_decoded_uri = STD_MOVE(decoded_uri);
-	m_auth_token = STD_MOVE(auth_token);
+	return "http";
 }
 
 boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers){
@@ -125,7 +124,7 @@ boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low
 	if(::strcasecmp(upgrade_str.c_str(), "websocket") == 0){
 		AUTO(ws_session, boost::make_shared<ClientWebSocketSession>(virtual_shared_from_this<ClientHttpSession>()));
 		Poseidon::enqueue(boost::make_shared<WebSocketHandshakeJob>(virtual_shared_from_this<ClientHttpSession>(), request_headers, ws_session));
-		return STD_MOVE(ws_session);
+		return STD_MOVE_IDN(ws_session);
 	} else if(upgrade_str.empty()){
 		return Poseidon::Http::Session::on_low_level_request_end(content_length, STD_MOVE(headers));
 	} else {
@@ -136,31 +135,34 @@ boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low
 void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders request_headers){
 	PROFILE_ME;
 
-	// Check authentication early.
-	sync_authenticate(request_headers);
-	LOG_CIRCE_DEBUG("Authenticated: remote = ", get_remote_info(), ", decoded_uri = ", m_decoded_uri, ", auth_token = ", m_auth_token);
-	DEBUG_THROW_ASSERT(!m_decoded_uri.empty());
+	m_decoded_uri = safe_decode_uri(request_headers.uri);
+	AUTO(auth_token, sync_authenticate(m_decoded_uri, request_headers.headers));
+	LOG_CIRCE_DEBUG("HTTP authentication succeeded: remote = ", get_remote_info(), ", auth_token = ", auth_token);
+	DEBUG_THROW_ASSERT(!m_auth_token);
+	m_auth_token = STD_MOVE_IDN(auth_token);
 
 	return Poseidon::Http::Session::on_sync_expect(STD_MOVE(request_headers));
 }
 void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_headers, Poseidon::StreamBuffer request_entity){
 	PROFILE_ME;
 
-	// If no `Expect:` header was received, check authentication now.
 	if(m_decoded_uri.empty()){
-		sync_authenticate(request_headers);
-		LOG_CIRCE_DEBUG("Authenticated: remote = ", get_remote_info(), ", decoded_uri = ", m_decoded_uri, ", auth_token = ", m_auth_token);
+		m_decoded_uri = safe_decode_uri(request_headers.uri);
 	}
-	DEBUG_THROW_ASSERT(!m_decoded_uri.empty());
+	if(!m_auth_token){
+		AUTO(auth_token, sync_authenticate(m_decoded_uri, request_headers.headers));
+		LOG_CIRCE_DEBUG("HTTP authentication succeeded: remote = ", get_remote_info(), ", auth_token = ", auth_token);
+		DEBUG_THROW_ASSERT(!m_auth_token);
+		m_auth_token = STD_MOVE_IDN(auth_token);
+	}
+	// Read then clear these members.
+	const AUTO(decoded_uri, STD_MOVE_IDN(m_decoded_uri));
+	m_decoded_uri.clear();
+	const AUTO(auth_token, STD_MOVE_IDN(m_auth_token.get()));
+	m_auth_token.reset();
 
 	const AUTO(response_encoding, Poseidon::Http::pick_content_encoding(request_headers));
 	DEBUG_THROW_UNLESS(response_encoding != Poseidon::Http::CE_NOT_ACCEPTABLE, Poseidon::Http::Exception, Poseidon::Http::ST_NOT_ACCEPTABLE);
-
-	// Read then clear these members.
-	const AUTO(decoded_uri, STD_MOVE(m_decoded_uri));
-	m_decoded_uri.clear();
-	const AUTO(auth_token, STD_MOVE(m_auth_token));
-	m_auth_token.clear();
 
 	Poseidon::Http::ResponseHeaders response_headers = { 10001 };
 	Poseidon::StreamBuffer response_entity;

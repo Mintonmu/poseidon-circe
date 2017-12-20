@@ -6,6 +6,7 @@
 
 #include <poseidon/http/session.hpp>
 #include <poseidon/uuid.hpp>
+#include <boost/optional.hpp>
 
 namespace Circe {
 namespace Gate {
@@ -19,17 +20,20 @@ private:
 	class WebSocketHandshakeJob;
 
 private:
+	static std::string safe_decode_uri(const std::string &uri);
+
+private:
 	const Poseidon::Uuid m_session_uuid;
 
 	std::string m_decoded_uri;
-	std::string m_auth_token;
+	boost::optional<std::string> m_auth_token;
 
 public:
 	explicit ClientHttpSession(Poseidon::Move<Poseidon::UniqueFile> socket);
 	~ClientHttpSession() OVERRIDE;
 
 private:
-	void sync_authenticate(const Poseidon::Http::RequestHeaders &request_headers);
+	std::string sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &headers) const;
 
 protected:
 	boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers) OVERRIDE;
