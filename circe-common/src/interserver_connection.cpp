@@ -251,7 +251,7 @@ protected:
 				hdr.serialize(magic_payload);
 				magic_payload.splice(resp.get_payload());
 				// Send it.
-				LOG_CIRCE_DEBUG("Sending user-defined response: remote = ", connection->get_remote_info(), ", hdr = ", hdr, ", message_id = ", resp.get_message_id(), ", payload_size = ", magic_payload.size());
+				LOG_CIRCE_TRACE("Sending user-defined response: remote = ", connection->get_remote_info(), ", hdr = ", hdr, ", message_id = ", resp.get_message_id(), ", payload_size = ", magic_payload.size());
 				connection->launch_deflate_and_send(magic_number, STD_MOVE(magic_payload));
 			}
 			LOG_CIRCE_TRACE("Done dispatching message: message_id = ", m_message_id);
@@ -354,7 +354,7 @@ try {
 		DEBUG_THROW_UNLESS(msg.options_resp.empty(), Poseidon::Cbpp::Exception, Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Server option not supported"));
 		return; }
 	}
-	DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED & MFL_RESERVED), Poseidon::Cbpp::Exception, Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
+	DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED | MFL_RESERVED), Poseidon::Cbpp::Exception, Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
 
 	const std::size_t size_deflated = encoded_payload.size();
 	Poseidon::StreamBuffer magic_payload = require_message_filter()->decode(STD_MOVE(encoded_payload));
@@ -430,7 +430,7 @@ try {
 		layer5_send_data(magic_number, STD_MOVE(magic_payload));
 		return; }
 	}
-	DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED & MFL_RESERVED), Poseidon::Cbpp::Exception, Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
+	DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED | MFL_RESERVED), Poseidon::Cbpp::Exception, Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
 
 	const std::size_t size_original = magic_payload.size();
 	Poseidon::StreamBuffer encoded_payload = require_message_filter()->encode(STD_MOVE(magic_payload));
@@ -462,11 +462,11 @@ void InterserverConnection::layer5_on_receive_control(long status_code, Poseidon
 		layer5_shutdown();
 		break;
 	case Poseidon::Cbpp::ST_PING:
-		LOG_CIRCE_DEBUG("Received PING frame from ", get_remote_info(), ": param = ", param);
+		LOG_CIRCE_TRACE("Received PING frame from ", get_remote_info(), ": param = ", param);
 		layer5_send_control(Poseidon::Cbpp::ST_PONG, STD_MOVE(param));
 		break;
 	case Poseidon::Cbpp::ST_PONG:
-		LOG_CIRCE_DEBUG("Received PONG frame from ", get_remote_info(), ": param = ", param);
+		LOG_CIRCE_TRACE("Received PONG frame from ", get_remote_info(), ": param = ", param);
 		break;
 	default:
 		LOG_CIRCE_WARNING("Received CBPP error from ", get_remote_info(), ": status_code = ", status_code, ", param = ", param);
@@ -523,8 +523,6 @@ const Poseidon::Uuid &InterserverConnection::get_connection_uuid() const {
 
 boost::shared_ptr<const InterserverConnection::PromisedResponse> InterserverConnection::send_request(boost::uint16_t message_id, Poseidon::StreamBuffer payload){
 	PROFILE_ME;
-
-	LOG_CIRCE_DEBUG("Sending user-defined request: remote = ", get_remote_info(), ", message_id = ", message_id, ", payload.size() = ", payload.size());
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
@@ -553,15 +551,13 @@ boost::shared_ptr<const InterserverConnection::PromisedResponse> InterserverConn
 boost::shared_ptr<const InterserverConnection::PromisedResponse> InterserverConnection::send_request(const Poseidon::Cbpp::MessageBase &msg){
 	PROFILE_ME;
 
-	LOG_CIRCE_DEBUG("Sending user-defined request: remote = ", get_remote_info(), ", msg = ", msg);
+	LOG_CIRCE_TRACE("Sending user-defined request: remote = ", get_remote_info(), ", msg = ", msg);
 	const boost::uint64_t message_id = msg.get_id();
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 	return send_request(message_id, msg);
 }
 void InterserverConnection::send_notification(boost::uint16_t message_id, Poseidon::StreamBuffer payload){
 	PROFILE_ME;
-
-	LOG_CIRCE_DEBUG("Sending user-defined notification: remote = ", get_remote_info(), ", message_id = ", message_id, ", payload.size() = ", payload.size());
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
@@ -573,7 +569,7 @@ void InterserverConnection::send_notification(boost::uint16_t message_id, Poseid
 void InterserverConnection::send_notification(const Poseidon::Cbpp::MessageBase &msg){
 	PROFILE_ME;
 
-	LOG_CIRCE_DEBUG("Sending user-defined notification: remote = ", get_remote_info(), ", msg = ", msg);
+	LOG_CIRCE_TRACE("Sending user-defined notification: remote = ", get_remote_info(), ", msg = ", msg);
 	const boost::uint64_t message_id = msg.get_id();
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 	return send_notification(message_id, msg);
