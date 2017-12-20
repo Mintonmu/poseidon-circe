@@ -4,6 +4,7 @@
 #include "precompiled.hpp"
 #include "client_websocket_session.hpp"
 #include "client_http_session.hpp"
+#include <poseidon/websocket/exception.hpp>
 
 namespace Circe {
 namespace Gate {

@@ -15,7 +15,7 @@ namespace {
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_ESSENTIAL){
 	const AUTO(bind, get_config<std::string>("auth_acceptor_bind", "0.0.0.0"));
-	const AUTO(port, get_config<unsigned>("auth_acceptor_port", 10816));
+	const AUTO(port, get_config<boost::uint16_t>("auth_acceptor_port", 10816));
 	const AUTO(appkey, get_config<std::string>("auth_acceptor_appkey", "testkey"));
 	LOG_CIRCE_INFO("Initializing AuthAcceptor...");
 	const AUTO(acceptor, boost::make_shared<Common::InterserverAcceptor>(bind, port, appkey));

@@ -5,12 +5,12 @@
 #include "interserver_connector.hpp"
 #include "interserver_connection.hpp"
 #include "cbpp_response.hpp"
+#include <poseidon/singletons/epoll_daemon.hpp>
+#include <poseidon/cbpp/exception.hpp>
+#include <poseidon/cbpp/low_level_client.hpp>
 #include <poseidon/singletons/timer_daemon.hpp>
 #include <poseidon/singletons/dns_daemon.hpp>
-#include <poseidon/cbpp/low_level_client.hpp>
-#include <poseidon/cbpp/exception.hpp>
 #include <poseidon/sock_addr.hpp>
-#include <poseidon/singletons/epoll_daemon.hpp>
 
 namespace Circe {
 namespace Common {
@@ -31,7 +31,7 @@ public:
 	{
 		LOG_CIRCE_INFO("InterserverClient constructor: remote = ", Poseidon::Cbpp::LowLevelClient::get_remote_info());
 	}
-	~InterserverClient(){
+	~InterserverClient() OVERRIDE {
 		LOG_CIRCE_INFO("InterserverClient destructor: remote = ", Poseidon::Cbpp::LowLevelClient::get_remote_info());
 	}
 
@@ -129,8 +129,8 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 	client->layer7_client_say_hello();
 }
 
-InterserverConnector::InterserverConnector(const std::string &host, unsigned port, std::string application_key)
-	: m_host(host), m_port(port), m_application_key(STD_MOVE(application_key))
+InterserverConnector::InterserverConnector(std::string host, unsigned port, std::string application_key)
+	: m_host(STD_MOVE(host)), m_port(port), m_application_key(STD_MOVE(application_key))
 {
 	LOG_CIRCE_INFO("InterserverConnector constructor: host:port = ", m_host, ":", m_port);
 }
@@ -144,7 +144,8 @@ void InterserverConnector::activate(){
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!m_timer, Poseidon::Exception, Poseidon::sslit("InterserverConnector is already activated"));
-	m_timer = Poseidon::TimerDaemon::register_timer(0, 5000, boost::bind(&timer_proc, virtual_weak_from_this<InterserverConnector>()));
+	const AUTO(timer, Poseidon::TimerDaemon::register_timer(0, 5000, boost::bind(&timer_proc, virtual_weak_from_this<InterserverConnector>())));
+	m_timer = timer;
 }
 
 boost::shared_ptr<InterserverConnection> InterserverConnector::get_client() const {

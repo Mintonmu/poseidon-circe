@@ -17,6 +17,8 @@ pkginclude_gate_HEADERS = \
 	src/client_http_session.hpp	\
 	src/client_websocket_session.hpp	\
 	src/singletons/client_http_acceptor.hpp	\
+	src/singletons/auth_connector.hpp	\
+	src/singletons/foyer_connector.hpp	\
 	src/mmain.hpp
 
 lib_LTLIBRARIES = \
@@ -26,6 +28,8 @@ lib_libcirce_gate_la_SOURCES = \
 	src/client_http_session.cpp	\
 	src/client_websocket_session.cpp	\
 	src/singletons/client_http_acceptor.cpp	\
+	src/singletons/auth_connector.cpp	\
+	src/singletons/foyer_connector.cpp	\
 	src/mmain.cpp
 
 lib_libcirce_gate_la_LDFLAGS = \

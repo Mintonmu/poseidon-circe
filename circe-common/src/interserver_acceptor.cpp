@@ -5,10 +5,11 @@
 #include "interserver_acceptor.hpp"
 #include "interserver_connection.hpp"
 #include "cbpp_response.hpp"
-#include <poseidon/singletons/main_config.hpp>
-#include <poseidon/cbpp/low_level_session.hpp>
-#include <poseidon/cbpp/exception.hpp>
 #include <poseidon/singletons/epoll_daemon.hpp>
+#include <poseidon/cbpp/exception.hpp>
+#include <poseidon/cbpp/low_level_session.hpp>
+#include <poseidon/tcp_server_base.hpp>
+#include <poseidon/singletons/main_config.hpp>
 
 namespace Circe {
 namespace Common {
@@ -29,7 +30,7 @@ public:
 	{
 		LOG_CIRCE_INFO("InterserverSession constructor: remote = ", Poseidon::Cbpp::LowLevelSession::get_remote_info());
 	}
-	~InterserverSession(){
+	~InterserverSession() OVERRIDE {
 		LOG_CIRCE_INFO("InterserverSession destructor: remote = ", Poseidon::Cbpp::LowLevelSession::get_remote_info());
 	}
 
@@ -79,6 +80,7 @@ protected:
 	}
 	void layer5_send_control(long status_code, Poseidon::StreamBuffer param) OVERRIDE {
 		Poseidon::Cbpp::LowLevelSession::send_status(status_code, STD_MOVE(param));
+		set_timeout(Poseidon::MainConfig::get<boost::uint64_t>("cbpp_keep_alive_timeout", 30000));
 	}
 	void layer7_post_set_connection_uuid() OVERRIDE {
 		PROFILE_ME;
@@ -100,38 +102,60 @@ protected:
 		const AUTO(parent, m_weak_parent.lock());
 		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 
-		const AUTO(timeout, Poseidon::MainConfig::get<boost::uint64_t>("cbpp_keep_alive_timeout", 30000));
-		set_timeout(timeout);
-
 		const AUTO(servlet, parent->get_servlet(message_id));
 		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Protocol::ERR_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverSession>(), message_id, STD_MOVE(payload));
 	}
 };
 
-InterserverAcceptor::InterserverAcceptor(const std::string &bind, unsigned port, std::string application_key)
-	: Poseidon::TcpServerBase(Poseidon::IpPort(bind.c_str(), port), "", "")
-	, m_application_key(STD_MOVE(application_key))
+class InterserverAcceptor::InterserverServer : public Poseidon::TcpServerBase {
+	friend InterserverAcceptor;
+
+private:
+	const boost::weak_ptr<InterserverAcceptor> m_weak_parent;
+
+public:
+	InterserverServer(const std::string &bind, unsigned port, const boost::shared_ptr<InterserverAcceptor> &parent)
+		: Poseidon::TcpServerBase(Poseidon::IpPort(bind.c_str(), port), "", "")
+		, m_weak_parent(parent)
+	{
+		LOG_CIRCE_INFO("InterserverServer constructor: local = ", Poseidon::TcpServerBase::get_local_info());
+	}
+	~InterserverServer() OVERRIDE {
+		LOG_CIRCE_INFO("InterserverServer destructor: local = ", Poseidon::TcpServerBase::get_local_info());
+	}
+
+protected:
+	boost::shared_ptr<Poseidon::TcpSessionBase> on_client_connect(Poseidon::Move<Poseidon::UniqueFile> socket) OVERRIDE {
+		PROFILE_ME;
+
+		const AUTO(parent, m_weak_parent.lock());
+		DEBUG_THROW_UNLESS(parent, Poseidon::Exception, Poseidon::sslit("The server has been shut down"));
+
+		AUTO(session, boost::make_shared<InterserverSession>(STD_MOVE(socket), parent));
+		session->set_no_delay();
+		return STD_MOVE_IDN(session);
+	}
+};
+
+InterserverAcceptor::InterserverAcceptor(std::string bind, unsigned port, std::string application_key)
+	: m_bind(STD_MOVE(bind)), m_port(port), m_application_key(STD_MOVE(application_key))
 {
-	LOG_CIRCE_INFO("InterserverAcceptor constructor: local = ", get_local_info());
+	LOG_CIRCE_INFO("InterserverAcceptor constructor: bind:port = ", m_bind, ":", m_port);
 }
 InterserverAcceptor::~InterserverAcceptor(){
-	LOG_CIRCE_INFO("InterserverAcceptor destructor: local = ", get_local_info());
+	LOG_CIRCE_INFO("InterserverAcceptor destructor: bind:port = ", m_bind, ":", m_port);
 	clear(Protocol::ERR_GONE_AWAY);
-}
-
-boost::shared_ptr<Poseidon::TcpSessionBase> InterserverAcceptor::on_client_connect(Poseidon::Move<Poseidon::UniqueFile> socket){
-	PROFILE_ME;
-
-	AUTO(session, boost::make_shared<InterserverSession>(STD_MOVE(socket), virtual_shared_from_this<InterserverAcceptor>()));
-	session->set_no_delay();
-	return STD_MOVE_IDN(session);
 }
 
 void InterserverAcceptor::activate(){
 	PROFILE_ME;
 
-	Poseidon::EpollDaemon::add_socket(virtual_shared_from_this<InterserverAcceptor>(), true);
+	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	DEBUG_THROW_UNLESS(!m_server, Poseidon::Exception, Poseidon::sslit("InterserverAcceptor is already activated"));
+	const AUTO(server, boost::make_shared<InterserverServer>(m_bind.c_str(), m_port, virtual_shared_from_this<InterserverAcceptor>()));
+	Poseidon::EpollDaemon::add_socket(server, false);
+	m_server = server;
 }
 
 boost::shared_ptr<InterserverConnection> InterserverAcceptor::get_session(const Poseidon::Uuid &connection_uuid) const {

@@ -32,7 +32,7 @@ private:
 	boost::weak_ptr<InterserverClient> m_weak_client;
 
 public:
-	InterserverConnector(const std::string &host, unsigned port, std::string application_key);
+	InterserverConnector(std::string host, unsigned port, std::string application_key);
 	~InterserverConnector() OVERRIDE;
 
 public:
