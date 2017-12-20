@@ -19,9 +19,15 @@ private:
 private:
 	const Poseidon::Uuid m_session_uuid;
 
+	std::string m_decoded_uri;
+	std::string m_auth_token;
+
 public:
 	explicit ClientHttpSession(Poseidon::Move<Poseidon::UniqueFile> socket);
 	~ClientHttpSession() OVERRIDE;
+
+private:
+	void sync_authenticate(const Poseidon::Http::RequestHeaders &request_headers);
 
 protected:
 	boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers) OVERRIDE;

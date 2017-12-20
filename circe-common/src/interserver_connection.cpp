@@ -358,8 +358,8 @@ try {
 
 	const std::size_t size_deflated = encoded_payload.size();
 	Poseidon::StreamBuffer magic_payload = require_message_filter()->decode(STD_MOVE(encoded_payload));
-	const std::size_t size_inflated = magic_payload.size();
-	LOG_CIRCE_TRACE("Inflate result: ", size_deflated, " / ", size_inflated, " (", std::fixed, std::setprecision(3), (size_inflated != 0) ? size_deflated * 100.0 / size_inflated : 0.0, "%)");
+	const std::size_t size_original = magic_payload.size();
+	LOG_CIRCE_TRACE("Inflate result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), (size_original != 0) ? size_deflated * 100.0 / size_original : 0.0, "%)");
 
 	boost::uint16_t message_id = magic_number & MESSAGE_ID_MAX;
 	if(Poseidon::has_any_flags_of(magic_number, MFL_IS_RESPONSE)){
@@ -436,10 +436,10 @@ try {
 	}
 	DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED & MFL_RESERVED), Poseidon::Cbpp::Exception, Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
 
-	const std::size_t size_inflated = magic_payload.size();
+	const std::size_t size_original = magic_payload.size();
 	Poseidon::StreamBuffer encoded_payload = require_message_filter()->encode(STD_MOVE(magic_payload));
 	const std::size_t size_deflated = encoded_payload.size();
-	LOG_CIRCE_TRACE("Deflate result: ", size_deflated, " / ", size_inflated, " (", std::fixed, std::setprecision(3), (size_inflated != 0) ? size_deflated * 100.0 / size_inflated : 0.0, "%)");
+	LOG_CIRCE_TRACE("Deflate result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), (size_original != 0) ? size_deflated * 100.0 / size_original : 0.0, "%)");
 
 	layer5_send_data(magic_number, STD_MOVE(encoded_payload));
 } catch(Poseidon::Cbpp::Exception &e){
