@@ -30,11 +30,33 @@ namespace Protocol {
 #define MESSAGE_ID     1102
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (http_status_code)	\
-	FIELD_STRING       (auth_token)	\
 	FIELD_ARRAY        (headers,	\
 	  FIELD_STRING       (key)	\
 	  FIELD_STRING       (value)	\
 	)	\
+	FIELD_STRING       (auth_token)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
+#define MESSAGE_NAME   GA_ClientWebSocketAuthenticationRequest
+#define MESSAGE_ID     1103
+#define MESSAGE_FIELDS \
+	FIELD_FIXED        (session_uuid, 16)	\
+	FIELD_STRING       (client_ip)	\
+	FIELD_STRING       (decoded_uri)	\
+	FIELD_ARRAY        (params,	\
+	  FIELD_STRING       (key)	\
+	  FIELD_STRING       (value)	\
+	)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
+#define MESSAGE_NAME   AG_ClientWebSocketAuthenticationResponse
+#define MESSAGE_ID     1104
+#define MESSAGE_FIELDS \
+	FIELD_VUINT        (websocket_status_code)	\
+	FIELD_STRING       (message)	\
+	FIELD_STRING       (auth_token)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 

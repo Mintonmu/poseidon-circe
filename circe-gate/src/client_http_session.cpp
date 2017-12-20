@@ -8,6 +8,7 @@
 #include "mmain.hpp"
 #include "singletons/auth_connector.hpp"
 #include "common/cbpp_response.hpp"
+#include "common/utilities.hpp"
 #include "protocol/error_codes.hpp"
 #include "protocol/messages_gate_auth.hpp"
 #include <poseidon/job_base.hpp>
@@ -21,34 +22,6 @@
 
 namespace Circe {
 namespace Gate {
-
-namespace {
-	template<typename ElementT>
-	void copy_values(boost::container::vector<ElementT> &vec, const Poseidon::OptionalMap &map){
-		PROFILE_ME;
-
-		vec.reserve(vec.size() + map.size());
-		for(AUTO(it, map.begin()); it != map.end(); ++it){
-			vec.emplace_back();
-			vec.back().key = it->first.get();
-			vec.back().value = it->second;
-		}
-	}
-	template<typename ElementT>
-	void copy_values(Poseidon::OptionalMap &map, const boost::container::vector<ElementT> &vec){
-		PROFILE_ME;
-
-		for(AUTO(it, vec.begin()); it != vec.end(); ++it){
-			map.append(Poseidon::SharedNts(it->key), it->value);
-		}
-	}
-	template<typename ElementT>
-	Poseidon::OptionalMap extract_values(const boost::container::vector<ElementT> &vec){
-		Poseidon::OptionalMap map;
-		copy_values<ElementT>(map, vec);
-		return map;
-	}
-}
 
 class ClientHttpSession::WebSocketHandshakeJob : public Poseidon::JobBase {
 private:
@@ -149,8 +122,8 @@ std::string ClientHttpSession::sync_authenticate(const std::string &decoded_uri,
 	req.session_uuid = get_session_uuid();
 	req.client_ip    = get_remote_info().ip();
 	req.decoded_uri  = decoded_uri;
-	copy_values(req.params, params);
-	copy_values(req.headers, headers);
+	Common::copy_key_values(req.params, params);
+	Common::copy_key_values(req.headers, headers);
 	LOG_CIRCE_TRACE("Sending request: ", req);
 	AUTO(result, Poseidon::wait(auth_connection->send_request(req)));
 	DEBUG_THROW_UNLESS(result.get_err_code() == Protocol::ERR_SUCCESS, Poseidon::Http::Exception, Poseidon::Http::ST_INTERNAL_SERVER_ERROR);
@@ -158,8 +131,8 @@ std::string ClientHttpSession::sync_authenticate(const std::string &decoded_uri,
 	DEBUG_THROW_UNLESS(result.get_message_id() == resp.get_id(), Poseidon::Http::Exception, Poseidon::Http::ST_INTERNAL_SERVER_ERROR);
 	resp.deserialize(result.get_payload());
 	LOG_CIRCE_TRACE("Received response: ", req);
-	if(resp.http_status_code != Poseidon::Http::ST_OK){
-		DEBUG_THROW(Poseidon::Http::Exception, resp.http_status_code, extract_values(resp.headers));
+	if((resp.http_status_code != 0) && (resp.http_status_code != Poseidon::Http::ST_OK)){
+		DEBUG_THROW(Poseidon::Http::Exception, resp.http_status_code, Common::extract_key_values(resp.headers));
 	}
 	return STD_MOVE(resp.auth_token);
 }
