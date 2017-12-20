@@ -19,7 +19,7 @@ ClientWebSocketSession::~ClientWebSocketSession(){
 	LOG_CIRCE_DEBUG("ClientWebSocketSession destructor: remote = ", get_remote_info());
 }
 
-std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &headers) const {
+std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params) const {
 	PROFILE_ME;
 
 	LOG_POSEIDON_FATAL("TODO CHECK AUTHENTICATION");

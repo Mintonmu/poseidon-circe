@@ -6,6 +6,10 @@
 #include "client_websocket_session.hpp"
 #include "singletons/client_http_acceptor.hpp"
 #include "mmain.hpp"
+#include "singletons/auth_connector.hpp"
+#include "common/cbpp_response.hpp"
+#include "protocol/error_codes.hpp"
+#include "protocol/messages_gate_auth.hpp"
 #include <poseidon/job_base.hpp>
 #include <poseidon/http/request_headers.hpp>
 #include <poseidon/http/response_headers.hpp>
@@ -17,6 +21,34 @@
 
 namespace Circe {
 namespace Gate {
+
+namespace {
+	template<typename ElementT>
+	void copy_values(boost::container::vector<ElementT> &vec, const Poseidon::OptionalMap &map){
+		PROFILE_ME;
+
+		vec.reserve(vec.size() + map.size());
+		for(AUTO(it, map.begin()); it != map.end(); ++it){
+			vec.emplace_back();
+			vec.back().key = it->first.get();
+			vec.back().value = it->second;
+		}
+	}
+	template<typename ElementT>
+	void copy_values(Poseidon::OptionalMap &map, const boost::container::vector<ElementT> &vec){
+		PROFILE_ME;
+
+		for(AUTO(it, vec.begin()); it != vec.end(); ++it){
+			map.append(Poseidon::SharedNts(it->key), it->value);
+		}
+	}
+	template<typename ElementT>
+	Poseidon::OptionalMap extract_values(const boost::container::vector<ElementT> &vec){
+		Poseidon::OptionalMap map;
+		copy_values<ElementT>(map, vec);
+		return map;
+	}
+}
 
 class ClientHttpSession::WebSocketHandshakeJob : public Poseidon::JobBase {
 private:
@@ -70,7 +102,7 @@ private:
 			return;
 		}
 		try {
-			AUTO(auth_token, ws_session->sync_authenticate(http_session->m_decoded_uri, m_request_headers.headers));
+			AUTO(auth_token, ws_session->sync_authenticate(http_session->m_decoded_uri, m_request_headers.get_params));
 			LOG_CIRCE_DEBUG("WebSocket authentication succeeded: remote = ", ws_session->get_remote_info(), ", auth_token = ", auth_token);
 			DEBUG_THROW_ASSERT(!ws_session->m_auth_token);
 			ws_session->m_auth_token = STD_MOVE_IDN(auth_token);
@@ -107,11 +139,29 @@ ClientHttpSession::~ClientHttpSession(){
 	ClientHttpAcceptor::remove_session(this);
 }
 
-std::string ClientHttpSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &headers) const {
+std::string ClientHttpSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers) const {
 	PROFILE_ME;
 
-	LOG_POSEIDON_FATAL("TODO CHECK AUTHENTICATION");
-	return "http";
+	const AUTO(auth_connection, AuthConnector::get_connection());
+	DEBUG_THROW_UNLESS(auth_connection, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
+
+	Protocol::GA_ClientHttpAuthenticationRequest req;
+	req.session_uuid = get_session_uuid();
+	req.client_ip    = get_remote_info().ip();
+	req.decoded_uri  = decoded_uri;
+	copy_values(req.params, params);
+	copy_values(req.headers, headers);
+	LOG_CIRCE_TRACE("Sending request: ", req);
+	AUTO(result, Poseidon::wait(auth_connection->send_request(req)));
+	DEBUG_THROW_UNLESS(result.get_err_code() == Protocol::ERR_SUCCESS, Poseidon::Http::Exception, Poseidon::Http::ST_INTERNAL_SERVER_ERROR);
+	Protocol::AG_ClientHttpAuthenticationResponse resp;
+	DEBUG_THROW_UNLESS(result.get_message_id() == resp.get_id(), Poseidon::Http::Exception, Poseidon::Http::ST_INTERNAL_SERVER_ERROR);
+	resp.deserialize(result.get_payload());
+	LOG_CIRCE_TRACE("Received response: ", req);
+	if(resp.http_status_code != Poseidon::Http::ST_OK){
+		DEBUG_THROW(Poseidon::Http::Exception, resp.http_status_code, extract_values(resp.headers));
+	}
+	return STD_MOVE(resp.auth_token);
 }
 
 boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers){
@@ -136,7 +186,7 @@ void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders request_he
 	PROFILE_ME;
 
 	m_decoded_uri = safe_decode_uri(request_headers.uri);
-	AUTO(auth_token, sync_authenticate(m_decoded_uri, request_headers.headers));
+	AUTO(auth_token, sync_authenticate(m_decoded_uri, request_headers.get_params, request_headers.headers));
 	LOG_CIRCE_DEBUG("HTTP authentication succeeded: remote = ", get_remote_info(), ", auth_token = ", auth_token);
 	DEBUG_THROW_ASSERT(!m_auth_token);
 	m_auth_token = STD_MOVE_IDN(auth_token);
@@ -150,7 +200,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		m_decoded_uri = safe_decode_uri(request_headers.uri);
 	}
 	if(!m_auth_token){
-		AUTO(auth_token, sync_authenticate(m_decoded_uri, request_headers.headers));
+		AUTO(auth_token, sync_authenticate(m_decoded_uri, request_headers.get_params, request_headers.headers));
 		LOG_CIRCE_DEBUG("HTTP authentication succeeded: remote = ", get_remote_info(), ", auth_token = ", auth_token);
 		DEBUG_THROW_ASSERT(!m_auth_token);
 		m_auth_token = STD_MOVE_IDN(auth_token);

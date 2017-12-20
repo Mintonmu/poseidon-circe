@@ -107,8 +107,10 @@ public:
 		return layer4_force_shutdown();
 	}
 
-	void send(const boost::shared_ptr<PromisedResponse> &promise, boost::uint16_t message_id, Poseidon::StreamBuffer payload);
-	void send(const boost::shared_ptr<PromisedResponse> &promise, const Poseidon::Cbpp::MessageBase &msg);
+	boost::shared_ptr<const PromisedResponse> send_request(boost::uint16_t message_id, Poseidon::StreamBuffer payload);
+	boost::shared_ptr<const PromisedResponse> send_request(const Poseidon::Cbpp::MessageBase &msg);
+	void send_notification(boost::uint16_t message_id, Poseidon::StreamBuffer payload);
+	void send_notification(const Poseidon::Cbpp::MessageBase &msg);
 	bool shutdown(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 

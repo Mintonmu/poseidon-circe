@@ -17,12 +17,21 @@ namespace {
 		const AUTO(port, get_config<boost::uint16_t>("auth_connector_port", 10816));
 		const AUTO(appkey, get_config<std::string>("auth_connector_appkey", "testkey"));
 		const AUTO(connector, boost::make_shared<Common::InterserverConnector>(host, port, appkey));
-		handles.push(connector);
 		connector->activate();
+		handles.push(connector);
+		g_weak_connector = connector;
 	}
 }
 
+boost::shared_ptr<Common::InterserverConnection> AuthConnector::get_connection(){
+	PROFILE_ME;
 
+	const AUTO(connector, g_weak_connector.lock());
+	if(!connector){
+		return VAL_INIT;
+	}
+	return connector->get_client();
+}
 
 }
 }

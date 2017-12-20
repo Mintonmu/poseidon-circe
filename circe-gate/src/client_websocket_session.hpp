@@ -26,7 +26,7 @@ public:
 	~ClientWebSocketSession() OVERRIDE;
 
 private:
-	std::string sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &headers) const;
+	std::string sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params) const;
 
 protected:
 	void on_sync_data_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload) OVERRIDE;

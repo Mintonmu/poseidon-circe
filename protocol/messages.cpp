@@ -3,3 +3,6 @@
 
 #include "precompiled.hpp"
 #define CBPP_MESSAGE_EMIT_EXTERNAL_DEFINITIONS  1
+#include "messages_gate_auth.hpp"
+#include "messages_gate_foyer.hpp"
+#include "messages_foyer_business.hpp"

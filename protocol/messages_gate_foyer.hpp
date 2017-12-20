@@ -9,47 +9,6 @@
 namespace Circe {
 namespace Protocol {
 
-#define MESSAGE_NAME   GF_
-#define MESSAGE_ID     1101
-#define MESSAGE_FIELDS \
-	FIELD_STRING       (uri)	\
-	FIELD_ARRAY        (headers,	\
-		FIELD_STRING       (key)	\
-		FIELD_STRING       (value)	\
-	)	\
-	FIELD_ARRAY        (params,	\
-		FIELD_STRING       (key)	\
-		FIELD_STRING       (value)	\
-	)	\
-	//
-#include <poseidon/cbpp/message_generator.hpp>
-
-#define MESSAGE_NAME   GF_ClientRequstHttpPost
-#define MESSAGE_ID     1002
-#define MESSAGE_FIELDS \
-	FIELD_STRING       (uri)	\
-	FIELD_ARRAY        (headers,	\
-		FIELD_STRING       (key)	\
-		FIELD_STRING       (value)	\
-	)	\
-	FIELD_BLOB         (entity)	\
-	//
-#include <poseidon/cbpp/message_generator.hpp>
-
-#define MESSAGE_NAME   GF_
-#define MESSAGE_ID     1003
-#define MESSAGE_FIELDS \
-	FIELD_STRING       (uri)	\
-	FIELD_ARRAY        (headers,	\
-		FIELD_STRING       (key)	\
-		FIELD_STRING       (value)	\
-	)	\
-	FIELD_ARRAY        (params,	\
-		FIELD_STRING       (key)	\
-		FIELD_STRING       (value)	\
-	)	\
-	//
-#include <poseidon/cbpp/message_generator.hpp>
 
 
 

@@ -33,7 +33,7 @@ public:
 	~ClientHttpSession() OVERRIDE;
 
 private:
-	std::string sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &headers) const;
+	std::string sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers) const;
 
 protected:
 	boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers) OVERRIDE;
