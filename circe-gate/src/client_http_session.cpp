@@ -104,7 +104,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		response_headers.headers.set(Poseidon::sslit("Connection"), "Close");
 	}
 	response_headers.headers.set(Poseidon::sslit("Access-Control-Allow-Origin"), "*");
-	response_headers.headers.set(Poseidon::sslit("Access-Control-Allow-Headers"), "Authorization");
+	response_headers.headers.set(Poseidon::sslit("Access-Control-Allow-Headers"), "Authorization, Content-Type");
 
 	// Try compressing the response entity if it is not empty and no explicit encoding is given.
 	const std::size_t size_original = response_entity.size();
