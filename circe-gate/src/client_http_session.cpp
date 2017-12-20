@@ -119,7 +119,7 @@ boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low
 	PROFILE_ME;
 
 	const AUTO_REF(request_headers, Poseidon::Http::Session::get_low_level_request_headers());
-	LOG_CIRCE_TRACE("Client HTTP request: uri = ", request_headers.uri, ", headers = ", headers);
+	LOG_CIRCE_TRACE("Client HTTP request: verb = ", Poseidon::Http::get_string_from_verb(request_headers.verb), ", uri = ", request_headers.uri, ", headers = ", request_headers.headers);
 
 	const AUTO_REF(upgrade_str, request_headers.headers.get("Upgrade"));
 	if(::strcasecmp(upgrade_str.c_str(), "websocket") == 0){
