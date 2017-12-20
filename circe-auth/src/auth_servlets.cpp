@@ -7,14 +7,16 @@
 #include "protocol/messages_gate_auth.hpp"
 
 #define DEFINE_SERVLET(Msg_, conn_param_, msg_param_)	\
-	namespace Servlets_ {	\
-		::Circe::Common::CbppResponse TOKEN_CAT2(servlet_callback_, __LINE__)(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> & conn_, Msg_ msg_);	\
-		::Circe::Common::CbppResponse TOKEN_CAT2(servlet_wrapper_, __LINE__)(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> & conn_, ::boost::uint16_t msgid_, ::Poseidon::StreamBuffer payload_){	\
-			PROFILE_ME;	\
-			DEBUG_THROW_ASSERT(msgid_ == Msg_::ID);	\
-			Msg_ msg_(payload_);	\
-			LOG_CIRCE_TRACE("Processing: ", msg_);	\
-			return TOKEN_CAT2(servlet_callback_, __LINE__)(conn_, STD_MOVE_IDN(msg_));	\
+	namespace {	\
+		namespace Servlets_ {	\
+			::Circe::Common::CbppResponse TOKEN_CAT2(servlet_callback_, __LINE__)(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> & conn_, Msg_ msg_);	\
+			::Circe::Common::CbppResponse TOKEN_CAT2(servlet_wrapper_, __LINE__)(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> & conn_, ::boost::uint16_t msgid_, ::Poseidon::StreamBuffer payload_){	\
+				PROFILE_ME;	\
+				DEBUG_THROW_ASSERT(msgid_ == Msg_::ID);	\
+				Msg_ msg_(payload_);	\
+				LOG_CIRCE_TRACE("Processing: ", msg_);	\
+				return TOKEN_CAT2(servlet_callback_, __LINE__)(conn_, STD_MOVE_IDN(msg_));	\
+			}	\
 		}	\
 		MODULE_RAII_PRIORITY(handles_, INIT_PRIORITY_LOW){	\
 			const AUTO(servlet_, ::boost::make_shared< ::Circe::Common::InterserverServletCallback>(&Servlets_::TOKEN_CAT2(servlet_wrapper_, __LINE__)));	\
