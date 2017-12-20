@@ -15,11 +15,11 @@ namespace Common {
 class InterserverServletContainer {
 private:
 	mutable Poseidon::Mutex m_mutex;
-	boost::container::flat_map<boost::uint16_t, boost::shared_ptr<const InterserverServletCallback> > m_map;
+	boost::container::flat_map<boost::uint16_t, boost::weak_ptr<const InterserverServletCallback> > m_servlets;
 
 public:
 	boost::shared_ptr<const InterserverServletCallback> get_servlet(boost::uint16_t message_id) const;
-	void insert_servlet(boost::uint16_t message_id, InterserverServletCallback callback);
+	void insert_servlet(boost::uint16_t message_id, const boost::shared_ptr<const InterserverServletCallback> &callback);
 	bool remove_servlet(boost::uint16_t message_id) NOEXCEPT;
 };
 

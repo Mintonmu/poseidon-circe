@@ -24,14 +24,14 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_ESSENTIAL){
 	g_weak_acceptor = acceptor;
 }
 
-void AuthAcceptor::insert_servlet(boost::uint16_t message_id, Common::InterserverServletCallback callback){
+void AuthAcceptor::insert_servlet(boost::uint16_t message_id, const boost::shared_ptr<Common::InterserverServletCallback> &servlet){
 	PROFILE_ME;
 
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
 		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("AuthAcceptor not initialized"));
 	}
-	return acceptor->insert_servlet(message_id, STD_MOVE_IDN(callback));
+	return acceptor->insert_servlet(message_id, servlet);
 }
 bool AuthAcceptor::remove_servlet(boost::uint16_t message_id) NOEXCEPT {
 	PROFILE_ME;
