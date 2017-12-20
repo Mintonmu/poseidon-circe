@@ -34,10 +34,6 @@ public:
 
 	typedef Poseidon::PromiseContainer<CbppResponse> PromisedResponse;
 
-private:
-	static void inflate_and_dispatch(const boost::weak_ptr<InterserverConnection> &weak_connection, boost::uint16_t magic_number, Poseidon::StreamBuffer &deflated_payload);
-	static void deflate_and_send(const boost::weak_ptr<InterserverConnection> &weak_connection, boost::uint16_t magic_number, Poseidon::StreamBuffer &magic_payload);
-
 public:
 	static CONSTEXPR bool is_message_id_valid(boost::uint64_t message_id){
 		return (MESSAGE_ID_MIN <= message_id) && (message_id <= MESSAGE_ID_MAX);
@@ -65,13 +61,14 @@ public:
 	~InterserverConnection() OVERRIDE;
 
 private:
-	boost::array<unsigned char, 32> calculate_checksum(bool response, const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp) const;
-
 	bool is_connection_uuid_set() const NOEXCEPT;
 	void server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp);
 
+	MessageFilter *require_message_filter();
 	void launch_inflate_and_dispatch(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload);
+	void inflate_and_dispatch(boost::uint16_t magic_number, Poseidon::StreamBuffer &deflated_payload);
 	void launch_deflate_and_send(boost::uint16_t magic_number, Poseidon::StreamBuffer magic_payload);
+	void deflate_and_send(boost::uint16_t magic_number, Poseidon::StreamBuffer &magic_payload);
 
 protected:
 	virtual const Poseidon::IpPort &layer5_get_remote_info() const NOEXCEPT = 0;
