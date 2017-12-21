@@ -105,37 +105,40 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 		return;
 	}
 
-	boost::shared_ptr<InterserverClient> client;
-	{
-		const Poseidon::Mutex::UniqueLock lock(connector->m_mutex);
-		client = connector->m_weak_client.lock();
-	}
-	if(client){
-		return;
-	}
-	const AUTO(promised_sock_addr, Poseidon::DnsDaemon::enqueue_for_looking_up(connector->m_host, connector->m_port));
-	Poseidon::yield(promised_sock_addr);
-	{
-		const Poseidon::Mutex::UniqueLock lock(connector->m_mutex);
-		client = connector->m_weak_client.lock();
-		if(client){
-			client->Poseidon::TcpSessionBase::force_shutdown();
+	for(std::size_t slot = 0; slot < connector->m_hosts.size(); ++slot){
+		boost::shared_ptr<InterserverClient> client;
+		{
+			const Poseidon::Mutex::UniqueLock lock(connector->m_mutex);
+			connector->m_weak_clients.resize(connector->m_hosts.size());
+			client = connector->m_weak_clients.at(slot).lock();
 		}
-		client = boost::make_shared<InterserverClient>(promised_sock_addr->get(), connector);
-		client->set_no_delay();
-		Poseidon::EpollDaemon::add_socket(client, true);
-		connector->m_weak_client = client;
+		if(client){
+			continue;
+		}
+		const AUTO(promised_sock_addr, Poseidon::DnsDaemon::enqueue_for_looking_up(connector->m_hosts.at(slot), connector->m_port));
+		Poseidon::yield(promised_sock_addr);
+		{
+			const Poseidon::Mutex::UniqueLock lock(connector->m_mutex);
+			client = connector->m_weak_clients.at(slot).lock();
+			if(client){
+				client->Poseidon::TcpSessionBase::force_shutdown();
+			}
+			client = boost::make_shared<InterserverClient>(promised_sock_addr->get(), connector);
+			client->set_no_delay();
+			Poseidon::EpollDaemon::add_socket(client, true);
+			connector->m_weak_clients.at(slot) = client;
+		}
+		client->layer7_client_say_hello();
 	}
-	client->layer7_client_say_hello();
 }
 
-InterserverConnector::InterserverConnector(std::string host, unsigned port, std::string application_key)
-	: m_host(STD_MOVE(host)), m_port(port), m_application_key(STD_MOVE(application_key))
+InterserverConnector::InterserverConnector(std::vector<std::string> hosts, unsigned port, std::string application_key)
+	: m_hosts(STD_MOVE(hosts)), m_port(port), m_application_key(STD_MOVE(application_key))
 {
-	LOG_CIRCE_INFO("InterserverConnector constructor: host:port = ", m_host, ":", m_port);
+	LOG_CIRCE_INFO("InterserverConnector constructor: hosts:port = ", Poseidon::implode(',', m_hosts), ":", m_port);
 }
 InterserverConnector::~InterserverConnector(){
-	LOG_CIRCE_INFO("InterserverConnector destructor: host:port = ", m_host, ":", m_port);
+	LOG_CIRCE_INFO("InterserverConnector destructor: hosts:port = ", Poseidon::implode(',', m_hosts), ":", m_port);
 	clear(Protocol::ERR_GONE_AWAY);
 }
 
@@ -152,20 +155,26 @@ boost::shared_ptr<InterserverConnection> InterserverConnector::get_client() cons
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	return m_weak_client.lock();
+	if(m_weak_clients.empty()){
+		return VAL_INIT;
+	}
+	const std::size_t slot = Poseidon::random_uint32() % m_weak_clients.size();
+	return m_weak_clients.at(slot).lock();
 }
 void InterserverConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
 	PROFILE_ME;
 
-	VALUE_TYPE(m_weak_client) weak_client;
+	VALUE_TYPE(m_weak_clients) weak_clients;
 	{
 		const Poseidon::Mutex::UniqueLock lock(m_mutex);
-		weak_client.swap(m_weak_client);
+		weak_clients.swap(m_weak_clients);
 	}
-	const AUTO(client, weak_client.lock());
-	if(client){
-		LOG_CIRCE_DEBUG("Disconnecting client: remote = ", client->Poseidon::Cbpp::LowLevelClient::get_remote_info());
-		client->Poseidon::Cbpp::LowLevelClient::shutdown(err_code, err_msg);
+	for(AUTO(it, weak_clients.begin()); it != weak_clients.end(); ++it){
+		const AUTO(client, it->lock());
+		if(client){
+			LOG_CIRCE_DEBUG("Disconnecting client: remote = ", client->Poseidon::Cbpp::LowLevelClient::get_remote_info());
+			client->Poseidon::Cbpp::LowLevelClient::shutdown(err_code, err_msg);
+		}
 	}
 }
 
