@@ -38,6 +38,7 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 	LOG_CIRCE_TRACE("Sending request: ", req);
 	AUTO(result, Poseidon::wait(auth_connection->send_request(req)));
 	DEBUG_THROW_UNLESS(result.get_err_code() == Protocol::ERR_SUCCESS, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_INTERNAL_ERROR);
+
 	Protocol::AG_ClientWebSocketAuthenticationResponse resp;
 	DEBUG_THROW_UNLESS(result.get_message_id() == resp.get_id(), Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_INTERNAL_ERROR);
 	resp.deserialize(result.get_payload());
@@ -51,7 +52,7 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
 	PROFILE_ME;
 
-	LOG_POSEIDON_FATAL("CONTROL: ", opcode, ": ", payload);
+	LOG_POSEIDON_FATAL("DATA: ", opcode, ": ", payload);
 }
 void ClientWebSocketSession::on_sync_control_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
 	PROFILE_ME;
