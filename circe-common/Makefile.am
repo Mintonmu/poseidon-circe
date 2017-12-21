@@ -29,7 +29,8 @@ pkginclude_protocol_HEADERS = \
 	../protocol/messages_gate_auth.hpp	\
 	../protocol/messages_gate_foyer.hpp	\
 	../protocol/messages_foyer_business.hpp	\
-	../protocol/error_codes.hpp
+	../protocol/error_codes.hpp	\
+	../protocol/utilities.hpp
 
 pkginclude_commondir = $(pkgincludedir)/common
 pkginclude_common_HEADERS = \
