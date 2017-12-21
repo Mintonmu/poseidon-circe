@@ -74,7 +74,7 @@ protected:
 	virtual const Poseidon::IpPort &layer5_get_remote_info() const NOEXCEPT = 0;
 	virtual const Poseidon::IpPort &layer5_get_local_info() const NOEXCEPT = 0;
 	virtual bool layer5_has_been_shutdown() const NOEXCEPT = 0;
-	virtual bool layer5_shutdown() NOEXCEPT = 0;
+	virtual bool layer5_shutdown(long err_code, const char *err_msg) NOEXCEPT = 0;
 	virtual void layer4_force_shutdown() NOEXCEPT = 0;
 	virtual void layer5_send_data(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload) = 0;
 	virtual void layer5_send_control(long status_code, Poseidon::StreamBuffer param) = 0;
@@ -103,6 +103,9 @@ public:
 	bool has_been_shutdown() const NOEXCEPT {
 		return layer5_has_been_shutdown();
 	}
+	bool shutdown(long err_code, const char *err_msg = "") NOEXCEPT {
+		return layer5_shutdown(err_code, err_msg);
+	}
 	void force_shutdown() NOEXCEPT {
 		return layer4_force_shutdown();
 	}
@@ -111,7 +114,6 @@ public:
 	boost::shared_ptr<const PromisedResponse> send_request(const Poseidon::Cbpp::MessageBase &msg);
 	void send_notification(boost::uint16_t message_id, Poseidon::StreamBuffer payload);
 	void send_notification(const Poseidon::Cbpp::MessageBase &msg);
-	bool shutdown(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 
 }

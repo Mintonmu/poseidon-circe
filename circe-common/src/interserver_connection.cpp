@@ -458,8 +458,7 @@ void InterserverConnection::layer5_on_receive_control(long status_code, Poseidon
 	switch(status_code){
 	case Poseidon::Cbpp::ST_SHUTDOWN:
 		LOG_CIRCE_INFO("Received SHUTDOWN frame from ", get_remote_info());
-		layer5_send_control(Poseidon::Cbpp::ST_SHUTDOWN, STD_MOVE(param));
-		layer5_shutdown();
+		layer5_shutdown(Poseidon::Cbpp::ST_SHUTDOWN, static_cast<const char *>(param.squash()));
 		break;
 	case Poseidon::Cbpp::ST_PING:
 		LOG_CIRCE_TRACE("Received PING frame from ", get_remote_info(), ": param = ", param);
@@ -573,17 +572,6 @@ void InterserverConnection::send_notification(const Poseidon::Cbpp::MessageBase 
 	const boost::uint64_t message_id = msg.get_id();
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 	return send_notification(message_id, msg);
-}
-bool InterserverConnection::shutdown(long err_code, const char *err_msg) NOEXCEPT
-try {
-	PROFILE_ME;
-
-	layer5_send_control(err_code, Poseidon::StreamBuffer(err_msg));
-	return layer5_shutdown();
-} catch(std::exception &e){
-	LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-	layer4_force_shutdown();
-	return false;
 }
 
 }

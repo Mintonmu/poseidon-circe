@@ -68,9 +68,8 @@ protected:
 	bool layer5_has_been_shutdown() const NOEXCEPT OVERRIDE {
 		return Poseidon::Cbpp::LowLevelSession::has_been_shutdown_write();
 	}
-	bool layer5_shutdown() NOEXCEPT OVERRIDE {
-		Poseidon::Cbpp::LowLevelSession::shutdown_read();
-		return Poseidon::Cbpp::LowLevelSession::shutdown_write();
+	bool layer5_shutdown(long err_code, const char *err_msg) NOEXCEPT OVERRIDE {
+		return Poseidon::Cbpp::LowLevelSession::shutdown(err_code, err_msg);
 	}
 	void layer4_force_shutdown() NOEXCEPT OVERRIDE {
 		return Poseidon::TcpSessionBase::force_shutdown();
@@ -171,16 +170,12 @@ boost::shared_ptr<InterserverConnection> InterserverAcceptor::get_session(const 
 void InterserverAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
 	PROFILE_ME;
 
-	VALUE_TYPE(m_weak_sessions) weak_sessions;
-	{
-		const Poseidon::Mutex::UniqueLock lock(m_mutex);
-		weak_sessions.swap(m_weak_sessions);
-	}
-	for(AUTO(it, weak_sessions.begin()); it != weak_sessions.end(); ++it){
+	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); ++it){
 		const AUTO(session, it->second.lock());
 		if(session){
-			LOG_CIRCE_DEBUG("Disconnecting session: remote = ", session->Poseidon::Cbpp::LowLevelSession::get_remote_info());
-			session->Poseidon::Cbpp::LowLevelSession::shutdown(err_code, err_msg);
+			LOG_CIRCE_DEBUG("Disconnecting session: remote = ", session->layer5_get_remote_info());
+			session->layer5_shutdown(err_code, err_msg);
 		}
 	}
 }
