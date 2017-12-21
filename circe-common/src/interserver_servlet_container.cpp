@@ -28,6 +28,7 @@ void InterserverServletContainer::insert_servlet(boost::uint16_t message_id, con
 	for(AUTO(it, m_servlets.begin()); it != m_servlets.end(); erase_it ? (it = m_servlets.erase(it)) : ++it){
 		erase_it = it->second.expired();
 	}
+	LOG_CIRCE_DEBUG("Registering servlet: message_id = ", message_id);
 	DEBUG_THROW_UNLESS(m_servlets.emplace(message_id, servlet).second, Poseidon::Exception, Poseidon::sslit("Another servlet for this message_id already exists"));
 }
 bool InterserverServletContainer::remove_servlet(boost::uint16_t message_id) NOEXCEPT {

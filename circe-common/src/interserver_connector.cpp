@@ -147,8 +147,8 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 		client = boost::make_shared<InterserverClient>(sock_addr, connector);
 		client->set_no_delay();
 		client->layer7_client_say_hello();
-		Poseidon::EpollDaemon::add_socket(client, true);
 		connector->m_weak_clients.at(slot) = client;
+		Poseidon::EpollDaemon::add_socket(client, true);
 	}
 }
 

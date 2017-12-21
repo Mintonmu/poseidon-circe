@@ -40,6 +40,7 @@ pkginclude_common_HEADERS = \
 	src/interserver_servlet_container.hpp	\
 	src/interserver_connector.hpp	\
 	src/interserver_acceptor.hpp	\
+	src/define_interserver_servlet_for.hpp	\
 	src/mmain.hpp
 
 lib_LTLIBRARIES = \
@@ -47,6 +48,7 @@ lib_LTLIBRARIES = \
 
 lib_libcirce_common_la_SOURCES = \
 	../protocol/messages.cpp	\
+	src/cbpp_response.cpp	\
 	src/interserver_connection.cpp	\
 	src/interserver_servlet_container.cpp	\
 	src/interserver_connector.cpp	\

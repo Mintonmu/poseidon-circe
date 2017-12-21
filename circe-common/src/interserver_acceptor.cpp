@@ -153,8 +153,8 @@ void InterserverAcceptor::activate(){
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!m_server, Poseidon::Exception, Poseidon::sslit("InterserverAcceptor is already activated"));
 	const AUTO(server, boost::make_shared<InterserverServer>(m_bind.c_str(), m_port, virtual_shared_from_this<InterserverAcceptor>()));
-	Poseidon::EpollDaemon::add_socket(server, false);
 	m_server = server;
+	Poseidon::EpollDaemon::add_socket(server, false);
 }
 
 boost::shared_ptr<InterserverConnection> InterserverAcceptor::get_session(const Poseidon::Uuid &connection_uuid) const {

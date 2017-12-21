@@ -21,18 +21,10 @@ private:
 	Poseidon::StreamBuffer m_payload;
 
 public:
-	CbppResponse(long err_code = Protocol::ERR_SUCCESS, std::string err_msg = std::string())
-		: m_err_code(err_code), m_err_msg(STD_MOVE(err_msg))
-		, m_message_id(), m_payload()
-	{ }
-	CbppResponse(boost::uint64_t message_id, Poseidon::StreamBuffer payload)
-		: m_err_code(Protocol::ERR_SUCCESS), m_err_msg()
-		, m_message_id(message_id), m_payload(STD_MOVE(payload))
-	{ }
-	CbppResponse(const Poseidon::Cbpp::MessageBase &msg)
-		: m_err_code(Protocol::ERR_SUCCESS), m_err_msg()
-		, m_message_id(msg.get_id()), m_payload(msg)
-	{ }
+	CbppResponse(long err_code = Protocol::ERR_SUCCESS, std::string err_msg = std::string());
+	CbppResponse(boost::uint64_t message_id, Poseidon::StreamBuffer payload);
+	CbppResponse(const Poseidon::Cbpp::MessageBase &msg);
+	~CbppResponse();
 
 public:
 	long get_err_code() const NOEXCEPT {
