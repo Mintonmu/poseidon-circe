@@ -14,6 +14,7 @@ namespace Protocol {
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (session_uuid, 16)	\
 	FIELD_STRING       (client_ip)	\
+	FIELD_VUINT        (verb)	\
 	FIELD_STRING       (decoded_uri)	\
 	FIELD_ARRAY        (params,	\
 	  FIELD_STRING       (key)	\

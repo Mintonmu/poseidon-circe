@@ -112,7 +112,7 @@ ClientHttpSession::~ClientHttpSession(){
 	ClientHttpAcceptor::remove_session(this);
 }
 
-std::string ClientHttpSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers) const {
+std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers) const {
 	PROFILE_ME;
 
 	const AUTO(auth_connection, AuthConnector::get_connection());
@@ -121,6 +121,7 @@ std::string ClientHttpSession::sync_authenticate(const std::string &decoded_uri,
 	Protocol::GA_ClientHttpAuthenticationRequest req;
 	req.session_uuid = get_session_uuid();
 	req.client_ip    = get_remote_info().ip();
+	req.verb         = verb;
 	req.decoded_uri  = decoded_uri;
 	Protocol::copy_key_values(req.params, params);
 	Protocol::copy_key_values(req.headers, headers);
@@ -159,7 +160,7 @@ void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders request_he
 	PROFILE_ME;
 
 	m_decoded_uri = safe_decode_uri(request_headers.uri);
-	AUTO(auth_token, sync_authenticate(m_decoded_uri, request_headers.get_params, request_headers.headers));
+	AUTO(auth_token, sync_authenticate(request_headers.verb, m_decoded_uri, request_headers.get_params, request_headers.headers));
 	LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", auth_token);
 	DEBUG_THROW_ASSERT(!m_auth_token);
 	m_auth_token = STD_MOVE_IDN(auth_token);
@@ -173,7 +174,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		m_decoded_uri = safe_decode_uri(request_headers.uri);
 	}
 	if(!m_auth_token){
-		AUTO(auth_token, sync_authenticate(m_decoded_uri, request_headers.get_params, request_headers.headers));
+		AUTO(auth_token, sync_authenticate(request_headers.verb, m_decoded_uri, request_headers.get_params, request_headers.headers));
 		LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", auth_token);
 		DEBUG_THROW_ASSERT(!m_auth_token);
 		m_auth_token = STD_MOVE_IDN(auth_token);
