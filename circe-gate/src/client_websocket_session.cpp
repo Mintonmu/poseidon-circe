@@ -54,11 +54,6 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 
 	LOG_POSEIDON_FATAL("DATA: ", opcode, ": ", payload);
 }
-void ClientWebSocketSession::on_sync_control_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
-	PROFILE_ME;
-
-	LOG_POSEIDON_FATAL("CONTROL: ", opcode, ": ", payload);
-}
 
 }
 }

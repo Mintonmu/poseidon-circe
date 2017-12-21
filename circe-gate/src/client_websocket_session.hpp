@@ -30,7 +30,6 @@ private:
 
 protected:
 	void on_sync_data_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload) OVERRIDE;
-	void on_sync_control_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload) OVERRIDE;
 
 public:
 	const Poseidon::Uuid &get_session_uuid() const NOEXCEPT {
