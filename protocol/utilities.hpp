@@ -1,15 +1,15 @@
 // 这个文件是 Circe 服务器应用程序框架的一部分。
 // Copyleft 2017, LH_Mouse. All wrongs reserved.
 
-#ifndef CIRCE_COMMON_UTILITIES_HPP_
-#define CIRCE_COMMON_UTILITIES_HPP_
+#ifndef CIRCE_PROTOCOL_UTILITIES_HPP_
+#define CIRCE_PROTOCOL_UTILITIES_HPP_
 
 #include <poseidon/cxx_ver.hpp>
 #include <poseidon/optional_map.hpp>
 #include <boost/container/vector.hpp>
 
 namespace Circe {
-namespace Common {
+namespace Protocol {
 
 template<typename ElementT>
 void copy_key_values(boost::container::vector<ElementT> &vec, const Poseidon::OptionalMap &map){

@@ -6,9 +6,9 @@
 #include "client_http_session.hpp"
 #include "singletons/auth_connector.hpp"
 #include "common/cbpp_response.hpp"
-#include "common/utilities.hpp"
 #include "protocol/error_codes.hpp"
 #include "protocol/messages_gate_auth.hpp"
+#include "protocol/utilities.hpp"
 #include <poseidon/websocket/exception.hpp>
 
 namespace Circe {
@@ -34,7 +34,7 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 	req.session_uuid = get_session_uuid();
 	req.client_ip    = get_remote_info().ip();
 	req.decoded_uri  = decoded_uri;
-	Common::copy_key_values(req.params, params);
+	Protocol::copy_key_values(req.params, params);
 	LOG_CIRCE_TRACE("Sending request: ", req);
 	AUTO(result, Poseidon::wait(auth_connection->send_request(req)));
 	DEBUG_THROW_UNLESS(result.get_err_code() == Protocol::ERR_SUCCESS, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_INTERNAL_ERROR);

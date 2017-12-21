@@ -8,9 +8,9 @@
 #include "mmain.hpp"
 #include "singletons/auth_connector.hpp"
 #include "common/cbpp_response.hpp"
-#include "common/utilities.hpp"
 #include "protocol/error_codes.hpp"
 #include "protocol/messages_gate_auth.hpp"
+#include "protocol/utilities.hpp"
 #include <poseidon/job_base.hpp>
 #include <poseidon/http/request_headers.hpp>
 #include <poseidon/http/response_headers.hpp>
@@ -122,8 +122,8 @@ std::string ClientHttpSession::sync_authenticate(const std::string &decoded_uri,
 	req.session_uuid = get_session_uuid();
 	req.client_ip    = get_remote_info().ip();
 	req.decoded_uri  = decoded_uri;
-	Common::copy_key_values(req.params, params);
-	Common::copy_key_values(req.headers, headers);
+	Protocol::copy_key_values(req.params, params);
+	Protocol::copy_key_values(req.headers, headers);
 	LOG_CIRCE_TRACE("Sending request: ", req);
 	AUTO(result, Poseidon::wait(auth_connection->send_request(req)));
 	DEBUG_THROW_UNLESS(result.get_err_code() == Protocol::ERR_SUCCESS, Poseidon::Http::Exception, Poseidon::Http::ST_INTERNAL_SERVER_ERROR);
@@ -132,7 +132,7 @@ std::string ClientHttpSession::sync_authenticate(const std::string &decoded_uri,
 	resp.deserialize(result.get_payload());
 	LOG_CIRCE_TRACE("Received response: ", req);
 	if((resp.http_status_code != 0) && (resp.http_status_code != Poseidon::Http::ST_OK)){
-		DEBUG_THROW(Poseidon::Http::Exception, resp.http_status_code, Common::extract_key_values(resp.headers));
+		DEBUG_THROW(Poseidon::Http::Exception, resp.http_status_code, Protocol::extract_key_values(resp.headers));
 	}
 	return STD_MOVE(resp.auth_token);
 }
