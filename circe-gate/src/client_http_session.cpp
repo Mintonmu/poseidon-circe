@@ -76,7 +76,7 @@ private:
 		}
 		try {
 			AUTO(auth_token, ws_session->sync_authenticate(http_session->m_decoded_uri, m_request_headers.get_params));
-			LOG_CIRCE_DEBUG("WebSocket authentication succeeded: remote = ", ws_session->get_remote_info(), ", auth_token = ", auth_token);
+			LOG_CIRCE_DEBUG("Auth server has allowed WebSocket client: remote = ", ws_session->get_remote_info(), ", auth_token = ", auth_token);
 			DEBUG_THROW_ASSERT(!ws_session->m_auth_token);
 			ws_session->m_auth_token = STD_MOVE_IDN(auth_token);
 		} catch(Poseidon::WebSocket::Exception &e){
@@ -160,7 +160,7 @@ void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders request_he
 
 	m_decoded_uri = safe_decode_uri(request_headers.uri);
 	AUTO(auth_token, sync_authenticate(m_decoded_uri, request_headers.get_params, request_headers.headers));
-	LOG_CIRCE_DEBUG("HTTP authentication succeeded: remote = ", get_remote_info(), ", auth_token = ", auth_token);
+	LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", auth_token);
 	DEBUG_THROW_ASSERT(!m_auth_token);
 	m_auth_token = STD_MOVE_IDN(auth_token);
 
@@ -174,7 +174,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 	}
 	if(!m_auth_token){
 		AUTO(auth_token, sync_authenticate(m_decoded_uri, request_headers.get_params, request_headers.headers));
-		LOG_CIRCE_DEBUG("HTTP authentication succeeded: remote = ", get_remote_info(), ", auth_token = ", auth_token);
+		LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", auth_token);
 		DEBUG_THROW_ASSERT(!m_auth_token);
 		m_auth_token = STD_MOVE_IDN(auth_token);
 	}
