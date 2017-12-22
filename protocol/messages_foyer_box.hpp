@@ -9,7 +9,7 @@
 namespace Circe {
 namespace Protocol {
 
-#define MESSAGE_NAME   FB_ClientHttpRequest
+#define MESSAGE_NAME   FB_ProcessHttpRequest
 #define MESSAGE_ID     1901
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
@@ -30,7 +30,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   BF_ClientHttpResponse
+#define MESSAGE_NAME   BF_ReturnHttpResponse
 #define MESSAGE_ID     1902
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
@@ -42,7 +42,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   FB_ClientWebSocketEstablishment
+#define MESSAGE_NAME   FB_EstablishWebSocketConnection
 #define MESSAGE_ID     1903
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
@@ -57,7 +57,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   BF_ClientWebSocketAcceptance
+#define MESSAGE_NAME   BF_ReturnWebSocketEstablishmentResult
 #define MESSAGE_ID     1904
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
@@ -65,7 +65,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   FB_ClientWebSocketClosure
+#define MESSAGE_NAME   FB_NotifyWebSocketClosure
 #define MESSAGE_ID     1905
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\

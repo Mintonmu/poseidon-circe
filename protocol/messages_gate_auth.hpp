@@ -9,7 +9,7 @@
 namespace Circe {
 namespace Protocol {
 
-#define MESSAGE_NAME   GA_ClientHttpAuthenticationRequest
+#define MESSAGE_NAME   GA_AuthenticateHttpRequest
 #define MESSAGE_ID     1801
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
@@ -27,7 +27,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   AG_ClientHttpAuthenticationResponse
+#define MESSAGE_NAME   AG_ReturnHttpAuthenticationResult
 #define MESSAGE_ID     1802
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
@@ -39,7 +39,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   GA_ClientWebSocketAuthenticationRequest
+#define MESSAGE_NAME   GA_AuthenticateWebSocketConnection
 #define MESSAGE_ID     1803
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
@@ -52,7 +52,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   AG_ClientWebSocketAuthenticationResponse
+#define MESSAGE_NAME   AG_ReturnWebSocketAuthenticationResult
 #define MESSAGE_ID     1804
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\

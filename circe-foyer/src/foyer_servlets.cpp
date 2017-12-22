@@ -15,10 +15,10 @@
 namespace Circe {
 namespace Foyer {
 
-DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_ClientHttpRequest gate_req){
+DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_ProcessHttpRequest gate_req){
 	const AUTO(box_conn, BoxConnector::get_connection());
 	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
-	Protocol::FB_ClientHttpRequest box_req;
+	Protocol::FB_ProcessHttpRequest box_req;
 	box_req.gate_uuid   = gate_conn->get_connection_uuid();
 	box_req.client_uuid = gate_req.client_uuid;
 	box_req.client_ip   = STD_MOVE(gate_req.client_ip);
@@ -29,20 +29,20 @@ DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_
 	Protocol::copy_key_values(box_req.headers, STD_MOVE(gate_req.headers));
 	box_req.entity      = STD_MOVE(gate_req.entity);
 	LOG_CIRCE_TRACE("Sending request: ", box_req);
-	Protocol::BF_ClientHttpResponse box_resp;
+	Protocol::BF_ReturnHttpResponse box_resp;
 	Common::wait_for_response(box_resp, box_conn->send_request(box_req));
 	LOG_CIRCE_TRACE("Received response: ", box_resp);
-	Protocol::FG_ClientHttpResponse gate_resp;
+	Protocol::FG_ReturnHttpResponse gate_resp;
 	gate_resp.status_code = box_resp.status_code;
 	Protocol::copy_key_values(gate_resp.headers, STD_MOVE(box_resp.headers));
 	gate_resp.entity      = STD_MOVE(box_resp.entity);
 	return gate_resp;
 }
 
-DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_ClientWebSocketEstablishment gate_req){
+DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_EstablishWebSocketConnection gate_req){
 	const AUTO(box_conn, BoxConnector::get_connection());
 	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
-	Protocol::FB_ClientWebSocketEstablishment box_req;
+	Protocol::FB_EstablishWebSocketConnection box_req;
 	box_req.gate_uuid   = gate_conn->get_connection_uuid();
 	box_req.client_uuid = gate_req.client_uuid;
 	box_req.client_ip   = STD_MOVE(gate_req.client_ip);
@@ -50,19 +50,19 @@ DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_
 	box_req.decoded_uri = STD_MOVE(gate_req.decoded_uri);
 	Protocol::copy_key_values(box_req.params, STD_MOVE(gate_req.params));
 	LOG_CIRCE_TRACE("Sending request: ", box_req);
-	Protocol::BF_ClientWebSocketAcceptance box_resp;
+	Protocol::BF_ReturnWebSocketEstablishmentResult box_resp;
 	Common::wait_for_response(box_resp, box_conn->send_request(box_req));
 	LOG_CIRCE_TRACE("Received response: ", box_resp);
-	Protocol::FG_ClientWebSocketAcceptance gate_resp;
+	Protocol::FG_ReturnWebSocketEstablishmentResult gate_resp;
 	gate_resp.status_code = box_resp.status_code;
 	gate_resp.message     = STD_MOVE(box_resp.message);
 	return gate_resp;
 }
 
-DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_ClientWebSocketClosure gate_ntfy){
+DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_NotifyWebSocketClosure gate_ntfy){
 	const AUTO(box_conn, BoxConnector::get_connection());
 	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
-	Protocol::FB_ClientWebSocketClosure box_ntfy;
+	Protocol::FB_NotifyWebSocketClosure box_ntfy;
 	box_ntfy.gate_uuid   = gate_conn->get_connection_uuid();
 	box_ntfy.client_uuid = gate_ntfy.client_uuid;
 	box_ntfy.status_code = gate_ntfy.status_code;

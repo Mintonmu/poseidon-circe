@@ -84,13 +84,13 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 
 	const AUTO(auth_conn, AuthConnector::get_connection());
 	DEBUG_THROW_UNLESS(auth_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY);
-	Protocol::GA_ClientWebSocketAuthenticationRequest auth_req;
+	Protocol::GA_AuthenticateWebSocketConnection auth_req;
 	auth_req.client_uuid = get_session_uuid();
 	auth_req.client_ip   = get_remote_info().ip();
 	auth_req.decoded_uri = decoded_uri;
 	Protocol::copy_key_values(auth_req.params, params);
 	LOG_CIRCE_TRACE("Sending request: ", auth_req);
-	Protocol::AG_ClientWebSocketAuthenticationResponse auth_resp;
+	Protocol::AG_ReturnWebSocketAuthenticationResult auth_resp;
 	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 	LOG_CIRCE_TRACE("Received response: ", auth_resp);
 	if(auth_resp.status_code != 0){
@@ -99,14 +99,14 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 
 	const AUTO(foyer_conn, FoyerConnector::get_connection());
 	DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY);
-	Protocol::GF_ClientWebSocketEstablishment foyer_req;
+	Protocol::GF_EstablishWebSocketConnection foyer_req;
 	foyer_req.client_uuid = get_session_uuid();
 	foyer_req.client_ip   = get_remote_info().ip();
 	foyer_req.auth_token  = auth_resp.auth_token;
 	foyer_req.decoded_uri = decoded_uri;
 	Protocol::copy_key_values(auth_req.params, params);
 	LOG_CIRCE_TRACE("Sending request: ", foyer_req);
-	Protocol::FG_ClientWebSocketAcceptance foyer_resp;
+	Protocol::FG_ReturnWebSocketEstablishmentResult foyer_resp;
 	Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
 	LOG_CIRCE_TRACE("Received response: ", foyer_resp);
 	if(foyer_resp.status_code != 0){
@@ -124,7 +124,7 @@ void ClientWebSocketSession::sync_notify_foyer_about_closure(Poseidon::WebSocket
 		return;
 	}
 	try {
-		Protocol::GF_ClientWebSocketClosure foyer_ntfy;
+		Protocol::GF_NotifyWebSocketClosure foyer_ntfy;
 		foyer_ntfy.client_uuid = get_session_uuid();
 		foyer_ntfy.client_ip   = get_remote_info().ip();
 		foyer_ntfy.status_code = status_code;
@@ -155,6 +155,7 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 	PROFILE_ME;
 
 	LOG_POSEIDON_FATAL("DATA: ", opcode, ": ", payload);
+	send(Poseidon::WebSocket::OP_DATA_TEXT, Poseidon::StreamBuffer("hello world!"));
 }
 void ClientWebSocketSession::on_sync_control_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
 	PROFILE_ME;

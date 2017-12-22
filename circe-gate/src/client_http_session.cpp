@@ -120,7 +120,7 @@ std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, cons
 
 	const AUTO(auth_conn, AuthConnector::get_connection());
 	DEBUG_THROW_UNLESS(auth_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
-	Protocol::GA_ClientHttpAuthenticationRequest auth_req;
+	Protocol::GA_AuthenticateHttpRequest auth_req;
 	auth_req.client_uuid = get_session_uuid();
 	auth_req.client_ip   = get_remote_info().ip();
 	auth_req.verb        = verb;
@@ -128,7 +128,7 @@ std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, cons
 	Protocol::copy_key_values(auth_req.params, params);
 	Protocol::copy_key_values(auth_req.headers, headers);
 	LOG_CIRCE_TRACE("Sending request: ", auth_req);
-	Protocol::AG_ClientHttpAuthenticationResponse auth_resp;
+	Protocol::AG_ReturnHttpAuthenticationResult auth_resp;
 	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 	LOG_CIRCE_TRACE("Received response: ", auth_req);
 	if((auth_resp.status_code != 0) && (auth_resp.status_code != Poseidon::Http::ST_OK)){
@@ -196,7 +196,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 
 		const AUTO(foyer_conn, FoyerConnector::get_connection());
 		DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
-		Protocol::GF_ClientHttpRequest foyer_req;
+		Protocol::GF_ProcessHttpRequest foyer_req;
 		foyer_req.client_uuid = get_session_uuid();
 		foyer_req.client_ip   = get_remote_info().ip();
 		foyer_req.auth_token  = m_auth_token.get();
@@ -206,7 +206,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		Protocol::copy_key_values(foyer_req.headers, STD_MOVE(request_headers.headers));
 		foyer_req.entity      = request_entity.dump_byte_string();
 		// LOG_CIRCE_TRACE("Sending request: ", foyer_req);
-		Protocol::FG_ClientHttpResponse foyer_resp;
+		Protocol::FG_ReturnHttpResponse foyer_resp;
 		Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
 		// LOG_CIRCE_TRACE("Received response: ", foyer_req);
 		response_headers.status_code = foyer_resp.status_code;
