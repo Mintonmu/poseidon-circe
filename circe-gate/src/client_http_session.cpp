@@ -268,6 +268,8 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 	} else {
 		send(STD_MOVE(response_headers), STD_MOVE(response_entity));
 	}
+
+	// HTTP is stateless.
 	m_decoded_uri.clear();
 	m_auth_token.reset();
 }
