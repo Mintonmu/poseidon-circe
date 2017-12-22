@@ -32,7 +32,8 @@ lib_libcirce_gate_la_SOURCES = \
 	circe-gate/src/singletons/client_http_acceptor.cpp	\
 	circe-gate/src/singletons/auth_connector.cpp	\
 	circe-gate/src/singletons/foyer_connector.cpp	\
-	circe-gate/src/mmain.cpp
+	circe-gate/src/mmain.cpp	\
+	circe-gate/src/servlets.cpp
 
 lib_libcirce_gate_la_LDFLAGS = \
 	-module -no-undefined -version-info 0:0:0
