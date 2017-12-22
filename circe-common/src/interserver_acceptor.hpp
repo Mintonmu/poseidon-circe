@@ -7,20 +7,21 @@
 #include <poseidon/fwd.hpp>
 #include <poseidon/virtual_shared_from_this.hpp>
 #include <poseidon/mutex.hpp>
-#include "interserver_servlet_container.hpp"
 
 namespace Circe {
 namespace Common {
 
+class InterserverServletContainer;
 class InterserverConnection;
 class CbppResponse;
 
-class InterserverAcceptor : public virtual Poseidon::VirtualSharedFromThis, public InterserverServletContainer {
+class InterserverAcceptor : public virtual Poseidon::VirtualSharedFromThis {
 private:
 	class InterserverSession;
 	class InterserverServer;
 
 private:
+	const boost::weak_ptr<const InterserverServletContainer> m_weak_servlet_container;
 	const std::string m_bind;
 	const unsigned m_port;
 	const std::string m_application_key;
@@ -30,7 +31,7 @@ private:
 	boost::container::flat_map<Poseidon::Uuid, boost::weak_ptr<InterserverSession> > m_weak_sessions;
 
 public:
-	InterserverAcceptor(std::string bind, unsigned port, std::string application_key);
+	InterserverAcceptor(const boost::shared_ptr<const InterserverServletContainer> &servlet_container, std::string bind, unsigned port, std::string application_key);
 	~InterserverAcceptor() OVERRIDE;
 
 public:

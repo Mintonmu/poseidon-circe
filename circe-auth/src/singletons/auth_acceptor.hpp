@@ -5,7 +5,6 @@
 #define CIRCE_AUTH_SINGLETONS_AUTH_ACCEPTOR_HPP_
 
 #include "common/interserver_connection.hpp"
-#include "common/interserver_servlet_container.hpp"
 
 namespace Circe {
 namespace Auth {
@@ -15,9 +14,6 @@ private:
 	AuthAcceptor();
 
 public:
-	static void insert_servlet(boost::uint16_t message_id, const boost::shared_ptr<Common::InterserverServletCallback> &servlet);
-	static bool remove_servlet(boost::uint16_t message_id) NOEXCEPT;
-
 	static boost::shared_ptr<Common::InterserverConnection> get_session(const Poseidon::Uuid &connection_uuid);
 	static void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };

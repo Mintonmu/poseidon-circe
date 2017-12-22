@@ -14,6 +14,7 @@ pkginclude_HEADERS =
 
 pkginclude_gatedir = $(pkgincludedir)/gate
 pkginclude_gate_HEADERS = \
+	circe-gate/src/singletons/servlet_container.hpp	\
 	circe-gate/src/client_http_session.hpp	\
 	circe-gate/src/client_websocket_session.hpp	\
 	circe-gate/src/singletons/client_http_acceptor.hpp	\
@@ -25,6 +26,7 @@ lib_LTLIBRARIES = \
 	lib/libcirce-gate.la
 
 lib_libcirce_gate_la_SOURCES = \
+	circe-gate/src/singletons/servlet_container.cpp	\
 	circe-gate/src/client_http_session.cpp	\
 	circe-gate/src/client_websocket_session.cpp	\
 	circe-gate/src/singletons/client_http_acceptor.cpp	\

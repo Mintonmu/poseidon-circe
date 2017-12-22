@@ -4,6 +4,7 @@
 #include "precompiled.hpp"
 #include "interserver_connector.hpp"
 #include "interserver_connection.hpp"
+#include "interserver_servlet_container.hpp"
 #include "cbpp_response.hpp"
 #include <poseidon/singletons/epoll_daemon.hpp>
 #include <poseidon/cbpp/exception.hpp>
@@ -88,9 +89,11 @@ protected:
 		PROFILE_ME;
 
 		const AUTO(parent, m_weak_parent.lock());
-		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("InterserverConnector has been shut down"));
+		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		const AUTO(servlet_container, parent->m_weak_servlet_container.lock());
+		DEBUG_THROW_UNLESS(servlet_container, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("Shutdown in progress"));
 
-		const AUTO(servlet, parent->get_servlet(message_id));
+		const AUTO(servlet, servlet_container->get_servlet(message_id));
 		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Protocol::ERR_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverClient>(), message_id, STD_MOVE(payload));
 	}
@@ -152,8 +155,8 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 	}
 }
 
-InterserverConnector::InterserverConnector(std::vector<std::string> hosts, unsigned port, std::string application_key)
-	: m_hosts(STD_MOVE(hosts)), m_port(port), m_application_key(STD_MOVE(application_key))
+InterserverConnector::InterserverConnector(const boost::shared_ptr<const InterserverServletContainer> &servlet_container, std::vector<std::string> hosts, unsigned port, std::string application_key)
+	: m_weak_servlet_container(servlet_container), m_hosts(STD_MOVE(hosts)), m_port(port), m_application_key(STD_MOVE(application_key))
 {
 	LOG_CIRCE_INFO("InterserverConnector constructor: hosts:port = ", Poseidon::implode(',', m_hosts), ":", m_port);
 }

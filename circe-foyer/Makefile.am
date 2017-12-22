@@ -14,6 +14,7 @@ pkginclude_HEADERS =
 
 pkginclude_foyerdir = $(pkgincludedir)/foyer
 pkginclude_foyer_HEADERS = \
+	circe-foyer/src/singletons/servlet_container.hpp	\
 	circe-foyer/src/singletons/foyer_acceptor.hpp	\
 	circe-foyer/src/singletons/box_connector.hpp	\
 	circe-foyer/src/mmain.hpp
@@ -22,10 +23,11 @@ lib_LTLIBRARIES = \
 	lib/libcirce-foyer.la
 
 lib_libcirce_foyer_la_SOURCES = \
+	circe-foyer/src/singletons/servlet_container.cpp	\
 	circe-foyer/src/singletons/foyer_acceptor.cpp	\
 	circe-foyer/src/singletons/box_connector.cpp	\
-	circe-foyer/src/foyer_servlets.cpp	\
-	circe-foyer/src/mmain.cpp
+	circe-foyer/src/mmain.cpp	\
+	circe-foyer/src/servlets.cpp
 
 lib_libcirce_foyer_la_LDFLAGS = \
 	-module -no-undefined -version-info 0:0:0

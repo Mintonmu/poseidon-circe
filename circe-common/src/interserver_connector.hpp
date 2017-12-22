@@ -7,15 +7,15 @@
 #include <poseidon/fwd.hpp>
 #include <poseidon/virtual_shared_from_this.hpp>
 #include <poseidon/mutex.hpp>
-#include "interserver_servlet_container.hpp"
 
 namespace Circe {
 namespace Common {
 
+class InterserverServletContainer;
 class InterserverConnection;
 class CbppResponse;
 
-class InterserverConnector : public virtual Poseidon::VirtualSharedFromThis, public InterserverServletContainer {
+class InterserverConnector : public virtual Poseidon::VirtualSharedFromThis {
 private:
 	class InterserverClient;
 
@@ -23,6 +23,7 @@ private:
 	static void timer_proc(const boost::weak_ptr<InterserverConnector> &weak_connector);
 
 private:
+	const boost::weak_ptr<const InterserverServletContainer> m_weak_servlet_container;
 	const std::vector<std::string> m_hosts;
 	const unsigned m_port;
 	const std::string m_application_key;
@@ -32,7 +33,7 @@ private:
 	std::vector<boost::weak_ptr<InterserverClient> > m_weak_clients;
 
 public:
-	InterserverConnector(std::vector<std::string> hosts, unsigned port, std::string application_key);
+	InterserverConnector(const boost::shared_ptr<const InterserverServletContainer> &servlet_container, std::vector<std::string> hosts, unsigned port, std::string application_key);
 	~InterserverConnector() OVERRIDE;
 
 public:

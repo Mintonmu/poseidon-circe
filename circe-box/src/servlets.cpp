@@ -2,12 +2,13 @@
 // Copyleft 2017, LH_Mouse. All wrongs reserved.
 
 #include "precompiled.hpp"
-#include "singletons/box_acceptor.hpp"
+#include "singletons/servlet_container.hpp"
+#include "common/interserver_connection.hpp"
 #include "common/define_interserver_servlet_for.hpp"
 #include "protocol/error_codes.hpp"
 #include "protocol/messages_foyer_box.hpp"
 
-#define DEFINE_SERVLET_FOR(...)   CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(::Circe::Box::BoxAcceptor::insert_servlet, __VA_ARGS__)
+#define DEFINE_SERVLET_FOR(...)   CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(::Circe::Box::ServletContainer::insert_servlet, __VA_ARGS__)
 
 namespace Circe {
 namespace Box {
