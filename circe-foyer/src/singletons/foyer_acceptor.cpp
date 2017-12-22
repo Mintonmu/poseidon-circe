@@ -21,7 +21,7 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 	const AUTO(port, get_config<boost::uint16_t>("foyer_acceptor_port", 10812));
 	const AUTO(appkey, get_config<std::string>("foyer_acceptor_appkey", "testkey"));
 	LOG_CIRCE_INFO("Initializing FoyerAcceptor...");
-	const AUTO(acceptor, boost::make_shared<Common::InterserverAcceptor>(ServletContainer::get_container(), bind, port, appkey));
+	const AUTO(acceptor, boost::make_shared<Common::InterserverAcceptor>(ServletContainer::get_safe_container(), bind, port, appkey));
 	acceptor->activate();
 	handles.push(acceptor);
 	g_weak_acceptor = acceptor;

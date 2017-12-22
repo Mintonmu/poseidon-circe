@@ -21,7 +21,7 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 	const AUTO(port, get_config<boost::uint16_t>("box_acceptor_port", 10819));
 	const AUTO(appkey, get_config<std::string>("box_acceptor_appkey", "testkey"));
 	LOG_CIRCE_INFO("Initializing BoxAcceptor...");
-	const AUTO(acceptor, boost::make_shared<Common::InterserverAcceptor>(ServletContainer::get_container(), bind, port, appkey));
+	const AUTO(acceptor, boost::make_shared<Common::InterserverAcceptor>(ServletContainer::get_safe_container(), bind, port, appkey));
 	acceptor->activate();
 	handles.push(acceptor);
 	g_weak_acceptor = acceptor;

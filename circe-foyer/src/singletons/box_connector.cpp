@@ -20,7 +20,7 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 	const AUTO(hosts, get_config_v<std::string>("box_connector_host"));
 	const AUTO(port, get_config<boost::uint16_t>("box_connector_port", 10819));
 	const AUTO(appkey, get_config<std::string>("box_connector_appkey", "testkey"));
-	const AUTO(connector, boost::make_shared<Common::InterserverConnector>(ServletContainer::get_container(), hosts, port, appkey));
+	const AUTO(connector, boost::make_shared<Common::InterserverConnector>(ServletContainer::get_safe_container(), hosts, port, appkey));
 	connector->activate();
 	handles.push(connector);
 	g_weak_connector = connector;
