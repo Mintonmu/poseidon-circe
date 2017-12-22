@@ -7,6 +7,7 @@
 #include <poseidon/cbpp/message_base.hpp>
 #include <poseidon/stream_buffer.hpp>
 #include <boost/cstdint.hpp>
+#include <iosfwd>
 #include "protocol/error_codes.hpp"
 
 namespace Circe {
@@ -21,6 +22,7 @@ private:
 	Poseidon::StreamBuffer m_payload;
 
 public:
+	CbppResponse();
 	CbppResponse(long err_code, std::string err_msg = std::string());
 	CbppResponse(boost::uint64_t message_id, Poseidon::StreamBuffer payload);
 	CbppResponse(const Poseidon::Cbpp::MessageBase &msg);
@@ -47,6 +49,8 @@ public:
 		return m_payload;
 	}
 };
+
+extern std::ostream &operator<<(std::ostream &os, const CbppResponse &rhs);
 
 }
 }
