@@ -17,7 +17,12 @@ DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &foyer
 
 	Protocol::BF_ClientHttpResponse foyer_resp;
 	foyer_resp.status_code = 200;
-	foyer_resp.entity      = (const unsigned char *)"hello world!\n";
+	foyer_resp.headers.resize(2);
+	foyer_resp.headers.at(0).key   = "Content-Type";
+	foyer_resp.headers.at(0).value = "text/plain";
+	foyer_resp.headers.at(1).key   = "X-FANCY";
+	foyer_resp.headers.at(1).value = "TRUE";
+	foyer_resp.entity      = (const unsigned char *)"<h1>hello world!</h1>";
 	return foyer_resp;
 }
 

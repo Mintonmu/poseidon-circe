@@ -132,7 +132,7 @@ std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, cons
 	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 	LOG_CIRCE_TRACE("Received response: ", auth_req);
 	if((auth_resp.status_code != 0) && (auth_resp.status_code != Poseidon::Http::ST_OK)){
-		DEBUG_THROW(Poseidon::Http::Exception, auth_resp.status_code, Protocol::extract_key_values(STD_MOVE(auth_resp.headers)));
+		DEBUG_THROW(Poseidon::Http::Exception, auth_resp.status_code, Protocol::copy_key_values(STD_MOVE(auth_resp.headers)));
 	}
 	return STD_MOVE(auth_resp.auth_token);
 }
@@ -211,7 +211,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
 		// LOG_CIRCE_TRACE("Received response: ", foyer_req);
 		response_headers.status_code = foyer_resp.status_code;
-		response_headers.headers     = Protocol::extract_key_values(STD_MOVE(foyer_resp.headers));
+		response_headers.headers     = Protocol::copy_key_values(STD_MOVE(foyer_resp.headers));
 		response_entity              = Poseidon::StreamBuffer(foyer_resp.entity);
 		break; }
 
