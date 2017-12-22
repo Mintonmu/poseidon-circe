@@ -10,10 +10,10 @@ AM_LIBS =
 	$(CXX) -x c++-header @DEFS@ $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -Wno-error $< -o $@
 
 BUILT_SOURCES = \
-	src/precompiled.hpp.gch
+	circe-common/src/precompiled.hpp.gch
 
 CLEANFILES = \
-	src/precompiled.hpp.gch
+	circe-common/src/precompiled.hpp.gch
 
 sysconf_DATA =
 
@@ -34,26 +34,26 @@ pkginclude_protocol_HEADERS = \
 
 pkginclude_commondir = $(pkgincludedir)/common
 pkginclude_common_HEADERS = \
-	src/cbpp_response.hpp	\
-	src/interserver_servlet_callback.hpp	\
-	src/interserver_connection.hpp	\
-	src/interserver_servlet_container.hpp	\
-	src/interserver_connector.hpp	\
-	src/interserver_acceptor.hpp	\
-	src/define_interserver_servlet_for.hpp	\
-	src/mmain.hpp
+	circe-common/src/cbpp_response.hpp	\
+	circe-common/src/interserver_servlet_callback.hpp	\
+	circe-common/src/interserver_connection.hpp	\
+	circe-common/src/interserver_servlet_container.hpp	\
+	circe-common/src/interserver_connector.hpp	\
+	circe-common/src/interserver_acceptor.hpp	\
+	circe-common/src/define_interserver_servlet_for.hpp	\
+	circe-common/src/mmain.hpp
 
 lib_LTLIBRARIES = \
 	lib/libcirce-common.la
 
 lib_libcirce_common_la_SOURCES = \
 	../protocol/messages.cpp	\
-	src/cbpp_response.cpp	\
-	src/interserver_connection.cpp	\
-	src/interserver_servlet_container.cpp	\
-	src/interserver_connector.cpp	\
-	src/interserver_acceptor.cpp	\
-	src/mmain.cpp
+	circe-common/src/cbpp_response.cpp	\
+	circe-common/src/interserver_connection.cpp	\
+	circe-common/src/interserver_servlet_container.cpp	\
+	circe-common/src/interserver_connector.cpp	\
+	circe-common/src/interserver_acceptor.cpp	\
+	circe-common/src/mmain.cpp
 
 lib_libcirce_common_la_LDFLAGS = \
 	-module -no-undefined -version-info 0:0:0

@@ -14,16 +14,16 @@ pkginclude_HEADERS =
 
 pkginclude_boxdir = $(pkgincludedir)/box
 pkginclude_box_HEADERS = \
-	src/singletons/box_acceptor.hpp	\
-	src/mmain.hpp
+	circe-box/src/singletons/box_acceptor.hpp	\
+	circe-box/src/mmain.hpp
 
 lib_LTLIBRARIES = \
 	lib/libcirce-box.la
 
 lib_libcirce_box_la_SOURCES = \
-	src/singletons/box_acceptor.cpp	\
-	src/box_servlets.cpp	\
-	src/mmain.cpp
+	circe-box/src/singletons/box_acceptor.cpp	\
+	circe-box/src/box_servlets.cpp	\
+	circe-box/src/mmain.cpp
 
 lib_libcirce_box_la_LDFLAGS = \
 	-module -no-undefined -version-info 0:0:0

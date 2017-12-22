@@ -14,16 +14,16 @@ pkginclude_HEADERS =
 
 pkginclude_authdir = $(pkgincludedir)/auth
 pkginclude_auth_HEADERS = \
-	src/singletons/auth_acceptor.hpp	\
-	src/mmain.hpp
+	circe-auth/src/singletons/auth_acceptor.hpp	\
+	circe-auth/src/mmain.hpp
 
 lib_LTLIBRARIES = \
 	lib/libcirce-auth.la
 
 lib_libcirce_auth_la_SOURCES = \
-	src/singletons/auth_acceptor.cpp	\
-	src/auth_servlets.cpp	\
-	src/mmain.cpp
+	circe-auth/src/singletons/auth_acceptor.cpp	\
+	circe-auth/src/auth_servlets.cpp	\
+	circe-auth/src/mmain.cpp
 
 lib_libcirce_auth_la_LDFLAGS = \
 	-module -no-undefined -version-info 0:0:0
