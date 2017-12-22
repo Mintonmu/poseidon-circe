@@ -8,27 +8,25 @@ AM_LIBS =
 
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
-	etc/circe/circe-foyer-template.conf
+	etc/circe/circe-box-template.conf
 
 pkginclude_HEADERS =
 
-pkginclude_foyerdir = $(pkgincludedir)/foyer
-pkginclude_foyer_HEADERS = \
-	src/singletons/foyer_acceptor.hpp	\
-	src/singletons/box_connector.hpp	\
+pkginclude_boxdir = $(pkgincludedir)/box
+pkginclude_box_HEADERS = \
+	src/singletons/box_acceptor.hpp	\
 	src/mmain.hpp
 
 lib_LTLIBRARIES = \
-	lib/libcirce-foyer.la
+	lib/libcirce-box.la
 
-lib_libcirce_foyer_la_SOURCES = \
-	src/singletons/foyer_acceptor.cpp	\
-	src/singletons/box_connector.cpp	\
-	src/foyer_servlets.cpp	\
+lib_libcirce_box_la_SOURCES = \
+	src/singletons/box_acceptor.cpp	\
+	src/box_servlets.cpp	\
 	src/mmain.cpp
 
-lib_libcirce_foyer_la_LDFLAGS = \
+lib_libcirce_box_la_LDFLAGS = \
 	-module -no-undefined -version-info 0:0:0
 
-lib_libcirce_foyer_la_LIBADD = \
+lib_libcirce_box_la_LIBADD = \
 	../circe-common/lib/libcirce-common.la

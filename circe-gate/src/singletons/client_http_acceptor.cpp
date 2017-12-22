@@ -48,17 +48,17 @@ namespace {
 	};
 
 	boost::weak_ptr<ClientTcpAcceptor> g_weak_acceptor;
+}
 
-	MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
-		const AUTO(bind, get_config<std::string>("client_http_acceptor_bind", "127.0.0.1"));
-		const AUTO(port, get_config<boost::uint16_t>("client_http_acceptor_port", 10810));
-		const AUTO(cert, get_config<std::string>("client_http_acceptor_certificate"));
-		const AUTO(pkey, get_config<std::string>("client_http_acceptor_private_key"));
-		const AUTO(acceptor, boost::make_shared<ClientTcpAcceptor>(bind, port, cert, pkey));
-		Poseidon::EpollDaemon::add_socket(acceptor, false);
-		handles.push(acceptor);
-		g_weak_acceptor = acceptor;
-	}
+MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
+	const AUTO(bind, get_config<std::string>("client_http_acceptor_bind", "127.0.0.1"));
+	const AUTO(port, get_config<boost::uint16_t>("client_http_acceptor_port", 10810));
+	const AUTO(cert, get_config<std::string>("client_http_acceptor_certificate"));
+	const AUTO(pkey, get_config<std::string>("client_http_acceptor_private_key"));
+	const AUTO(acceptor, boost::make_shared<ClientTcpAcceptor>(bind, port, cert, pkey));
+	Poseidon::EpollDaemon::add_socket(acceptor, false);
+	handles.push(acceptor);
+	g_weak_acceptor = acceptor;
 }
 
 boost::shared_ptr<ClientHttpSession> ClientHttpAcceptor::get_session(const Poseidon::Uuid &session_uuid){

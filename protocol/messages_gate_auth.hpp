@@ -10,9 +10,9 @@ namespace Circe {
 namespace Protocol {
 
 #define MESSAGE_NAME   GA_ClientHttpAuthenticationRequest
-#define MESSAGE_ID     1101
+#define MESSAGE_ID     1901
 #define MESSAGE_FIELDS \
-	FIELD_FIXED        (session_uuid, 16)	\
+	FIELD_FIXED        (client_uuid, 16)	\
 	FIELD_STRING       (client_ip)	\
 	FIELD_VUINT        (verb)	\
 	FIELD_STRING       (decoded_uri)	\
@@ -28,9 +28,9 @@ namespace Protocol {
 #include <poseidon/cbpp/message_generator.hpp>
 
 #define MESSAGE_NAME   AG_ClientHttpAuthenticationResponse
-#define MESSAGE_ID     1102
+#define MESSAGE_ID     1902
 #define MESSAGE_FIELDS \
-	FIELD_VUINT        (http_status_code)	\
+	FIELD_VUINT        (status_code)	\
 	FIELD_ARRAY        (headers,	\
 	  FIELD_STRING       (key)	\
 	  FIELD_STRING       (value)	\
@@ -40,9 +40,9 @@ namespace Protocol {
 #include <poseidon/cbpp/message_generator.hpp>
 
 #define MESSAGE_NAME   GA_ClientWebSocketAuthenticationRequest
-#define MESSAGE_ID     1103
+#define MESSAGE_ID     1903
 #define MESSAGE_FIELDS \
-	FIELD_FIXED        (session_uuid, 16)	\
+	FIELD_FIXED        (client_uuid, 16)	\
 	FIELD_STRING       (client_ip)	\
 	FIELD_STRING       (decoded_uri)	\
 	FIELD_ARRAY        (params,	\
@@ -53,9 +53,9 @@ namespace Protocol {
 #include <poseidon/cbpp/message_generator.hpp>
 
 #define MESSAGE_NAME   AG_ClientWebSocketAuthenticationResponse
-#define MESSAGE_ID     1104
+#define MESSAGE_ID     1904
 #define MESSAGE_FIELDS \
-	FIELD_VUINT        (websocket_status_code)	\
+	FIELD_VUINT        (status_code)	\
 	FIELD_STRING       (message)	\
 	FIELD_STRING       (auth_token)	\
 	//

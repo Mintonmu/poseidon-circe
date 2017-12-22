@@ -20,6 +20,8 @@ namespace Common {
 
 class CbppResponse;
 
+typedef Poseidon::PromiseContainer<CbppResponse> PromisedResponse;
+
 class InterserverConnection : public virtual Poseidon::VirtualSharedFromThis {
 private:
 	class MessageFilter;
@@ -31,8 +33,6 @@ public:
 		MESSAGE_ID_MAX  = 0x0FFF,
 	};
 	BOOST_STATIC_ASSERT((MESSAGE_ID_MAX & (MESSAGE_ID_MAX + 1)) == 0);
-
-	typedef Poseidon::PromiseContainer<CbppResponse> PromisedResponse;
 
 public:
 	static CONSTEXPR bool is_message_id_valid(boost::uint64_t message_id){
@@ -115,6 +115,8 @@ public:
 	void send_notification(boost::uint16_t message_id, Poseidon::StreamBuffer payload);
 	void send_notification(const Poseidon::Cbpp::MessageBase &msg);
 };
+
+extern void wait_for_response(Poseidon::Cbpp::MessageBase &msg, const boost::shared_ptr<const PromisedResponse> &promise);
 
 }
 }

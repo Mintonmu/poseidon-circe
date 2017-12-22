@@ -1,0 +1,23 @@
+// 这个文件是 Circe 服务器应用程序框架的一部分。
+// Copyleft 2017, LH_Mouse. All wrongs reserved.
+
+#ifndef CIRCE_GATE_SINGLETONS_FOYER_CONNECTOR_HPP_
+#define CIRCE_GATE_SINGLETONS_FOYER_CONNECTOR_HPP_
+
+#include "common/interserver_connection.hpp"
+
+namespace Circe {
+namespace Gate {
+
+class FoyerConnector {
+private:
+	FoyerConnector();
+
+public:
+	static boost::shared_ptr<Common::InterserverConnection> get_connection();
+};
+
+}
+}
+
+#endif

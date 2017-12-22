@@ -21,7 +21,8 @@ private:
 	Poseidon::StreamBuffer m_payload;
 
 public:
-	CbppResponse(long err_code = Protocol::ERR_SUCCESS, std::string err_msg = std::string());
+	CbppResponse();
+	CbppResponse(long err_code, std::string err_msg = std::string());
 	CbppResponse(boost::uint64_t message_id, Poseidon::StreamBuffer payload);
 	CbppResponse(const Poseidon::Cbpp::MessageBase &msg);
 	~CbppResponse();

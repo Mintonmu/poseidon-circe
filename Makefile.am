@@ -6,10 +6,12 @@ EXTRA_DIST = \
 	etc/circe/circe-common-template.conf	\
 	etc/circe/circe-gate-template.conf	\
 	etc/circe/circe-foyer-template.conf	\
-	etc/circe/circe-auth-template.conf
+	etc/circe/circe-auth-template.conf	\
+	etc/circe/circe-box-template.conf
 
 SUBDIRS = \
 	circe-common	\
 	circe-gate	\
 	circe-foyer	\
-	circe-auth
+	circe-auth	\
+	circe-box

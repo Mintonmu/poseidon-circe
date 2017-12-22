@@ -25,7 +25,10 @@ namespace ErrorCodes {
 		ERR_INVALID_ARGUMENT                  =   -13,
 		ERR_UNSUPPORTED                       =   -14,
 
-		ERR_FOYER_CONNECTION_LOST             = 50001,
+		ERR_GATE_CONNECTION_LOST              = 50001,
+		ERR_AUTH_CONNECTION_LOST              = 50002,
+		ERR_FOYER_CONNECTION_LOST             = 50003,
+		ERR_BOX_CONNECTION_LOST               = 50004,
 	};
 }
 using namespace ErrorCodes;

@@ -2,33 +2,35 @@
 // Copyleft 2017, LH_Mouse. All wrongs reserved.
 
 #include "precompiled.hpp"
-#include "foyer_connector.hpp"
+#include "box_connector.hpp"
 #include "common/interserver_connector.hpp"
 #include "../mmain.hpp"
 
 namespace Circe {
-namespace Gate {
+namespace Foyer {
 
 namespace {
 	boost::weak_ptr<Common::InterserverConnector> g_weak_connector;
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
-	const AUTO(hosts, get_config_v<std::string>("foyer_connector_host"));
-	const AUTO(port, get_config<boost::uint16_t>("foyer_connector_port", 10812));
-	const AUTO(appkey, get_config<std::string>("foyer_connector_appkey", "testkey"));
+	PROFILE_ME;
+
+	const AUTO(hosts, get_config_v<std::string>("box_connector_host"));
+	const AUTO(port, get_config<boost::uint16_t>("box_connector_port", 10819));
+	const AUTO(appkey, get_config<std::string>("box_connector_appkey", "testkey"));
 	const AUTO(connector, boost::make_shared<Common::InterserverConnector>(hosts, port, appkey));
 	connector->activate();
 	handles.push(connector);
 	g_weak_connector = connector;
 }
 
-boost::shared_ptr<Common::InterserverConnection> FoyerConnector::get_connection(){
+boost::shared_ptr<Common::InterserverConnection> BoxConnector::get_connection(){
 	PROFILE_ME;
 
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
-		LOG_CIRCE_WARNING("FoyerConnector has not been initialized.");
+		LOG_CIRCE_WARNING("BoxConnector has not been initialized.");
 		return VAL_INIT;
 	}
 	return connector->get_client();

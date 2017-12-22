@@ -486,7 +486,7 @@ void InterserverConnection::layer4_on_close(){
 		if(!promise){
 			continue;
 		}
-		static const AUTO(s_exception, STD_MAKE_EXCEPTION_PTR(Poseidon::TinyException("Connection is lost before a response could be received")));
+		static const AUTO(s_exception, STD_MAKE_EXCEPTION_PTR(Poseidon::TinyException("Connection was lost before a response could be received")));
 		promise->set_exception(s_exception, false);
 	}
 }
@@ -520,12 +520,12 @@ const Poseidon::Uuid &InterserverConnection::get_connection_uuid() const {
 	return m_connection_uuid;
 }
 
-boost::shared_ptr<const InterserverConnection::PromisedResponse> InterserverConnection::send_request(boost::uint16_t message_id, Poseidon::StreamBuffer payload){
+boost::shared_ptr<const PromisedResponse> InterserverConnection::send_request(boost::uint16_t message_id, Poseidon::StreamBuffer payload){
 	PROFILE_ME;
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("InterserverConnection is lost"));
+	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("InterserverConnection was lost"));
 	const boost::uint32_t serial = ++m_next_serial;
 	AUTO(promise, boost::make_shared<PromisedResponse>());
 	const AUTO(it, m_weak_promises.emplace(serial, promise));
@@ -547,7 +547,7 @@ boost::shared_ptr<const InterserverConnection::PromisedResponse> InterserverConn
 	}
 	return STD_MOVE_IDN(promise);
 }
-boost::shared_ptr<const InterserverConnection::PromisedResponse> InterserverConnection::send_request(const Poseidon::Cbpp::MessageBase &msg){
+boost::shared_ptr<const PromisedResponse> InterserverConnection::send_request(const Poseidon::Cbpp::MessageBase &msg){
 	PROFILE_ME;
 
 	LOG_CIRCE_TRACE("Sending user-defined request: remote = ", get_remote_info(), ", msg = ", msg);
@@ -560,7 +560,7 @@ void InterserverConnection::send_notification(boost::uint16_t message_id, Poseid
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("InterserverConnection is lost"));
+	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("InterserverConnection was lost"));
 	boost::uint16_t magic_number = message_id;
 	LOG_CIRCE_TRACE("Sending user-defined notification: remote = ", get_remote_info(), ", message_id = ", message_id, ", payload_size = ", payload.size());
 	launch_deflate_and_send(magic_number, STD_MOVE(payload));
@@ -572,6 +572,17 @@ void InterserverConnection::send_notification(const Poseidon::Cbpp::MessageBase 
 	const boost::uint64_t message_id = msg.get_id();
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 	return send_notification(message_id, msg);
+}
+
+// Non-member functions.
+void wait_for_response(Poseidon::Cbpp::MessageBase &msg, const boost::shared_ptr<const PromisedResponse> &promise){
+	PROFILE_ME;
+
+	Poseidon::yield(promise);
+	AUTO_REF(resp, promise->get());
+	DEBUG_THROW_UNLESS(resp.get_err_code() == Protocol::ERR_SUCCESS, Poseidon::Cbpp::Exception, resp.get_err_code(), Poseidon::SharedNts(resp.get_err_msg()));
+	DEBUG_THROW_UNLESS(resp.get_message_id() == msg.get_id(), Poseidon::Exception, Poseidon::sslit("Unexpected response message ID"));
+	msg.deserialize(resp.get_payload());
 }
 
 }

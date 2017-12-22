@@ -32,7 +32,7 @@ template<typename R, typename C, typename M> M guess_message_type(R (*)(const C 
 				PROFILE_ME;	\
 				DEBUG_THROW_ASSERT(message_id_ == Message_::ID);	\
 				Message_ req_(STD_MOVE(payload_));	\
-				LOG_CIRCE_DEBUG("Received request from ", connection_->get_remote_info(), ": ", req_);	\
+				LOG_CIRCE_TRACE("Received request from ", connection_->get_remote_info(), ": ", req_);	\
 				return unwrapped_callback_(connection_, STD_MOVE(req_));	\
 			}	\
 		};	\

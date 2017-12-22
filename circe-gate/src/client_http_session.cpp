@@ -7,9 +7,11 @@
 #include "singletons/client_http_acceptor.hpp"
 #include "mmain.hpp"
 #include "singletons/auth_connector.hpp"
+#include "singletons/foyer_connector.hpp"
 #include "common/cbpp_response.hpp"
 #include "protocol/error_codes.hpp"
 #include "protocol/messages_gate_auth.hpp"
+#include "protocol/messages_gate_foyer.hpp"
 #include "protocol/utilities.hpp"
 #include <poseidon/job_base.hpp>
 #include <poseidon/http/request_headers.hpp>
@@ -115,27 +117,24 @@ ClientHttpSession::~ClientHttpSession(){
 std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers) const {
 	PROFILE_ME;
 
-	const AUTO(auth_connection, AuthConnector::get_connection());
-	DEBUG_THROW_UNLESS(auth_connection, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
+	const AUTO(auth_conn, AuthConnector::get_connection());
+	DEBUG_THROW_UNLESS(auth_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
 
-	Protocol::GA_ClientHttpAuthenticationRequest req;
-	req.session_uuid = get_session_uuid();
-	req.client_ip    = get_remote_info().ip();
-	req.verb         = verb;
-	req.decoded_uri  = decoded_uri;
-	Protocol::copy_key_values(req.params, params);
-	Protocol::copy_key_values(req.headers, headers);
-	LOG_CIRCE_TRACE("Sending request: ", req);
-	AUTO(result, Poseidon::wait(auth_connection->send_request(req)));
-	DEBUG_THROW_UNLESS(result.get_err_code() == Protocol::ERR_SUCCESS, Poseidon::Http::Exception, Poseidon::Http::ST_INTERNAL_SERVER_ERROR);
-	Protocol::AG_ClientHttpAuthenticationResponse resp;
-	DEBUG_THROW_UNLESS(result.get_message_id() == resp.get_id(), Poseidon::Http::Exception, Poseidon::Http::ST_INTERNAL_SERVER_ERROR);
-	resp.deserialize(result.get_payload());
-	LOG_CIRCE_TRACE("Received response: ", req);
-	if((resp.http_status_code != 0) && (resp.http_status_code != Poseidon::Http::ST_OK)){
-		DEBUG_THROW(Poseidon::Http::Exception, resp.http_status_code, Protocol::extract_key_values(resp.headers));
+	Protocol::GA_ClientHttpAuthenticationRequest auth_req;
+	auth_req.client_uuid = get_session_uuid();
+	auth_req.client_ip   = get_remote_info().ip();
+	auth_req.verb        = verb;
+	auth_req.decoded_uri = decoded_uri;
+	Protocol::copy_key_values(auth_req.params, params);
+	Protocol::copy_key_values(auth_req.headers, headers);
+	LOG_CIRCE_TRACE("Sending request: ", auth_req);
+	Protocol::AG_ClientHttpAuthenticationResponse auth_resp;
+	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
+	LOG_CIRCE_TRACE("Received response: ", auth_req);
+	if((auth_resp.status_code != 0) && (auth_resp.status_code != Poseidon::Http::ST_OK)){
+		DEBUG_THROW(Poseidon::Http::Exception, auth_resp.status_code, Protocol::extract_key_values(STD_MOVE(auth_resp.headers)));
 	}
-	return STD_MOVE(resp.auth_token);
+	return STD_MOVE(auth_resp.auth_token);
 }
 
 boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers){
@@ -179,11 +178,6 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		DEBUG_THROW_ASSERT(!m_auth_token);
 		m_auth_token = STD_MOVE_IDN(auth_token);
 	}
-	// Read then clear these members.
-	const AUTO(decoded_uri, STD_MOVE_IDN(m_decoded_uri));
-	m_decoded_uri.clear();
-	const AUTO(auth_token, STD_MOVE_IDN(m_auth_token.get()));
-	m_auth_token.reset();
 
 	const AUTO(response_encoding, Poseidon::Http::pick_content_encoding(request_headers));
 	DEBUG_THROW_UNLESS(response_encoding != Poseidon::Http::CE_NOT_ACCEPTABLE, Poseidon::Http::Exception, Poseidon::Http::ST_NOT_ACCEPTABLE);
@@ -195,21 +189,30 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 	// Fill in `response_headers.status_code` and `response_entity`.
 	switch(request_headers.verb){
 	case Poseidon::Http::V_HEAD:
-	case Poseidon::Http::V_GET: {
-		const AUTO(enable_http, get_config<bool>("protocol_enable_http", false));
-		DEBUG_THROW_UNLESS(enable_http, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
-
-		response_headers.status_code = Poseidon::Http::ST_OK;
-		for(int i = 0; i < 1000; ++i){
-			response_entity.put("meow ");
-		}
-		break; }
-
+	case Poseidon::Http::V_GET:
 	case Poseidon::Http::V_POST: {
 		const AUTO(enable_http, get_config<bool>("protocol_enable_http", false));
 		DEBUG_THROW_UNLESS(enable_http, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
 
-		response_headers.status_code = Poseidon::Http::ST_OK;
+		const AUTO(foyer_conn, FoyerConnector::get_connection());
+		DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
+
+		Protocol::GF_ClientHttpRequest foyer_req;
+		foyer_req.client_uuid = get_session_uuid();
+		foyer_req.client_ip   = get_remote_info().ip();
+		foyer_req.auth_token  = m_auth_token.get();
+		foyer_req.verb        = request_headers.verb;
+		foyer_req.decoded_uri = m_decoded_uri;
+		Protocol::copy_key_values(foyer_req.params, STD_MOVE(request_headers.get_params));
+		Protocol::copy_key_values(foyer_req.headers, STD_MOVE(request_headers.headers));
+		foyer_req.entity      = request_entity.dump_byte_string();
+		// LOG_CIRCE_TRACE("Sending request: ", foyer_req);
+		Protocol::FG_ClientHttpResponse foyer_resp;
+		Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
+		// LOG_CIRCE_TRACE("Received response: ", foyer_req);
+		response_headers.status_code = foyer_resp.status_code;
+		response_headers.headers     = Protocol::extract_key_values(STD_MOVE(foyer_resp.headers));
+		response_entity              = Poseidon::StreamBuffer(foyer_resp.entity);
 		break; }
 
 	case Poseidon::Http::V_OPTIONS: {
@@ -265,6 +268,8 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 	} else {
 		send(STD_MOVE(response_headers), STD_MOVE(response_entity));
 	}
+	m_decoded_uri.clear();
+	m_auth_token.reset();
 }
 
 }

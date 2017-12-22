@@ -164,6 +164,7 @@ InterserverConnector::~InterserverConnector(){
 
 void InterserverConnector::activate(){
 	PROFILE_ME;
+	DEBUG_THROW_UNLESS(!m_hosts.empty(), Poseidon::Exception, Poseidon::sslit("No hosts to connect to"));
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!m_timer, Poseidon::Exception, Poseidon::sslit("InterserverConnector is already activated"));
