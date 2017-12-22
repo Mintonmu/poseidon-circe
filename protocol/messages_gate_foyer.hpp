@@ -41,6 +41,38 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
+#define MESSAGE_NAME   GF_ClientWebSocketEstablishment
+#define MESSAGE_ID     1203
+#define MESSAGE_FIELDS \
+	FIELD_FIXED        (client_uuid, 16)	\
+	FIELD_STRING       (client_ip)	\
+	FIELD_STRING       (auth_token)	\
+	FIELD_STRING       (decoded_uri)	\
+	FIELD_ARRAY        (params,	\
+	  FIELD_STRING       (key)	\
+	  FIELD_STRING       (value)	\
+	)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
+#define MESSAGE_NAME   FG_ClientWebSocketAcceptance
+#define MESSAGE_ID     1204
+#define MESSAGE_FIELDS \
+	FIELD_VUINT        (status_code)	\
+	FIELD_STRING       (message)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
+#define MESSAGE_NAME   GF_ClientWebSocketClosure
+#define MESSAGE_ID     1205
+#define MESSAGE_FIELDS \
+	FIELD_FIXED        (client_uuid, 16)	\
+	FIELD_STRING       (client_ip)	\
+	FIELD_VUINT        (status_code)	\
+	FIELD_STRING       (message)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
 }
 }
 

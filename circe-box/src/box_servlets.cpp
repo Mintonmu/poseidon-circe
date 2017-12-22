@@ -26,5 +26,18 @@ DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &foyer
 	return foyer_resp;
 }
 
+DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &foyer_conn, Protocol::FB_ClientWebSocketEstablishment foyer_req){
+	LOG_CIRCE_FATAL("TODO: CLIENT WEBSOCKET ESTABLISHMENT ", foyer_req);
+
+	Protocol::BF_ClientWebSocketAcceptance foyer_resp;
+	return foyer_resp;
+}
+
+DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &foyer_conn, Protocol::FB_ClientWebSocketClosure foyer_req){
+	LOG_CIRCE_FATAL("TODO: CLIENT WEBSOCKET CLOSURE ", foyer_req);
+
+	return 0;
+}
+
 }
 }

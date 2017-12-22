@@ -27,7 +27,7 @@ namespace Gate {
 
 class ClientHttpSession::WebSocketHandshakeJob : public Poseidon::JobBase {
 private:
-	const TcpSessionBase::DelayedShutdownGuard m_guard;
+	const Poseidon::SocketBase::DelayedShutdownGuard m_guard;
 	const boost::weak_ptr<ClientHttpSession> m_weak_http_session;
 
 	Poseidon::Http::RequestHeaders m_request_headers;
@@ -106,6 +106,7 @@ std::string ClientHttpSession::safe_decode_uri(const std::string &uri){
 
 ClientHttpSession::ClientHttpSession(Poseidon::Move<Poseidon::UniqueFile> socket)
 	: Poseidon::Http::Session(STD_MOVE(socket))
+	, m_session_uuid(Poseidon::Uuid::random())
 {
 	LOG_CIRCE_DEBUG("ClientHttpSession constructor: remote = ", get_remote_info());
 }
@@ -114,12 +115,11 @@ ClientHttpSession::~ClientHttpSession(){
 	ClientHttpAcceptor::remove_session(this);
 }
 
-std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers) const {
+std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers){
 	PROFILE_ME;
 
 	const AUTO(auth_conn, AuthConnector::get_connection());
 	DEBUG_THROW_UNLESS(auth_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
-
 	Protocol::GA_ClientHttpAuthenticationRequest auth_req;
 	auth_req.client_uuid = get_session_uuid();
 	auth_req.client_ip   = get_remote_info().ip();
@@ -196,7 +196,6 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 
 		const AUTO(foyer_conn, FoyerConnector::get_connection());
 		DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
-
 		Protocol::GF_ClientHttpRequest foyer_req;
 		foyer_req.client_uuid = get_session_uuid();
 		foyer_req.client_ip   = get_remote_info().ip();

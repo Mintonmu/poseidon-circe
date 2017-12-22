@@ -7,12 +7,6 @@
 namespace Circe {
 namespace Common {
 
-CbppResponse::CbppResponse()
-	: m_err_code(Protocol::ERR_INTERNAL_ERROR), m_err_msg()
-	, m_message_id(), m_payload()
-{
-	LOG_CIRCE_TRACE("Constructing indeterminate CbppResponse.");
-}
 CbppResponse::CbppResponse(long err_code, std::string err_msg)
 	: m_err_code(err_code), m_err_msg(STD_MOVE(err_msg))
 	, m_message_id(), m_payload()

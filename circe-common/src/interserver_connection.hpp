@@ -7,7 +7,7 @@
 #include <poseidon/fwd.hpp>
 #include <poseidon/cbpp/fwd.hpp>
 #include <poseidon/virtual_shared_from_this.hpp>
-#include <poseidon/mutex.hpp>
+#include <poseidon/recursive_mutex.hpp>
 #include <poseidon/uuid.hpp>
 #include <poseidon/ip_port.hpp>
 #include <poseidon/stream_buffer.hpp>
@@ -50,7 +50,7 @@ private:
 	boost::scoped_ptr<MessageFilter> m_message_filter;
 
 	// These are protected by a mutex and can be accessed by any thread.
-	mutable Poseidon::Mutex m_mutex;
+	mutable Poseidon::RecursiveMutex m_mutex;
 	Poseidon::Uuid m_connection_uuid;
 	boost::uint64_t m_timestamp;
 	boost::uint64_t m_next_serial;
@@ -63,6 +63,7 @@ public:
 private:
 	bool is_connection_uuid_set() const NOEXCEPT;
 	void server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp);
+	void send_response(boost::uint64_t serial, CbppResponse resp);
 
 	MessageFilter *require_message_filter();
 	void launch_inflate_and_dispatch(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload);

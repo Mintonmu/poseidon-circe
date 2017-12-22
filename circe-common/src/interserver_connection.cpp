@@ -198,6 +198,18 @@ public:
 
 class InterserverConnection::RequestMessageJob : public Poseidon::JobBase {
 private:
+	static CbppResponse wrapped_dispatch(const boost::shared_ptr<InterserverConnection> &connection, boost::uint16_t message_id, Poseidon::StreamBuffer payload)
+	try {
+		return connection->layer7_on_sync_message(message_id, STD_MOVE(payload));
+	} catch(Poseidon::Cbpp::Exception &e){
+		LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: mesasge_id = ", message_id, ", err_code = ", e.get_code(), ", err_msg = ", e.what());
+		return CbppResponse(e.get_code(), e.what());
+	} catch(std::exception &e){
+		LOG_CIRCE_ERROR("std::exception thrown: mesasge_id = ", message_id, ", err_msg = ", e.what());
+		return CbppResponse(Protocol::ERR_INTERNAL_ERROR, e.what());
+	}
+
+private:
 	const Poseidon::SocketBase::DelayedShutdownGuard m_guard;
 	const boost::weak_ptr<InterserverConnection> m_weak_connection;
 
@@ -227,32 +239,9 @@ protected:
 
 		try {
 			LOG_CIRCE_TRACE("Dispatching message: message_id = ", m_message_id);
-			CbppResponse resp;
-			try {
-				resp = connection->layer7_on_sync_message(m_message_id, STD_MOVE(m_payload));
-				DEBUG_THROW_UNLESS(is_message_id_valid(resp.get_message_id()), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
-			} catch(Poseidon::Cbpp::Exception &e){
-				LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: mesasge_id = ", m_message_id, ", err_code = ", e.get_code(), ", err_msg = ", e.what());
-				resp = CbppResponse(e.get_code(), e.what());
-			} catch(std::exception &e){
-				LOG_CIRCE_ERROR("std::exception thrown: mesasge_id = ", m_message_id, ", err_msg = ", e.what());
-				resp = CbppResponse(Protocol::ERR_INTERNAL_ERROR, e.what());
-			}
+			CbppResponse resp = wrapped_dispatch(connection, m_message_id, STD_MOVE(m_payload));
 			if(m_send_response){
-				boost::uint16_t magic_number = resp.get_message_id();
-				Poseidon::add_flags(magic_number, MFL_IS_RESPONSE);
-				// Initialize the header.
-				IS_UserResponseHeader hdr;
-				hdr.serial   = m_serial;
-				hdr.err_code = resp.get_err_code();
-				hdr.err_msg  = STD_MOVE(resp.get_err_msg());
-				// Concatenate the payload to the header.
-				Poseidon::StreamBuffer magic_payload;
-				hdr.serialize(magic_payload);
-				magic_payload.splice(resp.get_payload());
-				// Send it.
-				LOG_CIRCE_TRACE("Sending user-defined response: remote = ", connection->get_remote_info(), ", hdr = ", hdr, ", message_id = ", resp.get_message_id(), ", payload_size = ", magic_payload.size());
-				connection->launch_deflate_and_send(magic_number, STD_MOVE(magic_payload));
+				connection->send_response(m_serial, STD_MOVE(resp));
 			}
 			LOG_CIRCE_TRACE("Done dispatching message: message_id = ", m_message_id);
 		} catch(std::exception &e){
@@ -274,7 +263,7 @@ boost::uint64_t InterserverConnection::get_hello_timeout(){
 
 InterserverConnection::InterserverConnection(const std::string &application_key)
 	: m_application_key(application_key)
-	, m_connection_uuid(), m_next_serial()
+	, m_connection_uuid(), m_next_serial(0)
 {
 	LOG_CIRCE_INFO("InterserverConnection constructor: this = ", (void *)this);
 }
@@ -285,27 +274,48 @@ InterserverConnection::~InterserverConnection(){
 bool InterserverConnection::is_connection_uuid_set() const NOEXCEPT {
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	return !!m_connection_uuid;
 }
 void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp){
 	PROFILE_ME;
-
 	LOG_CIRCE_INFO("Accepted HELLO from ", get_remote_info());
+
+	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
+	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("server_accept_hello() shall be called exactly once by the server and must not be called by the client"));
 	{
-		const Poseidon::Mutex::UniqueLock lock(m_mutex);
-		DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("server_accept_hello() shall be called exactly once by the server and must not be called by the client"));
-		{
-			IS_ServerHello msg;
-			const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, connection_uuid, timestamp));
-			msg.checksum_resp = checksum_resp;
-			LOG_CIRCE_TRACE("Sending server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
-			launch_deflate_and_send(msg.get_id(), msg);
-		}
-		m_connection_uuid = connection_uuid;
-		m_timestamp = timestamp;
+		IS_ServerHello msg;
+		const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, connection_uuid, timestamp));
+		msg.checksum_resp = checksum_resp;
+		LOG_CIRCE_TRACE("Sending server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
+		launch_deflate_and_send(msg.get_id(), msg);
 	}
+	m_connection_uuid = connection_uuid;
+	m_timestamp = timestamp;
 	layer7_post_set_connection_uuid();
+}
+void InterserverConnection::send_response(boost::uint64_t serial, CbppResponse resp){
+	PROFILE_ME;
+
+	const boost::uint64_t message_id = resp.get_message_id();
+	DEBUG_THROW_UNLESS((message_id == 0) || is_message_id_valid(resp.get_message_id()), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
+
+	boost::uint16_t magic_number = message_id;
+	Poseidon::add_flags(magic_number, MFL_IS_RESPONSE);
+	// Initialize the header.
+	IS_UserResponseHeader hdr;
+	hdr.serial   = serial;
+	hdr.err_code = resp.get_err_code();
+	hdr.err_msg  = STD_MOVE(resp.get_err_msg());
+	// Concatenate the payload to the header.
+	Poseidon::StreamBuffer magic_payload;
+	hdr.serialize(magic_payload);
+	if(message_id != 0){
+		magic_payload.splice(resp.get_payload());
+	}
+	// Send it.
+	LOG_CIRCE_TRACE("Sending user-defined response: remote = ", get_remote_info(), ", hdr = ", hdr, ", message_id = ", resp.get_message_id(), ", payload_size = ", magic_payload.size());
+	launch_deflate_and_send(magic_number, STD_MOVE(magic_payload));
 }
 
 InterserverConnection::MessageFilter *InterserverConnection::require_message_filter(){
@@ -366,16 +376,12 @@ try {
 		IS_UserResponseHeader hdr;
 		hdr.deserialize(magic_payload);
 		LOG_CIRCE_TRACE("Received user-defined response: remote = ", get_remote_info(), ", hdr = ", hdr, ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
-		CbppResponse resp;
-		if(message_id == 0){
-			resp = CbppResponse(hdr.err_code, STD_MOVE_IDN(hdr.err_msg));
-		} else {
-			resp = CbppResponse(message_id, STD_MOVE_IDN(magic_payload));
-		}
+		CbppResponse resp = (message_id == 0) ? CbppResponse(hdr.err_code, STD_MOVE_IDN(hdr.err_msg))
+		                                      : CbppResponse(message_id, STD_MOVE_IDN(magic_payload));
 		// Satisfy the promise.
 		boost::shared_ptr<PromisedResponse> promise;
 		{
-			const Poseidon::Mutex::UniqueLock lock(m_mutex);
+			const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 			const AUTO(it, m_weak_promises.find(hdr.serial));
 			if(it != m_weak_promises.end()){
 				promise = it->second.lock();
@@ -477,7 +483,7 @@ void InterserverConnection::layer4_on_close(){
 
 	VALUE_TYPE(m_weak_promises) weak_promises;
 	{
-		const Poseidon::Mutex::UniqueLock lock(m_mutex);
+		const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 		DEBUG_THROW_ASSERT(has_been_shutdown());
 		weak_promises.swap(m_weak_promises);
 	}
@@ -497,21 +503,20 @@ void InterserverConnection::layer7_client_say_hello(){
 	const AUTO(connection_uuid, Poseidon::Uuid::random());
 	const AUTO(timestamp, Poseidon::get_utc_time());
 	LOG_CIRCE_INFO("Sending HELLO to ", get_remote_info());
+
+	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
+	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("layer7_client_say_hello() shall be called exactly once by the client and must not be called by the server"));
 	{
-		const Poseidon::Mutex::UniqueLock lock(m_mutex);
-		DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("layer7_client_say_hello() shall be called exactly once by the client and must not be called by the server"));
-		{
-			IS_ClientHello msg;
-			const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, connection_uuid, timestamp));
-			msg.connection_uuid = connection_uuid;
-			msg.timestamp = timestamp;
-			msg.checksum_req = checksum_req;
-			LOG_CIRCE_TRACE("Sending client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
-			launch_deflate_and_send(msg.get_id(), msg);
-		}
-		m_connection_uuid = connection_uuid;
-		m_timestamp = timestamp;
+		IS_ClientHello msg;
+		const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, connection_uuid, timestamp));
+		msg.connection_uuid = connection_uuid;
+		msg.timestamp = timestamp;
+		msg.checksum_req = checksum_req;
+		LOG_CIRCE_TRACE("Sending client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
+		launch_deflate_and_send(msg.get_id(), msg);
 	}
+	m_connection_uuid = connection_uuid;
+	m_timestamp = timestamp;
 	layer7_post_set_connection_uuid();
 }
 
@@ -524,7 +529,7 @@ boost::shared_ptr<const PromisedResponse> InterserverConnection::send_request(bo
 	PROFILE_ME;
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 
-	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("InterserverConnection was lost"));
 	const boost::uint32_t serial = ++m_next_serial;
 	AUTO(promise, boost::make_shared<PromisedResponse>());
@@ -559,7 +564,7 @@ void InterserverConnection::send_notification(boost::uint16_t message_id, Poseid
 	PROFILE_ME;
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 
-	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("InterserverConnection was lost"));
 	boost::uint16_t magic_number = message_id;
 	LOG_CIRCE_TRACE("Sending user-defined notification: remote = ", get_remote_info(), ", message_id = ", message_id, ", payload_size = ", payload.size());

@@ -34,6 +34,7 @@ pkginclude_protocol_HEADERS = \
 
 pkginclude_commondir = $(pkgincludedir)/common
 pkginclude_common_HEADERS = \
+	circe-common/src/fwd.hpp	\
 	circe-common/src/cbpp_response.hpp	\
 	circe-common/src/interserver_servlet_callback.hpp	\
 	circe-common/src/interserver_connection.hpp	\
