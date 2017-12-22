@@ -130,7 +130,7 @@ std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, cons
 	LOG_CIRCE_TRACE("Sending request: ", auth_req);
 	Protocol::AG_ReturnHttpAuthenticationResult auth_resp;
 	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
-	LOG_CIRCE_TRACE("Received response: ", auth_req);
+	LOG_CIRCE_TRACE("Received response: ", auth_resp);
 	if((auth_resp.status_code != 0) && (auth_resp.status_code != Poseidon::Http::ST_OK)){
 		DEBUG_THROW(Poseidon::Http::Exception, auth_resp.status_code, Protocol::copy_key_values(STD_MOVE(auth_resp.headers)));
 	}
@@ -205,10 +205,10 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		Protocol::copy_key_values(foyer_req.params, STD_MOVE(request_headers.get_params));
 		Protocol::copy_key_values(foyer_req.headers, STD_MOVE(request_headers.headers));
 		foyer_req.entity      = request_entity.dump_byte_string();
-		// LOG_CIRCE_TRACE("Sending request: ", foyer_req);
+		LOG_CIRCE_TRACE("Sending request: ", foyer_req);
 		Protocol::FG_ReturnHttpResponse foyer_resp;
 		Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
-		// LOG_CIRCE_TRACE("Received response: ", foyer_req);
+		LOG_CIRCE_TRACE("Received response: ", foyer_resp);
 		response_headers.status_code = foyer_resp.status_code;
 		response_headers.headers     = Protocol::copy_key_values(STD_MOVE(foyer_resp.headers));
 		response_entity              = Poseidon::StreamBuffer(foyer_resp.entity);
