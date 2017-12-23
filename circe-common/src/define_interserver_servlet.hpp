@@ -1,8 +1,8 @@
 // 这个文件是 Circe 服务器应用程序框架的一部分。
 // Copyleft 2017, LH_Mouse. All wrongs reserved.
 
-#ifndef CIRCE_COMMON_DEFINE_INTERSERVER_SERVLET_FOR_HPP_
-#define CIRCE_COMMON_DEFINE_INTERSERVER_SERVLET_FOR_HPP_
+#ifndef CIRCE_COMMON_DEFINE_INTERSERVER_SERVLET_HPP_
+#define CIRCE_COMMON_DEFINE_INTERSERVER_SERVLET_HPP_
 
 #include "interserver_servlet_callback.hpp"
 #include "log.hpp"
@@ -19,7 +19,7 @@ template<typename R, typename C, typename M> M guess_message_type(R (*)(const C 
 }
 }
 
-#define CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(insert_servlet_, ...)	\
+#define CIRCE_DEFINE_INTERSERVER_SERVLET(insert_servlet_, ...)	\
 	namespace {	\
 		/* Define the servlet wrapper. We need some local definitions inside it. */	\
 		struct TOKEN_CAT2(InterserverServletWrapper, __LINE__) {	\

@@ -4,19 +4,19 @@
 #include "precompiled.hpp"
 #include "singletons/servlet_container.hpp"
 #include "common/interserver_connection.hpp"
-#include "common/define_interserver_servlet_for.hpp"
+#include "common/define_interserver_servlet.hpp"
 #include "protocol/error_codes.hpp"
 #include "protocol/utilities.hpp"
 #include "protocol/messages_gate_foyer.hpp"
 #include "protocol/messages_foyer_box.hpp"
 #include "singletons/box_connector.hpp"
 
-#define DEFINE_SERVLET_FOR(...)   CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(::Circe::Foyer::ServletContainer::insert_servlet, __VA_ARGS__)
+#define DEFINE_SERVLET(...)   CIRCE_DEFINE_INTERSERVER_SERVLET(::Circe::Foyer::ServletContainer::insert_servlet, __VA_ARGS__)
 
 namespace Circe {
 namespace Foyer {
 
-DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_ProcessHttpRequest gate_req){
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_ProcessHttpRequest gate_req){
 	const AUTO(box_conn, BoxConnector::get_connection());
 	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 
@@ -44,7 +44,7 @@ DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_
 	return gate_resp;
 }
 
-DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_EstablishWebSocketConnection gate_req){
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_EstablishWebSocketConnection gate_req){
 	const AUTO(box_conn, BoxConnector::get_connection());
 	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 
@@ -68,7 +68,7 @@ DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_
 	return gate_resp;
 }
 
-DEFINE_SERVLET_FOR(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_NotifyWebSocketClosure gate_ntfy){
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_NotifyWebSocketClosure gate_ntfy){
 	const AUTO(box_conn, BoxConnector::get_connection());
 	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 

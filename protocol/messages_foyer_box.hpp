@@ -75,6 +75,16 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
+#define MESSAGE_NAME   BF_KillWebSocketConnection
+#define MESSAGE_ID     1906
+#define MESSAGE_FIELDS \
+	FIELD_FIXED        (gate_uuid, 16)	\
+	FIELD_FIXED        (client_uuid, 16)	\
+	FIELD_VUINT        (status_code)	\
+	FIELD_STRING       (message)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
 }
 }
 

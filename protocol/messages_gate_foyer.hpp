@@ -73,7 +73,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   FG_KillWebSocketClient
+#define MESSAGE_NAME   FG_KillWebSocketConnection
 #define MESSAGE_ID     1206
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
