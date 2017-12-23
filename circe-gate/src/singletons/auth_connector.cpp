@@ -13,8 +13,8 @@ namespace Gate {
 namespace {
 	class SpecializedConnector : public Common::InterserverConnector {
 	public:
-		SpecializedConnector(std::vector<std::string> hosts, unsigned port, std::string application_key)
-			: Common::InterserverConnector(STD_MOVE(hosts), port, STD_MOVE(application_key))
+		SpecializedConnector(std::string host, unsigned port, std::string application_key)
+			: Common::InterserverConnector(STD_MOVE(host), port, STD_MOVE(application_key))
 		{ }
 
 	protected:
@@ -29,10 +29,10 @@ namespace {
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 	PROFILE_ME;
 
-	const AUTO(hosts, get_config_v<std::string>("auth_connector_host"));
+	const AUTO(host, get_config<std::string>("auth_connector_host", "localhost"));
 	const AUTO(port, get_config<boost::uint16_t>("auth_connector_port", 10818));
 	const AUTO(appkey, get_config<std::string>("auth_connector_appkey", "testkey"));
-	const AUTO(connector, boost::make_shared<SpecializedConnector>(hosts, port, appkey));
+	const AUTO(connector, boost::make_shared<SpecializedConnector>(host, port, appkey));
 	connector->activate();
 	handles.push(connector);
 	g_weak_connector = connector;

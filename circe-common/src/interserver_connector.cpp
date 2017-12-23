@@ -105,67 +105,42 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 		return;
 	}
 
-	boost::container::vector<boost::shared_ptr<const Poseidon::PromiseContainer<Poseidon::SockAddr> > > dns_results;
-	for(std::size_t slot = 0; slot < connector->m_hosts.size(); ++slot){
-		// Get the list of clients to create.
-		{
-			const Poseidon::Mutex::UniqueLock lock(connector->m_mutex);
-			connector->m_weak_clients.resize(connector->m_hosts.size());
-			if(!connector->m_weak_clients.at(slot).expired()){
-				continue;
-			}
-		}
-		LOG_CIRCE_DEBUG("About to create InterserverConnection to ", connector->m_hosts.at(slot));
-
-		dns_results.resize(connector->m_hosts.size());
-		AUTO(promised_sock_addr, Poseidon::DnsDaemon::enqueue_for_looking_up(connector->m_hosts.at(slot), connector->m_port));
-		dns_results.at(slot) = STD_MOVE_IDN(promised_sock_addr);
+	boost::shared_ptr<InterserverClient> client;
+	{
+		const Poseidon::Mutex::UniqueLock lock(connector->m_mutex);
+		client = connector->m_weak_client.lock();
 	}
-	if(dns_results.empty()){
-		return;
-	}
-	for(std::size_t slot = 0; slot < connector->m_hosts.size(); ++slot){
-		// Create clients now.
-		const AUTO_REF(promised_sock_addr, dns_results.at(slot));
-		if(!promised_sock_addr){
-			continue;
-		}
-		try {
-			Poseidon::yield(promised_sock_addr);
-		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("DNS failure: host = ", connector->m_hosts.at(slot), ", what = ", e.what());
-			continue;
-		}
-		const AUTO_REF(sock_addr, promised_sock_addr->get());
-		LOG_CIRCE_DEBUG("Creating InterserverConnection to ", Poseidon::IpPort(sock_addr));
+	if(!client){
+		const AUTO(promised_sock_addr, Poseidon::DnsDaemon::enqueue_for_looking_up(connector->m_host, connector->m_port));
+		Poseidon::yield(promised_sock_addr);
+		LOG_CIRCE_INFO("Connecting InterserverClient to ", Poseidon::IpPort(promised_sock_addr->get()));
 
 		const Poseidon::Mutex::UniqueLock lock(connector->m_mutex);
-		AUTO(client, connector->m_weak_clients.at(slot).lock());
+		client = connector->m_weak_client.lock();
 		if(client){
 			LOG_CIRCE_WARNING("Killing old client: remote = ", client->layer5_get_remote_info());
 			client->Poseidon::TcpSessionBase::force_shutdown();
 		}
-		client = boost::make_shared<InterserverClient>(sock_addr, connector);
+		client = boost::make_shared<InterserverClient>(promised_sock_addr->get(), connector);
 		client->set_no_delay();
 		client->layer7_client_say_hello();
-		connector->m_weak_clients.at(slot) = client;
 		Poseidon::EpollDaemon::add_socket(client, true);
+		connector->m_weak_client = client;
 	}
 }
 
-InterserverConnector::InterserverConnector(std::vector<std::string> hosts, unsigned port, std::string application_key)
-	: m_hosts(STD_MOVE(hosts)), m_port(port), m_application_key(STD_MOVE(application_key))
+InterserverConnector::InterserverConnector(std::string host, unsigned port, std::string application_key)
+	: m_host(STD_MOVE(host)), m_port(port), m_application_key(STD_MOVE(application_key))
 {
-	LOG_CIRCE_INFO("InterserverConnector constructor: hosts:port = ", Poseidon::implode(',', m_hosts), ":", m_port);
+	LOG_CIRCE_INFO("InterserverConnector constructor: host:port = ", m_host, ":", m_port);
 }
 InterserverConnector::~InterserverConnector(){
-	LOG_CIRCE_INFO("InterserverConnector destructor: hosts:port = ", Poseidon::implode(',', m_hosts), ":", m_port);
+	LOG_CIRCE_INFO("InterserverConnector destructor: host:port = ", m_host, ":", m_port);
 	clear(Protocol::ERR_GONE_AWAY);
 }
 
 void InterserverConnector::activate(){
 	PROFILE_ME;
-	DEBUG_THROW_UNLESS(!m_hosts.empty(), Poseidon::Exception, Poseidon::sslit("No hosts to connect to"));
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!m_timer, Poseidon::Exception, Poseidon::sslit("InterserverConnector is already activated"));
@@ -177,22 +152,16 @@ boost::shared_ptr<InterserverConnection> InterserverConnector::get_client() cons
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	if(m_weak_clients.empty()){
-		return VAL_INIT;
-	}
-	const std::size_t slot = Poseidon::random_uint32() % m_weak_clients.size();
-	return m_weak_clients.at(slot).lock();
+	return m_weak_client.lock();
 }
 void InterserverConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	for(AUTO(it, m_weak_clients.begin()); it != m_weak_clients.end(); ++it){
-		const AUTO(client, it->lock());
-		if(client){
-			LOG_CIRCE_DEBUG("Disconnecting client: remote = ", client->layer5_get_remote_info());
-			client->layer5_shutdown(err_code, err_msg);
-		}
+	const AUTO(client, m_weak_client.lock());
+	if(client){
+		LOG_CIRCE_DEBUG("Disconnecting client: remote = ", client->layer5_get_remote_info());
+		client->layer5_shutdown(err_code, err_msg);
 	}
 }
 

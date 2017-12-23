@@ -23,16 +23,16 @@ private:
 	static void timer_proc(const boost::weak_ptr<InterserverConnector> &weak_connector);
 
 private:
-	const std::vector<std::string> m_hosts;
+	const std::string m_host;
 	const unsigned m_port;
 	const std::string m_application_key;
 
 	mutable Poseidon::Mutex m_mutex;
 	boost::shared_ptr<Poseidon::Timer> m_timer;
-	std::vector<boost::weak_ptr<InterserverClient> > m_weak_clients;
+	boost::weak_ptr<InterserverClient> m_weak_client;
 
 public:
-	InterserverConnector(std::vector<std::string> hosts, unsigned port, std::string application_key);
+	InterserverConnector(std::string host, unsigned port, std::string application_key);
 	~InterserverConnector() OVERRIDE;
 
 protected:
