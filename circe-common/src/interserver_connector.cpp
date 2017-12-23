@@ -91,7 +91,7 @@ protected:
 		const AUTO(parent, m_weak_parent.lock());
 		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 
-		const AUTO(servlet, parent->get_servlet(message_id));
+		const AUTO(servlet, parent->sync_get_servlet(message_id));
 		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Protocol::ERR_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverClient>(), message_id, STD_MOVE(payload));
 	}

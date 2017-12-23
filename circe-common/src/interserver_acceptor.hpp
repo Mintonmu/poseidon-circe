@@ -34,7 +34,7 @@ public:
 	~InterserverAcceptor() OVERRIDE;
 
 protected:
-	virtual boost::shared_ptr<const InterserverServletCallback> get_servlet(boost::uint16_t message_id) const = 0;
+	virtual boost::shared_ptr<const InterserverServletCallback> sync_get_servlet(boost::uint16_t message_id) const = 0;
 
 public:
 	void activate();

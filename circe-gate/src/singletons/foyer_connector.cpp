@@ -18,7 +18,7 @@ namespace {
 		{ }
 
 	protected:
-		boost::shared_ptr<const Common::InterserverServletCallback> get_servlet(boost::uint16_t message_id) const OVERRIDE {
+		boost::shared_ptr<const Common::InterserverServletCallback> sync_get_servlet(boost::uint16_t message_id) const OVERRIDE {
 			return ServletContainer::get_servlet(message_id);
 		}
 	};
