@@ -16,13 +16,13 @@
 namespace Circe {
 namespace Foyer {
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_ProcessHttpRequest gate_req){
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_HttpRequest gate_req){
 	const AUTO(box_conn, BoxConnector::get_connection());
 	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 
-	Protocol::BF_ReturnHttpResponse box_resp;
+	Protocol::BF_HttpResponse box_resp;
 	{
-		Protocol::FB_ProcessHttpRequest box_req;
+		Protocol::FB_HttpRequest box_req;
 		box_req.gate_uuid   = gate_conn->get_connection_uuid();
 		box_req.client_uuid = gate_req.client_uuid;
 		box_req.client_ip   = STD_MOVE(gate_req.client_ip);
@@ -37,13 +37,13 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn
 		LOG_CIRCE_TRACE("Received response: ", box_resp);
 	}
 
-	Protocol::FG_ReturnHttpResponse gate_resp;
+	Protocol::FG_HttpResponse gate_resp;
 	gate_resp.status_code = box_resp.status_code;
 	Protocol::copy_key_values(gate_resp.headers, STD_MOVE(box_resp.headers));
 	gate_resp.entity      = STD_MOVE(box_resp.entity);
 	return gate_resp;
 }
-
+/*
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_EstablishWebSocketConnection gate_req){
 	const AUTO(box_conn, BoxConnector::get_connection());
 	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
@@ -84,6 +84,6 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn
 
 	return 0;
 }
-
+*/
 }
 }

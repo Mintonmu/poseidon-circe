@@ -13,17 +13,17 @@
 namespace Circe {
 namespace Auth {
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GA_AuthenticateHttpRequest gate_req){
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GA_HttpAuthenticationRequest gate_req){
 	LOG_POSEIDON_FATAL("TODO: CHECK AUTHENTICATION: ", gate_req);
 
-	Protocol::AG_ReturnHttpAuthenticationResult gate_resp;
+	Protocol::AG_HttpAuthenticationResponse gate_resp;
 	return gate_resp;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GA_AuthenticateWebSocketConnection gate_req){
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GA_WebSocketAuthenticationRequest gate_req){
 	LOG_POSEIDON_FATAL("TODO: CHECK AUTHENTICATION: ", gate_req);
 
-	Protocol::AG_ReturnWebSocketAuthenticationResult gate_resp;
+	Protocol::AG_WebSocketAuthenticationResponse gate_resp;
 	return gate_resp;
 }
 

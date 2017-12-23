@@ -9,7 +9,7 @@
 namespace Circe {
 namespace Protocol {
 
-#define MESSAGE_NAME   FB_ProcessHttpRequest
+#define MESSAGE_NAME   FB_HttpRequest
 #define MESSAGE_ID     1901
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
@@ -30,7 +30,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   BF_ReturnHttpResponse
+#define MESSAGE_NAME   BF_HttpResponse
 #define MESSAGE_ID     1902
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
@@ -41,8 +41,8 @@ namespace Protocol {
 	FIELD_FLEXIBLE     (entity)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
-
-#define MESSAGE_NAME   FB_EstablishWebSocketConnection
+/*
+#define MESSAGE_NAME   FB_WebSocketEstablishmentRequest
 #define MESSAGE_ID     1903
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
@@ -57,34 +57,50 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   BF_ReturnWebSocketEstablishmentResult
+#define MESSAGE_NAME   BF_WebSocketEstablishmentResponse
 #define MESSAGE_ID     1904
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
-	FIELD_STRING       (message)	\
+	FIELD_STRING       (addition)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   FB_NotifyWebSocketClosure
+#define MESSAGE_NAME   FB_WebSocketPackedRequests
 #define MESSAGE_ID     1905
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
-	FIELD_FIXED        (client_uuid, 16)	\
-	FIELD_VUINT        (status_code)	\
-	FIELD_STRING       (message)	\
+	FIELD_LIST         (messages,	\
+		FIELD_FIXED        (client_uuid, 16)	\
+		FIELD_VUINT        (opcode)	\
+		FIELD_FLEXIBLE     (payload)	\
+	)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   BF_KillWebSocketConnection
+#define MESSAGE_NAME   BF_WebSocketPackAcknowledgement
 #define MESSAGE_ID     1906
 #define MESSAGE_FIELDS \
-	FIELD_FIXED        (gate_uuid, 16)	\
-	FIELD_FIXED        (client_uuid, 16)	\
-	FIELD_VUINT        (status_code)	\
-	FIELD_STRING       (message)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
+#define MESSAGE_NAME   BF_WebSocketPackedMessages
+#define MESSAGE_ID     1907
+#define MESSAGE_FIELDS \
+	FIELD_LIST         (messages,	\
+		FIELD_FIXED        (gate_uuid, 16)	\
+		FIELD_FIXED        (client_uuid, 16)	\
+		FIELD_VUINT        (opcode)	\
+		FIELD_FLEXIBLE     (payload)	\
+	)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
+#define MESSAGE_NAME   FB_WebSocketPackAcknowledgement
+#define MESSAGE_ID     1908
+#define MESSAGE_FIELDS \
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+*/
 }
 }
 

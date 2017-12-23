@@ -13,10 +13,10 @@
 namespace Circe {
 namespace Box {
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &foyer_conn, Protocol::FB_ProcessHttpRequest foyer_req){
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &foyer_conn, Protocol::FB_HttpRequest foyer_req){
 	LOG_CIRCE_FATAL("TODO: CLIENT HTTP REQUEST: ", foyer_req);
 
-	Protocol::BF_ReturnHttpResponse foyer_resp;
+	Protocol::BF_HttpResponse foyer_resp;
 	foyer_resp.status_code = 200;
 	foyer_resp.headers.resize(2);
 	foyer_resp.headers.at(0).key   = "Content-Type";
@@ -26,7 +26,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &foyer_con
 	foyer_resp.entity      = (const unsigned char *)"<h1>hello world!</h1>";
 	return foyer_resp;
 }
-
+/*
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &foyer_conn, Protocol::FB_EstablishWebSocketConnection foyer_req){
 	LOG_CIRCE_FATAL("TODO: CLIENT WEBSOCKET ESTABLISHMENT ", foyer_req);
 
@@ -39,6 +39,6 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &foyer_con
 
 	return 0;
 }
-
+*/
 }
 }

@@ -9,7 +9,7 @@
 namespace Circe {
 namespace Protocol {
 
-#define MESSAGE_NAME   GF_ProcessHttpRequest
+#define MESSAGE_NAME   GF_HttpRequest
 #define MESSAGE_ID     1201
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
@@ -29,7 +29,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   FG_ReturnHttpResponse
+#define MESSAGE_NAME   FG_HttpResponse
 #define MESSAGE_ID     1202
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
@@ -40,7 +40,7 @@ namespace Protocol {
 	FIELD_FLEXIBLE     (entity)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
-
+/*
 #define MESSAGE_NAME   GF_EstablishWebSocketConnection
 #define MESSAGE_ID     1203
 #define MESSAGE_FIELDS \
@@ -81,7 +81,7 @@ namespace Protocol {
 	FIELD_STRING       (message)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
-
+*/
 }
 }
 

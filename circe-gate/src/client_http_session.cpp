@@ -119,9 +119,9 @@ std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, cons
 	const AUTO(auth_conn, AuthConnector::get_connection());
 	DEBUG_THROW_UNLESS(auth_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
 
-	Protocol::AG_ReturnHttpAuthenticationResult auth_resp;
+	Protocol::AG_HttpAuthenticationResponse auth_resp;
 	{
-		Protocol::GA_AuthenticateHttpRequest auth_req;
+		Protocol::GA_HttpAuthenticationRequest auth_req;
 		auth_req.client_uuid = get_session_uuid();
 		auth_req.client_ip   = get_remote_info().ip();
 		auth_req.verb        = verb;
@@ -135,6 +135,7 @@ std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, cons
 	if((auth_resp.status_code != 0) && (auth_resp.status_code != Poseidon::Http::ST_OK)){
 		DEBUG_THROW(Poseidon::Http::Exception, auth_resp.status_code, Protocol::copy_key_values(STD_MOVE(auth_resp.headers)));
 	}
+
 	LOG_CIRCE_DEBUG("Got authentication token: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 	return STD_MOVE(auth_resp.auth_token);
 }
@@ -199,9 +200,9 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		const AUTO(foyer_conn, FoyerConnector::get_connection());
 		DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
 
-		Protocol::FG_ReturnHttpResponse foyer_resp;
+		Protocol::FG_HttpResponse foyer_resp;
 		{
-			Protocol::GF_ProcessHttpRequest foyer_req;
+			Protocol::GF_HttpRequest foyer_req;
 			foyer_req.client_uuid = get_session_uuid();
 			foyer_req.client_ip   = get_remote_info().ip();
 			foyer_req.auth_token  = m_auth_token.get();
