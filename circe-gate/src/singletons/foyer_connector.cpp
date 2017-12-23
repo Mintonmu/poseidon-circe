@@ -34,6 +34,16 @@ boost::shared_ptr<Common::InterserverConnection> FoyerConnector::get_connection(
 	}
 	return connector->get_client();
 }
+void FoyerConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
+	PROFILE_ME;
+
+	const AUTO(connector, g_weak_connector.lock());
+	if(!connector){
+		LOG_CIRCE_WARNING("AuthConnector has not been initialized.");
+		return;
+	}
+	connector->clear(err_code, err_msg);
+}
 
 }
 }

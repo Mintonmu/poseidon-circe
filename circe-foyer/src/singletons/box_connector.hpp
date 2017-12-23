@@ -2,7 +2,7 @@
 // Copyleft 2017, LH_Mouse. All wrongs reserved.
 
 #ifndef CIRCE_FOYER_SINGLETONS_BOX_CONNECTOR_HPP_
-#define CIRCE_FOYER_SINGLETONS_BUSINES_CONNECTOR_HPP_
+#define CIRCE_FOYER_SINGLETONS_BOX_CONNECTOR_HPP_
 
 #include "common/interserver_connection.hpp"
 
@@ -15,6 +15,7 @@ private:
 
 public:
 	static boost::shared_ptr<Common::InterserverConnection> get_connection();
+	static void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 
 }

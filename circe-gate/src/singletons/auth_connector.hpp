@@ -15,6 +15,7 @@ private:
 
 public:
 	static boost::shared_ptr<Common::InterserverConnection> get_connection();
+	static void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 
 }
