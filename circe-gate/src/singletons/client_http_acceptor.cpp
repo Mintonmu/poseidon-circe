@@ -3,8 +3,8 @@
 
 #include "precompiled.hpp"
 #include "client_http_acceptor.hpp"
+#include "../client_websocket_session.hpp"
 #include "../mmain.hpp"
-#include <poseidon/multi_index_map.hpp>
 #include <poseidon/tcp_server_base.hpp>
 #include <poseidon/singletons/epoll_daemon.hpp>
 
@@ -12,38 +12,63 @@ namespace Circe {
 namespace Gate {
 
 namespace {
-	struct SessionElement {
-		// Invariants.
-		boost::weak_ptr<ClientHttpSession> weak_session;
-		// Indices.
-		const volatile ClientHttpSession *ptr;
-		Poseidon::Uuid session_uuid;
-
-		explicit SessionElement(const boost::shared_ptr<ClientHttpSession> &session)
-			: weak_session(session)
-			, ptr(session.get()), session_uuid(session->get_session_uuid())
-		{ }
-	};
-	MULTI_INDEX_MAP(SessionMap, SessionElement,
-		UNIQUE_MEMBER_INDEX(ptr)
-		UNIQUE_MEMBER_INDEX(session_uuid)
-	)
-	Poseidon::Mutex g_session_map_mutex;
-	SessionMap g_session_map;
-
 	class SpecializedAcceptor : public Poseidon::TcpServerBase {
+	private:
+		mutable Poseidon::Mutex m_mutex;
+		boost::container::flat_map<Poseidon::Uuid, boost::weak_ptr<ClientHttpSession> > m_weak_sessions;
+
 	public:
 		SpecializedAcceptor(const std::string &bind, unsigned port, const std::string &cert, const std::string &pkey)
 			: Poseidon::TcpServerBase(Poseidon::IpPort(bind.c_str(), port), cert.c_str(), pkey.c_str())
 		{ }
+		~SpecializedAcceptor() OVERRIDE {
+			clear();
+		}
 
 	protected:
 		boost::shared_ptr<Poseidon::TcpSessionBase> on_client_connect(Poseidon::Move<Poseidon::UniqueFile> client) OVERRIDE {
 			PROFILE_ME;
 
-			const AUTO(session, boost::make_shared<ClientHttpSession>(STD_MOVE(client)));
+			AUTO(session, boost::make_shared<ClientHttpSession>(STD_MOVE(client)));
 			session->set_no_delay();
-			return session;
+			{
+				const Poseidon::Mutex::UniqueLock lock(m_mutex);
+				bool erase_it;
+				for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); erase_it ? (it = m_weak_sessions.erase(it)) : ++it){
+					erase_it = it->second.expired();
+				}
+				DEBUG_THROW_ASSERT(m_weak_sessions.emplace(session->get_session_uuid(), session).second);
+			}
+			return STD_MOVE_IDN(session);
+		}
+
+	public:
+		boost::shared_ptr<ClientHttpSession> get_session(const Poseidon::Uuid &session_uuid) const {
+			PROFILE_ME;
+
+			const Poseidon::Mutex::UniqueLock lock(m_mutex);
+			const AUTO(it, m_weak_sessions.find(session_uuid));
+			if(it == m_weak_sessions.end()){
+				return VAL_INIT;
+			}
+			return it->second.lock();
+		}
+		void clear() NOEXCEPT {
+			PROFILE_ME;
+
+			const Poseidon::Mutex::UniqueLock lock(m_mutex);
+			for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); ++it){
+				const AUTO(http_session, it->second.lock());
+				if(http_session){
+					LOG_CIRCE_DEBUG("Disconnecting client session: remote = ", http_session->get_remote_info());
+					const AUTO(ws_session, boost::dynamic_pointer_cast<ClientWebSocketSession>(http_session->get_upgraded_session()));
+					if(ws_session){
+						ws_session->shutdown(Poseidon::WebSocket::ST_GOING_AWAY);
+					} else {
+						http_session->force_shutdown();
+					}
+				}
+			}
 		}
 	};
 
@@ -64,25 +89,20 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 boost::shared_ptr<ClientHttpSession> ClientHttpAcceptor::get_session(const Poseidon::Uuid &session_uuid){
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_session_map_mutex);
-	const AUTO(it, g_session_map.find<1>(session_uuid));
-	if(it == g_session_map.end<1>()){
+	const AUTO(acceptor, g_weak_acceptor.lock());
+	if(!acceptor){
 		return VAL_INIT;
 	}
-	return it->weak_session.lock();
+	return acceptor->get_session(session_uuid);
 }
-void ClientHttpAcceptor::insert_session(const boost::shared_ptr<ClientHttpSession> &session){
+void ClientHttpAcceptor::clear(long /*err_code*/, const char */*err_msg*/) NOEXCEPT {
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_session_map_mutex);
-	const AUTO(pair, g_session_map.insert(SessionElement(session)));
-	DEBUG_THROW_UNLESS(pair.second, Poseidon::Exception, Poseidon::sslit("ClientHttpSession is already in map"));
-}
-bool ClientHttpAcceptor::remove_session(const volatile ClientHttpSession *ptr) NOEXCEPT {
-	PROFILE_ME;
-
-	const Poseidon::Mutex::UniqueLock lock(g_session_map_mutex);
-	return g_session_map.erase<0>(ptr) != 0;
+	const AUTO(acceptor, g_weak_acceptor.lock());
+	if(!acceptor){
+		return;
+	}
+	acceptor->clear();
 }
 
 }

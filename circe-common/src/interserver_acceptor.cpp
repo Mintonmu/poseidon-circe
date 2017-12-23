@@ -175,7 +175,7 @@ void InterserverAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
 	for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); ++it){
 		const AUTO(session, it->second.lock());
 		if(session){
-			LOG_CIRCE_DEBUG("Disconnecting session: remote = ", session->layer5_get_remote_info());
+			LOG_CIRCE_DEBUG("Disconnecting interserver session: remote = ", session->layer5_get_remote_info());
 			session->layer5_shutdown(err_code, err_msg);
 		}
 	}

@@ -4,6 +4,7 @@
 #include "precompiled.hpp"
 #include "auth_connector.hpp"
 #include "servlet_container.hpp"
+#include "client_http_acceptor.hpp"
 #include "common/interserver_connector.hpp"
 #include "../mmain.hpp"
 
@@ -20,6 +21,9 @@ namespace {
 	protected:
 		boost::shared_ptr<const Common::InterserverServletCallback> sync_get_servlet(boost::uint16_t message_id) const OVERRIDE {
 			return ServletContainer::get_servlet(message_id);
+		}
+		void sync_pre_connect() OVERRIDE {
+			ClientHttpAcceptor::clear(Protocol::ERR_AUTH_CONNECTION_LOST);
 		}
 	};
 

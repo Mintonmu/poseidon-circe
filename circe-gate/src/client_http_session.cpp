@@ -4,7 +4,6 @@
 #include "precompiled.hpp"
 #include "client_http_session.hpp"
 #include "client_websocket_session.hpp"
-#include "singletons/client_http_acceptor.hpp"
 #include "mmain.hpp"
 #include "singletons/auth_connector.hpp"
 #include "singletons/foyer_connector.hpp"
@@ -112,7 +111,6 @@ ClientHttpSession::ClientHttpSession(Poseidon::Move<Poseidon::UniqueFile> socket
 }
 ClientHttpSession::~ClientHttpSession(){
 	LOG_CIRCE_DEBUG("ClientHttpSession destructor: remote = ", get_remote_info());
-	ClientHttpAcceptor::remove_session(this);
 }
 
 std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers){

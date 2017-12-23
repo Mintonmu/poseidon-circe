@@ -15,8 +15,7 @@ private:
 
 public:
 	static boost::shared_ptr<ClientHttpSession> get_session(const Poseidon::Uuid &session_uuid);
-	static void insert_session(const boost::shared_ptr<ClientHttpSession> &session);
-	static bool remove_session(const volatile ClientHttpSession *ptr) NOEXCEPT;
+	static void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 
 }
