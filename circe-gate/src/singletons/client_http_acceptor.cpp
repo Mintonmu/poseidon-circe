@@ -31,9 +31,9 @@ namespace {
 	Poseidon::Mutex g_session_map_mutex;
 	SessionMap g_session_map;
 
-	class ClientTcpAcceptor : public Poseidon::TcpServerBase {
+	class SpecializedAcceptor : public Poseidon::TcpServerBase {
 	public:
-		ClientTcpAcceptor(const std::string &bind, unsigned port, const std::string &cert, const std::string &pkey)
+		SpecializedAcceptor(const std::string &bind, unsigned port, const std::string &cert, const std::string &pkey)
 			: Poseidon::TcpServerBase(Poseidon::IpPort(bind.c_str(), port), cert.c_str(), pkey.c_str())
 		{ }
 
@@ -47,7 +47,7 @@ namespace {
 		}
 	};
 
-	boost::weak_ptr<ClientTcpAcceptor> g_weak_acceptor;
+	boost::weak_ptr<SpecializedAcceptor> g_weak_acceptor;
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
@@ -55,7 +55,7 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 	const AUTO(port, get_config<boost::uint16_t>("client_http_acceptor_port", 10810));
 	const AUTO(cert, get_config<std::string>("client_http_acceptor_certificate"));
 	const AUTO(pkey, get_config<std::string>("client_http_acceptor_private_key"));
-	const AUTO(acceptor, boost::make_shared<ClientTcpAcceptor>(bind, port, cert, pkey));
+	const AUTO(acceptor, boost::make_shared<SpecializedAcceptor>(bind, port, cert, pkey));
 	Poseidon::EpollDaemon::add_socket(acceptor, false);
 	handles.push(acceptor);
 	g_weak_acceptor = acceptor;

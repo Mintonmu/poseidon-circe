@@ -101,10 +101,8 @@ protected:
 
 		const AUTO(parent, m_weak_parent.lock());
 		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
-		const AUTO(servlet_container, parent->m_weak_servlet_container.lock());
-		DEBUG_THROW_UNLESS(servlet_container, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("Shutdown in progress"));
 
-		const AUTO(servlet, servlet_container->get_servlet(message_id));
+		const AUTO(servlet, parent->get_servlet(message_id));
 		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Protocol::ERR_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverSession>(), message_id, STD_MOVE(payload));
 	}
@@ -140,8 +138,8 @@ protected:
 	}
 };
 
-InterserverAcceptor::InterserverAcceptor(const boost::shared_ptr<const InterserverServletContainer> &servlet_container, std::string bind, unsigned port, std::string application_key)
-	: m_weak_servlet_container(servlet_container), m_bind(STD_MOVE(bind)), m_port(port), m_application_key(STD_MOVE(application_key))
+InterserverAcceptor::InterserverAcceptor(std::string bind, unsigned port, std::string application_key)
+	: m_bind(STD_MOVE(bind)), m_port(port), m_application_key(STD_MOVE(application_key))
 {
 	LOG_CIRCE_INFO("InterserverAcceptor constructor: bind:port = ", m_bind, ":", m_port);
 }

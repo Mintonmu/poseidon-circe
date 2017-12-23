@@ -8,7 +8,6 @@ namespace Circe {
 namespace Auth {
 
 namespace {
-	Poseidon::Mutex g_mutex;
 	boost::weak_ptr<Common::InterserverServletContainer> g_weak_container;
 }
 
@@ -20,28 +19,16 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_ESSENTIAL){
 	g_weak_container = weak_container;
 }
 
-boost::shared_ptr<const Common::InterserverServletContainer> ServletContainer::get_container(){
-	PROFILE_ME;
-
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
-	AUTO(container, g_weak_container.lock());
+boost::shared_ptr<const Common::InterserverServletCallback> ServletContainer::get_servlet(boost::uint16_t message_id){
+	const AUTO(container, g_weak_container.lock());
 	if(!container){
 		return VAL_INIT;
 	}
-	return STD_MOVE_IDN(container);
+	return container->get_servlet(message_id);
 }
-boost::shared_ptr<const Common::InterserverServletContainer> ServletContainer::get_safe_container(){
-	PROFILE_ME;
-
-	AUTO(container, get_container());
-	DEBUG_THROW_ASSERT(container);
-	return container;
-}
-
 void ServletContainer::insert_servlet(boost::uint16_t message_id, const boost::shared_ptr<Common::InterserverServletCallback> &servlet){
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(container, g_weak_container.lock());
 	if(!container){
 		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Another servlet with the same message_id already exists"));
@@ -51,7 +38,6 @@ void ServletContainer::insert_servlet(boost::uint16_t message_id, const boost::s
 bool ServletContainer::remove_servlet(boost::uint16_t message_id) NOEXCEPT {
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(container, g_weak_container.lock());
 	if(!container){
 		return false;

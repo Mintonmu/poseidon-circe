@@ -11,7 +11,19 @@ namespace Circe {
 namespace Auth {
 
 namespace {
-	boost::weak_ptr<Common::InterserverAcceptor> g_weak_acceptor;
+	class SpecializedAcceptor : public Common::InterserverAcceptor {
+	public:
+		SpecializedAcceptor(std::string bind, unsigned port, std::string application_key)
+			: Common::InterserverAcceptor(STD_MOVE(bind), port, STD_MOVE(application_key))
+		{ }
+
+	protected:
+		boost::shared_ptr<const Common::InterserverServletCallback> get_servlet(boost::uint16_t message_id) const OVERRIDE {
+			return ServletContainer::get_servlet(message_id);
+		}
+	};
+
+	boost::weak_ptr<SpecializedAcceptor> g_weak_acceptor;
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
@@ -21,7 +33,7 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 	const AUTO(port, get_config<boost::uint16_t>("auth_acceptor_port", 10818));
 	const AUTO(appkey, get_config<std::string>("auth_acceptor_appkey", "testkey"));
 	LOG_CIRCE_INFO("Initializing AuthAcceptor...");
-	const AUTO(acceptor, boost::make_shared<Common::InterserverAcceptor>(ServletContainer::get_safe_container(), bind, port, appkey));
+	const AUTO(acceptor, boost::make_shared<SpecializedAcceptor>(bind, port, appkey));
 	acceptor->activate();
 	handles.push(acceptor);
 	g_weak_acceptor = acceptor;
