@@ -183,11 +183,11 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		m_auth_token = STD_MOVE_IDN(auth_token);
 	}
 
-	const AUTO(response_encoding, Poseidon::Http::pick_content_encoding(request_headers));
-	DEBUG_THROW_UNLESS(response_encoding != Poseidon::Http::CE_NOT_ACCEPTABLE, Poseidon::Http::Exception, Poseidon::Http::ST_NOT_ACCEPTABLE);
+	const AUTO(response_encoding_preferred, Poseidon::Http::pick_content_encoding(request_headers));
+	DEBUG_THROW_UNLESS(response_encoding_preferred != Poseidon::Http::CE_NOT_ACCEPTABLE, Poseidon::Http::Exception, Poseidon::Http::ST_NOT_ACCEPTABLE);
 
 	Poseidon::Http::ResponseHeaders response_headers = { 10001 };
-	Poseidon::StreamBuffer response_entity;
+	std::basic_string<unsigned char> response_entity_as_string;
 
 	// Process the request. `HEAD` is handled in the same way as `GET`.
 	// Fill in `response_headers.status_code` and `response_entity`.
@@ -201,22 +201,24 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		const AUTO(foyer_conn, FoyerConnector::get_connection());
 		DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
 
-		Protocol::GF_ProcessHttpRequest foyer_req;
-		foyer_req.client_uuid = get_session_uuid();
-		foyer_req.client_ip   = get_remote_info().ip();
-		foyer_req.auth_token  = m_auth_token.get();
-		foyer_req.verb        = request_headers.verb;
-		foyer_req.decoded_uri = m_decoded_uri;
-		Protocol::copy_key_values(foyer_req.params, STD_MOVE(request_headers.get_params));
-		Protocol::copy_key_values(foyer_req.headers, STD_MOVE(request_headers.headers));
-		foyer_req.entity      = request_entity.dump_byte_string();
-		LOG_CIRCE_TRACE("Sending request: ", foyer_req);
 		Protocol::FG_ReturnHttpResponse foyer_resp;
-		Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
-		LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+		{
+			Protocol::GF_ProcessHttpRequest foyer_req;
+			foyer_req.client_uuid = get_session_uuid();
+			foyer_req.client_ip   = get_remote_info().ip();
+			foyer_req.auth_token  = m_auth_token.get();
+			foyer_req.verb        = request_headers.verb;
+			foyer_req.decoded_uri = m_decoded_uri;
+			Protocol::copy_key_values(foyer_req.params, STD_MOVE(request_headers.get_params));
+			Protocol::copy_key_values(foyer_req.headers, STD_MOVE(request_headers.headers));
+			foyer_req.entity      = request_entity.dump_byte_string();
+			LOG_CIRCE_TRACE("Sending request: ", foyer_req);
+			Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
+			LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+		}
 		response_headers.status_code = foyer_resp.status_code;
 		response_headers.headers     = Protocol::copy_key_values(STD_MOVE(foyer_resp.headers));
-		response_entity              = Poseidon::StreamBuffer(foyer_resp.entity);
+		response_entity_as_string    = STD_MOVE(foyer_resp.entity);
 		break; }
 
 	case Poseidon::Http::V_OPTIONS: {
@@ -226,46 +228,55 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 	default:
 		DEBUG_THROW(Poseidon::Http::Exception, Poseidon::Http::ST_NOT_IMPLEMENTED);
 	}
+
 	// Fill in other fields.
 	const AUTO(desc, Poseidon::Http::get_status_code_desc(response_headers.status_code));
 	response_headers.reason = desc.desc_short;
-	if(Poseidon::Http::is_keep_alive_enabled(request_headers) && (response_headers.status_code / 100 <= 3)){
-		response_headers.headers.set(Poseidon::sslit("Connection"), "Keep-Alive");
-	} else {
-		response_headers.headers.set(Poseidon::sslit("Connection"), "Close");
-	}
+	const AUTO(keep_alive, Poseidon::Http::is_keep_alive_enabled(request_headers) && (response_headers.status_code / 100 <= 3));
+	response_headers.headers.set(Poseidon::sslit("Connection"), keep_alive ? "Keep-Alive" : "Close");
 	response_headers.headers.set(Poseidon::sslit("Access-Control-Allow-Origin"), "*");
 	response_headers.headers.set(Poseidon::sslit("Access-Control-Allow-Headers"), "Authorization, Content-Type");
 
-	// Try compressing the response entity if it is not empty and no explicit encoding is given.
-	const std::size_t size_original = response_entity.size();
-	if((size_original != 0) && !response_headers.headers.has("Content-Encoding")){
-		const AUTO(compression_level, get_config<int>("protocol_http_compression_level", 6));
-		if(compression_level > 0){
-			switch(response_encoding){
-			case Poseidon::Http::CE_GZIP: {
-				LOG_CIRCE_TRACE("Compressing HTTP response using GZIP: compression_level = ", compression_level);
-				response_headers.headers.set(Poseidon::sslit("Content-Encoding"), "gzip");
-				Poseidon::Deflator deflator(true, compression_level);
-				deflator.put(response_entity);
-				response_entity = deflator.finalize();
-				const std::size_t size_deflated = response_entity.size();
-				LOG_CIRCE_TRACE("GZIP result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0 / size_original, "%)");
-				break; }
-			case Poseidon::Http::CE_DEFLATE: {
-				LOG_CIRCE_TRACE("Compressing HTTP response using DEFLATE: compression_level = ", compression_level);
-				response_headers.headers.set(Poseidon::sslit("Content-Encoding"), "deflate");
-				Poseidon::Deflator deflator(false, compression_level);
-				deflator.put(response_entity);
-				response_entity = deflator.finalize();
-				const std::size_t size_deflated = response_entity.size();
-				LOG_CIRCE_TRACE("DEFLATE result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0 / size_original, "%)");
-				break; }
-			default: {
-				LOG_CIRCE_TRACE("The client did not send any `Accept-Encoding` we support.");
-				break; }
-			}
-		}
+	// Select an encoding for compression if the response entity is not empty and no explicit encoding is given.
+	Poseidon::Http::ContentEncoding response_encoding;
+	const std::size_t size_original = response_entity_as_string.size();
+	if(size_original == 0){
+		response_encoding = Poseidon::Http::CE_IDENTITY;
+	} else if(response_headers.headers.has("Content-Encoding")){
+		response_encoding = Poseidon::Http::CE_IDENTITY;
+	} else if(response_encoding_preferred == Poseidon::Http::CE_GZIP){
+		response_encoding = Poseidon::Http::CE_GZIP;
+	} else if(response_encoding_preferred == Poseidon::Http::CE_DEFLATE){
+		response_encoding = Poseidon::Http::CE_DEFLATE;
+	} else {
+		response_encoding = Poseidon::Http::CE_IDENTITY;
+	}
+	// Compress it if possible
+	Poseidon::StreamBuffer response_entity;
+	switch(response_encoding){
+	case Poseidon::Http::CE_GZIP: {
+		const AUTO(compression_level, get_config<int>("protocol_http_compression_level", 8));
+		LOG_CIRCE_TRACE("Compressing HTTP response using GZIP: compression_level = ", compression_level);
+		Poseidon::Deflator deflator(true, compression_level);
+		deflator.put(response_entity_as_string.data(), response_entity_as_string.size());
+		response_entity = deflator.finalize();
+		const std::size_t size_deflated = response_entity.size();
+		LOG_CIRCE_TRACE("GZIP result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0 / size_original, "%)");
+		response_headers.headers.set(Poseidon::sslit("Content-Encoding"), "gzip");
+		break; }
+	case Poseidon::Http::CE_DEFLATE: {
+		const AUTO(compression_level, get_config<int>("protocol_http_compression_level", 8));
+		LOG_CIRCE_TRACE("Compressing HTTP response using DEFLATE: compression_level = ", compression_level);
+		Poseidon::Deflator deflator(false, compression_level);
+		deflator.put(response_entity_as_string.data(), response_entity_as_string.size());
+		response_entity = deflator.finalize();
+		const std::size_t size_deflated = response_entity.size();
+		LOG_CIRCE_TRACE("DEFLATE result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0 / size_original, "%)");
+		response_headers.headers.set(Poseidon::sslit("Content-Encoding"), "deflate");
+		break; }
+	default: {
+		response_entity.put(response_entity_as_string.data(), response_entity_as_string.size());
+		break; }
 	}
 	if((response_headers.status_code / 100 >= 3) && response_entity.empty()){
 		send_default(response_headers.status_code, STD_MOVE(response_headers.headers));
