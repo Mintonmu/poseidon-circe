@@ -60,8 +60,8 @@ private:
 			http_session->m_decoded_uri = safe_decode_uri(m_request_headers.uri);
 			LOG_CIRCE_TRACE("Decoded URI: ", http_session->m_decoded_uri);
 
-			const AUTO(enable_websocket, get_config<bool>("protocol_enable_websocket", false));
-			DEBUG_THROW_UNLESS(enable_websocket, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
+			const AUTO(websocket_enabled, get_config<bool>("client_websocket_enabled", false));
+			DEBUG_THROW_UNLESS(websocket_enabled, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
 
 			AUTO(ws_resp, Poseidon::WebSocket::make_handshake_response(m_request_headers));
 			DEBUG_THROW_UNLESS(ws_resp.status_code == Poseidon::Http::ST_SWITCHING_PROTOCOLS, Poseidon::Http::Exception, ws_resp.status_code, STD_MOVE(ws_resp.headers));
@@ -194,8 +194,8 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 	case Poseidon::Http::V_HEAD:
 	case Poseidon::Http::V_GET:
 	case Poseidon::Http::V_POST: {
-		const AUTO(enable_http, get_config<bool>("protocol_enable_http", false));
-		DEBUG_THROW_UNLESS(enable_http, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
+		const AUTO(http_enabled, get_config<bool>("http_websocket_enabled", false));
+		DEBUG_THROW_UNLESS(http_enabled, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
 
 		const AUTO(foyer_conn, FoyerConnector::get_connection());
 		DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
@@ -254,7 +254,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 	Poseidon::StreamBuffer response_entity;
 	switch(response_encoding){
 	case Poseidon::Http::CE_GZIP: {
-		const AUTO(compression_level, get_config<int>("protocol_http_compression_level", 8));
+		const AUTO(compression_level, get_config<int>("client_http_compression_level", 8));
 		LOG_CIRCE_TRACE("Compressing HTTP response using GZIP: compression_level = ", compression_level);
 		Poseidon::Deflator deflator(true, compression_level);
 		deflator.put(response_entity_as_string.data(), response_entity_as_string.size());
@@ -264,7 +264,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		response_headers.headers.set(Poseidon::sslit("Content-Encoding"), "gzip");
 		break; }
 	case Poseidon::Http::CE_DEFLATE: {
-		const AUTO(compression_level, get_config<int>("protocol_http_compression_level", 8));
+		const AUTO(compression_level, get_config<int>("client_http_compression_level", 8));
 		LOG_CIRCE_TRACE("Compressing HTTP response using DEFLATE: compression_level = ", compression_level);
 		Poseidon::Deflator deflator(false, compression_level);
 		deflator.put(response_entity_as_string.data(), response_entity_as_string.size());

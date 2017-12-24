@@ -4,6 +4,7 @@
 #include "precompiled.hpp"
 #include "client_websocket_session.hpp"
 #include "client_http_session.hpp"
+#include "mmain.hpp"
 #include "singletons/auth_connector.hpp"
 #include "singletons/foyer_connector.hpp"
 #include "common/cbpp_response.hpp"
@@ -19,6 +20,7 @@ namespace Gate {
 ClientWebSocketSession::ClientWebSocketSession(const boost::shared_ptr<ClientHttpSession> &parent)
 	: Poseidon::WebSocket::Session(parent)
 	, m_session_uuid(parent->get_session_uuid())
+	, m_request_counter_reset_time(0), m_request_counter(0)
 {
 	LOG_CIRCE_DEBUG("ClientWebSocketSession constructor: remote = ", get_remote_info());
 }
@@ -26,6 +28,19 @@ ClientWebSocketSession::~ClientWebSocketSession(){
 	LOG_CIRCE_DEBUG("ClientWebSocketSession destructor: remote = ", get_remote_info());
 }
 
+bool ClientWebSocketSession::on_low_level_message_end(boost::uint64_t whole_size){
+	PROFILE_ME;
+
+	const AUTO(now, Poseidon::get_fast_mono_clock());
+	if(m_request_counter_reset_time < now){
+		m_request_counter = 0;
+		m_request_counter_reset_time = Poseidon::saturated_add<boost::uint64_t>(now, 60000);
+	}
+	const AUTO(max_requests_per_minute, get_config<boost::uint64_t>("client_websocket_max_requests_per_minute", 300));
+	DEBUG_THROW_UNLESS(++m_request_counter <= max_requests_per_minute, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_ACCESS_DENIED, Poseidon::sslit("Max number of requests per minute exceeded"));
+
+	return Poseidon::WebSocket::Session::on_low_level_message_end(whole_size);
+}
 std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params){
 	PROFILE_ME;
 

@@ -19,6 +19,10 @@ class ClientWebSocketSession : public Poseidon::WebSocket::Session {
 private:
 	const Poseidon::Uuid m_session_uuid;
 
+	// 仅在 epoll 线程中访问。
+	mutable boost::uint64_t m_request_counter_reset_time;
+	mutable boost::uint64_t m_request_counter;
+
 	boost::optional<std::string> m_auth_token;
 
 public:
@@ -30,6 +34,7 @@ private:
 	void sync_notify_closure(Poseidon::WebSocket::StatusCode status_code, std::string message);
 
 protected:
+	bool on_low_level_message_end(boost::uint64_t whole_size) OVERRIDE;
 	void on_sync_data_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload) OVERRIDE;
 
 public:
