@@ -40,8 +40,8 @@ namespace Protocol {
 	FIELD_FLEXIBLE     (entity)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
-/*
-#define MESSAGE_NAME   GF_EstablishWebSocketConnection
+
+#define MESSAGE_NAME   GF_WebSocketEstablishmentRequest
 #define MESSAGE_ID     1203
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
@@ -55,7 +55,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   FG_ReturnWebSocketEstablishmentResult
+#define MESSAGE_NAME   FG_WebSocketEstablishmentResponse
 #define MESSAGE_ID     1204
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
@@ -63,25 +63,6 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   GF_NotifyWebSocketClosure
-#define MESSAGE_ID     1205
-#define MESSAGE_FIELDS \
-	FIELD_FIXED        (client_uuid, 16)	\
-	FIELD_STRING       (client_ip)	\
-	FIELD_VUINT        (status_code)	\
-	FIELD_STRING       (message)	\
-	//
-#include <poseidon/cbpp/message_generator.hpp>
-
-#define MESSAGE_NAME   FG_KillWebSocketConnection
-#define MESSAGE_ID     1206
-#define MESSAGE_FIELDS \
-	FIELD_FIXED        (client_uuid, 16)	\
-	FIELD_VUINT        (status_code)	\
-	FIELD_STRING       (message)	\
-	//
-#include <poseidon/cbpp/message_generator.hpp>
-*/
 }
 }
 

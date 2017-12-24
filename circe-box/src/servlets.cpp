@@ -26,19 +26,13 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &foyer_con
 	foyer_resp.entity      = (const unsigned char *)"<h1>hello world!</h1>";
 	return foyer_resp;
 }
-/*
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &foyer_conn, Protocol::FB_EstablishWebSocketConnection foyer_req){
+
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &foyer_conn, Protocol::FB_WebSocketEstablishmentRequest foyer_req){
 	LOG_CIRCE_FATAL("TODO: CLIENT WEBSOCKET ESTABLISHMENT ", foyer_req);
 
-	Protocol::BF_ReturnWebSocketEstablishmentResult foyer_resp;
+	Protocol::BF_WebSocketEstablishmentResponse foyer_resp;
 	return foyer_resp;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &foyer_conn, Protocol::FB_NotifyWebSocketClosure foyer_req){
-	LOG_CIRCE_FATAL("TODO: CLIENT WEBSOCKET CLOSURE ", foyer_req);
-
-	return 0;
-}
-*/
 }
 }

@@ -43,14 +43,14 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn
 	gate_resp.entity      = STD_MOVE(box_resp.entity);
 	return gate_resp;
 }
-/*
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_EstablishWebSocketConnection gate_req){
+
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_WebSocketEstablishmentRequest gate_req){
 	const AUTO(box_conn, BoxConnector::get_connection());
 	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 
-	Protocol::BF_ReturnWebSocketEstablishmentResult box_resp;
+	Protocol::BF_WebSocketEstablishmentResponse box_resp;
 	{
-		Protocol::FB_EstablishWebSocketConnection box_req;
+		Protocol::FB_WebSocketEstablishmentRequest box_req;
 		box_req.gate_uuid   = gate_conn->get_connection_uuid();
 		box_req.client_uuid = gate_req.client_uuid;
 		box_req.client_ip   = STD_MOVE(gate_req.client_ip);
@@ -62,28 +62,11 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn
 		LOG_CIRCE_TRACE("Received response: ", box_resp);
 	}
 
-	Protocol::FG_ReturnWebSocketEstablishmentResult gate_resp;
+	Protocol::FG_WebSocketEstablishmentResponse gate_resp;
 	gate_resp.status_code = box_resp.status_code;
 	gate_resp.message     = STD_MOVE(box_resp.message);
 	return gate_resp;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_NotifyWebSocketClosure gate_ntfy){
-	const AUTO(box_conn, BoxConnector::get_connection());
-	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
-
-	{
-		Protocol::FB_NotifyWebSocketClosure box_ntfy;
-		box_ntfy.gate_uuid   = gate_conn->get_connection_uuid();
-		box_ntfy.client_uuid = gate_ntfy.client_uuid;
-		box_ntfy.status_code = gate_ntfy.status_code;
-		box_ntfy.message     = STD_MOVE(gate_ntfy.message);
-		LOG_CIRCE_TRACE("Sending notification: ", box_ntfy);
-		box_conn->send_notification(box_ntfy);
-	}
-
-	return 0;
-}
-*/
 }
 }

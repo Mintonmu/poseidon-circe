@@ -48,10 +48,10 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 	if(auth_resp.status_code != 0){
 		DEBUG_THROW(Poseidon::WebSocket::Exception, auth_resp.status_code, Poseidon::SharedNts(auth_resp.message));
 	}
-/*
-	Protocol::FG_ReturnWebSocketEstablishmentResult foyer_resp;
+
+	Protocol::FG_WebSocketEstablishmentResponse foyer_resp;
 	{
-		Protocol::GF_EstablishWebSocketConnection foyer_req;
+		Protocol::GF_WebSocketEstablishmentRequest foyer_req;
 		foyer_req.client_uuid = get_session_uuid();
 		foyer_req.client_ip   = get_remote_info().ip();
 		foyer_req.auth_token  = auth_resp.auth_token;
@@ -64,7 +64,7 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 	if(foyer_resp.status_code != 0){
 		DEBUG_THROW(Poseidon::WebSocket::Exception, foyer_resp.status_code, Poseidon::SharedNts(foyer_resp.message));
 	}
-*/
+
 	LOG_CIRCE_DEBUG("Established WebSocketConnection: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 	return STD_MOVE(auth_resp.auth_token);
 }
