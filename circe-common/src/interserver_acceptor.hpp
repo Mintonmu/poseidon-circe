@@ -7,6 +7,8 @@
 #include <poseidon/fwd.hpp>
 #include <poseidon/virtual_shared_from_this.hpp>
 #include <poseidon/mutex.hpp>
+#include <boost/container/flat_set.hpp>
+#include <boost/container/flat_map.hpp>
 #include "interserver_servlet_callback.hpp"
 
 namespace Circe {
@@ -27,6 +29,7 @@ private:
 
 	mutable Poseidon::Mutex m_mutex;
 	boost::shared_ptr<InterserverServer> m_server;
+	boost::container::flat_multiset<boost::weak_ptr<InterserverSession> > m_weak_sessions_pending;
 	boost::container::flat_map<Poseidon::Uuid, boost::weak_ptr<InterserverSession> > m_weak_sessions;
 
 public:

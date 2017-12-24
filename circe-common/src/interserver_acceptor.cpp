@@ -19,15 +19,15 @@ class InterserverAcceptor::InterserverSession : public Poseidon::Cbpp::LowLevelS
 	friend InterserverAcceptor;
 
 private:
-	const boost::weak_ptr<InterserverAcceptor> m_weak_parent;
+	const boost::weak_ptr<InterserverAcceptor> m_weak_acceptor;
 
 	boost::uint16_t m_magic_number;
 	Poseidon::StreamBuffer m_deflated_payload;
 
 public:
-	InterserverSession(Poseidon::Move<Poseidon::UniqueFile> socket, const boost::shared_ptr<InterserverAcceptor> &parent)
-		: Poseidon::Cbpp::LowLevelSession(STD_MOVE(socket)), InterserverConnection(parent->m_application_key)
-		, m_weak_parent(parent)
+	InterserverSession(Poseidon::Move<Poseidon::UniqueFile> socket, const boost::shared_ptr<InterserverAcceptor> &acceptor)
+		: Poseidon::Cbpp::LowLevelSession(STD_MOVE(socket)), InterserverConnection(acceptor->m_application_key)
+		, m_weak_acceptor(acceptor)
 	{
 		LOG_CIRCE_INFO("InterserverSession constructor: remote = ", Poseidon::Cbpp::LowLevelSession::get_remote_info());
 	}
@@ -85,24 +85,25 @@ protected:
 	void layer7_post_set_connection_uuid() OVERRIDE {
 		PROFILE_ME;
 
-		const AUTO(parent, m_weak_parent.lock());
-		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		const AUTO(acceptor, m_weak_acceptor.lock());
+		DEBUG_THROW_UNLESS(acceptor, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 
-		const Poseidon::Mutex::UniqueLock lock(parent->m_mutex);
+		const Poseidon::Mutex::UniqueLock lock(acceptor->m_mutex);
 		bool erase_it;
-		for(AUTO(it, parent->m_weak_sessions.begin()); it != parent->m_weak_sessions.end(); erase_it ? (it = parent->m_weak_sessions.erase(it)) : ++it){
+		for(AUTO(it, acceptor->m_weak_sessions.begin()); it != acceptor->m_weak_sessions.end(); erase_it ? (it = acceptor->m_weak_sessions.erase(it)) : ++it){
 			erase_it = it->second.expired();
 		}
-		const AUTO(pair, parent->m_weak_sessions.emplace(get_connection_uuid(), virtual_shared_from_this<InterserverSession>()));
+		const AUTO(pair, acceptor->m_weak_sessions.emplace(get_connection_uuid(), virtual_shared_from_this<InterserverSession>()));
 		DEBUG_THROW_UNLESS(pair.second, Poseidon::Exception, Poseidon::sslit("Duplicate InterserverSession UUID"));
+		acceptor->m_weak_sessions_pending.erase(virtual_weak_from_this<InterserverSession>());
 	}
 	CbppResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) OVERRIDE {
 		PROFILE_ME;
 
-		const AUTO(parent, m_weak_parent.lock());
-		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		const AUTO(acceptor, m_weak_acceptor.lock());
+		DEBUG_THROW_UNLESS(acceptor, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 
-		const AUTO(servlet, parent->sync_get_servlet(message_id));
+		const AUTO(servlet, acceptor->sync_get_servlet(message_id));
 		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Protocol::ERR_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverSession>(), message_id, STD_MOVE(payload));
 	}
@@ -112,12 +113,12 @@ class InterserverAcceptor::InterserverServer : public Poseidon::TcpServerBase {
 	friend InterserverAcceptor;
 
 private:
-	const boost::weak_ptr<InterserverAcceptor> m_weak_parent;
+	const boost::weak_ptr<InterserverAcceptor> m_weak_acceptor;
 
 public:
-	InterserverServer(const std::string &bind, unsigned port, const boost::shared_ptr<InterserverAcceptor> &parent)
+	InterserverServer(const std::string &bind, unsigned port, const boost::shared_ptr<InterserverAcceptor> &acceptor)
 		: Poseidon::TcpServerBase(Poseidon::IpPort(bind.c_str(), port), "", "")
-		, m_weak_parent(parent)
+		, m_weak_acceptor(acceptor)
 	{
 		LOG_CIRCE_INFO("InterserverServer constructor: local = ", Poseidon::TcpServerBase::get_local_info());
 	}
@@ -129,11 +130,13 @@ protected:
 	boost::shared_ptr<Poseidon::TcpSessionBase> on_client_connect(Poseidon::Move<Poseidon::UniqueFile> socket) OVERRIDE {
 		PROFILE_ME;
 
-		const AUTO(parent, m_weak_parent.lock());
-		DEBUG_THROW_UNLESS(parent, Poseidon::Exception, Poseidon::sslit("The server has been shut down"));
+		const AUTO(acceptor, m_weak_acceptor.lock());
+		DEBUG_THROW_UNLESS(acceptor, Poseidon::Exception, Poseidon::sslit("The server has been shut down"));
 
-		AUTO(session, boost::make_shared<InterserverSession>(STD_MOVE(socket), parent));
+		const Poseidon::Mutex::UniqueLock lock(acceptor->m_mutex);
+		AUTO(session, boost::make_shared<InterserverSession>(STD_MOVE(socket), acceptor));
 		session->set_no_delay();
+		acceptor->m_weak_sessions_pending.emplace(session);
 		return STD_MOVE_IDN(session);
 	}
 };
@@ -172,6 +175,13 @@ void InterserverAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	for(AUTO(it, m_weak_sessions_pending.begin()); it != m_weak_sessions_pending.end(); ++it){
+		const AUTO(session, it->lock());
+		if(session){
+			LOG_CIRCE_DEBUG("Disconnecting interserver session: remote = ", session->layer5_get_remote_info());
+			session->layer5_shutdown(err_code, err_msg);
+		}
+	}
 	for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); ++it){
 		const AUTO(session, it->second.lock());
 		if(session){
@@ -179,6 +189,8 @@ void InterserverAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
 			session->layer5_shutdown(err_code, err_msg);
 		}
 	}
+	m_weak_sessions_pending.clear();
+	m_weak_sessions.clear();
 }
 
 }

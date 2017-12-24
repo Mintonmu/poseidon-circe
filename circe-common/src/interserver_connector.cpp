@@ -20,15 +20,15 @@ class InterserverConnector::InterserverClient : public Poseidon::Cbpp::LowLevelC
 	friend InterserverConnector;
 
 private:
-	const boost::weak_ptr<InterserverConnector> m_weak_parent;
+	const boost::weak_ptr<InterserverConnector> m_weak_connector;
 
 	boost::uint16_t m_magic_number;
 	Poseidon::StreamBuffer m_deflated_payload;
 
 public:
-	InterserverClient(const Poseidon::SockAddr &sock_addr, const boost::shared_ptr<InterserverConnector> &parent)
-		: Poseidon::Cbpp::LowLevelClient(sock_addr, false), InterserverConnection(parent->m_application_key)
-		, m_weak_parent(parent)
+	InterserverClient(const Poseidon::SockAddr &sock_addr, const boost::shared_ptr<InterserverConnector> &connector)
+		: Poseidon::Cbpp::LowLevelClient(sock_addr, false), InterserverConnection(connector->m_application_key)
+		, m_weak_connector(connector)
 	{
 		LOG_CIRCE_INFO("InterserverClient constructor: remote = ", Poseidon::Cbpp::LowLevelClient::get_remote_info());
 	}
@@ -88,10 +88,10 @@ protected:
 	CbppResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) OVERRIDE {
 		PROFILE_ME;
 
-		const AUTO(parent, m_weak_parent.lock());
-		DEBUG_THROW_UNLESS(parent, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		const AUTO(connector, m_weak_connector.lock());
+		DEBUG_THROW_UNLESS(connector, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 
-		const AUTO(servlet, parent->sync_get_servlet(message_id));
+		const AUTO(servlet, connector->sync_get_servlet(message_id));
 		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Protocol::ERR_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverClient>(), message_id, STD_MOVE(payload));
 	}
@@ -166,6 +166,7 @@ void InterserverConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
 		LOG_CIRCE_DEBUG("Disconnecting interserver client: remote = ", client->layer5_get_remote_info());
 		client->layer5_shutdown(err_code, err_msg);
 	}
+	m_weak_client.reset();
 }
 
 }
