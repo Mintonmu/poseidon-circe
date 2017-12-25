@@ -59,7 +59,7 @@ namespace Protocol {
 #define MESSAGE_ID     1204
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
-	FIELD_STRING       (message)	\
+	FIELD_STRING       (reason)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 

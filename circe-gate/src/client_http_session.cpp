@@ -51,14 +51,15 @@ private:
 		}
 		const AUTO(ws_session, m_weak_ws_session.lock());
 		if(!ws_session){
-			http_session->force_shutdown();
+			http_session->send_default_and_shutdown(Poseidon::Http::ST_BAD_REQUEST);
 			return;
 		}
 		LOG_CIRCE_TRACE("Client WebSocket establishment: uri = ", m_request_headers.uri, ", headers = ", m_request_headers.headers);
 
+		std::string decoded_uri;
 		try {
-			http_session->m_decoded_uri = safe_decode_uri(m_request_headers.uri);
-			LOG_CIRCE_TRACE("Decoded URI: ", http_session->m_decoded_uri);
+			decoded_uri = safe_decode_uri(m_request_headers.uri);
+			LOG_CIRCE_TRACE("Decoded URI: ", decoded_uri);
 
 			AUTO(ws_resp, Poseidon::WebSocket::make_handshake_response(m_request_headers));
 			DEBUG_THROW_UNLESS(ws_resp.status_code == Poseidon::Http::ST_SWITCHING_PROTOCOLS, Poseidon::Http::Exception, ws_resp.status_code, STD_MOVE(ws_resp.headers));
@@ -73,7 +74,7 @@ private:
 			return;
 		}
 		try {
-			AUTO(auth_token, ws_session->sync_authenticate(http_session->m_decoded_uri, m_request_headers.get_params));
+			AUTO(auth_token, ws_session->sync_authenticate(decoded_uri, m_request_headers.get_params));
 			LOG_CIRCE_DEBUG("Auth server has allowed WebSocket client: remote = ", ws_session->get_remote_info(), ", auth_token = ", auth_token);
 			DEBUG_THROW_ASSERT(!ws_session->m_auth_token);
 			ws_session->m_auth_token = STD_MOVE_IDN(auth_token);
@@ -132,9 +133,7 @@ std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, cons
 		Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 		LOG_CIRCE_TRACE("Received response: ", auth_resp);
 	}
-	if((auth_resp.status_code != 0) && (auth_resp.status_code != Poseidon::Http::ST_OK)){
-		DEBUG_THROW(Poseidon::Http::Exception, auth_resp.status_code, Protocol::copy_key_values(STD_MOVE(auth_resp.headers)));
-	}
+	DEBUG_THROW_UNLESS(auth_resp.status_code == 0, Poseidon::Http::Exception, auth_resp.status_code, Protocol::copy_key_values(STD_MOVE(auth_resp.headers)));
 
 	LOG_CIRCE_DEBUG("Got authentication token: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 	return STD_MOVE(auth_resp.auth_token);

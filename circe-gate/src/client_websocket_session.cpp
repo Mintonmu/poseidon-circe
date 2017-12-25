@@ -63,9 +63,7 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 		Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 		LOG_CIRCE_TRACE("Received response: ", auth_resp);
 	}
-	if(auth_resp.status_code != 0){
-		DEBUG_THROW(Poseidon::WebSocket::Exception, auth_resp.status_code, Poseidon::SharedNts(auth_resp.message));
-	}
+	DEBUG_THROW_UNLESS(auth_resp.status_code == 0, Poseidon::WebSocket::Exception, auth_resp.status_code, Poseidon::SharedNts(auth_resp.reason));
 
 	Protocol::FG_WebSocketEstablishmentResponse foyer_resp;
 	{
@@ -79,9 +77,7 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 		Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
 		LOG_CIRCE_TRACE("Received response: ", foyer_resp);
 	}
-	if(foyer_resp.status_code != 0){
-		DEBUG_THROW(Poseidon::WebSocket::Exception, foyer_resp.status_code, Poseidon::SharedNts(foyer_resp.message));
-	}
+	DEBUG_THROW_UNLESS(foyer_resp.status_code == 0, Poseidon::WebSocket::Exception, foyer_resp.status_code, Poseidon::SharedNts(foyer_resp.reason));
 
 	LOG_CIRCE_DEBUG("Established WebSocketConnection: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 	return STD_MOVE(auth_resp.auth_token);

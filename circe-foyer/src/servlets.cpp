@@ -64,7 +64,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn
 
 	Protocol::FG_WebSocketEstablishmentResponse gate_resp;
 	gate_resp.status_code = box_resp.status_code;
-	gate_resp.message     = STD_MOVE(box_resp.message);
+	gate_resp.reason      = STD_MOVE(box_resp.reason);
 	return gate_resp;
 }
 
