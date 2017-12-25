@@ -62,7 +62,7 @@ private:
 
 			AUTO(ws_resp, Poseidon::WebSocket::make_handshake_response(m_request_headers));
 			DEBUG_THROW_UNLESS(ws_resp.status_code == Poseidon::Http::ST_SWITCHING_PROTOCOLS, Poseidon::Http::Exception, ws_resp.status_code, STD_MOVE(ws_resp.headers));
-			http_session->send(STD_MOVE(ws_resp));
+			http_session->send(STD_MOVE(ws_resp), Poseidon::StreamBuffer());
 		} catch(Poseidon::Http::Exception &e){
 			LOG_CIRCE_WARNING("Http::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
 			http_session->send_default_and_shutdown(e.get_status_code(), e.get_headers());
@@ -274,11 +274,13 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 		response_entity.put(response_entity_as_string.data(), response_entity_as_string.size());
 		break; }
 	}
-	if((response_headers.status_code / 100 >= 3) && response_entity.empty()){
-		send_default(response_headers.status_code, STD_MOVE(response_headers.headers));
-	} else {
-		send(STD_MOVE(response_headers), STD_MOVE(response_entity));
+	// For 4xx and 5xx responses, create a default entity if there isn't one.
+	if((response_headers.status_code / 100 >= 4) && response_entity.empty()){
+		AUTO(pair, Poseidon::Http::make_default_response(response_headers.status_code, STD_MOVE(response_headers.headers)));
+		response_headers = STD_MOVE(pair.first);
+		response_entity  = STD_MOVE(pair.second);
 	}
+	send(STD_MOVE(response_headers), STD_MOVE(response_entity));
 
 	// HTTP is stateless.
 	m_decoded_uri.clear();
@@ -290,17 +292,29 @@ bool ClientHttpSession::has_been_shutdown() const NOEXCEPT {
 
 	return Poseidon::Http::Session::has_been_shutdown_write();
 }
-void ClientHttpSession::shutdown() NOEXCEPT {
+bool ClientHttpSession::shutdown() NOEXCEPT {
 	PROFILE_ME;
 
 	const AUTO(ws_session, boost::dynamic_pointer_cast<ClientWebSocketSession>(get_upgraded_session()));
 	if(ws_session){
-		LOG_CIRCE_TRACE("Shutting down client WebSocket session: remote = ", get_remote_info());
-		ws_session->shutdown(Poseidon::WebSocket::ST_GOING_AWAY);
-	} else {
-		LOG_CIRCE_TRACE("Shutting down client HTTP session: remote = ", get_remote_info());
-		force_shutdown();
+		return ws_session->shutdown(Poseidon::WebSocket::ST_GOING_AWAY, "");
 	}
+	LOG_CIRCE_DEBUG("Shutting down HTTP client: remote = ", get_remote_info());
+	shutdown_read();
+	return shutdown_write();
+}
+
+bool ClientHttpSession::send(Poseidon::Http::ResponseHeaders response_headers, Poseidon::StreamBuffer entity){
+	PROFILE_ME;
+
+	LOG_CIRCE_DEBUG("Sending to HTTP client: remote = ", get_remote_info(), ", status_code = ", response_headers.status_code, ", headers = ", response_headers.headers, ", entity.size() = ", entity.size());
+	return Poseidon::Http::Session::send(STD_MOVE(response_headers), STD_MOVE(entity));
+}
+bool ClientHttpSession::send_default_and_shutdown(Poseidon::Http::StatusCode status_code, const Poseidon::OptionalMap &headers) NOEXCEPT {
+	PROFILE_ME;
+
+	LOG_CIRCE_DEBUG("Shutting down HTTP client: remote = ", get_remote_info(), ", status_code = ", status_code, ", headers = ", headers);
+	return Poseidon::Http::Session::send_default_and_shutdown(status_code, headers);
 }
 
 }

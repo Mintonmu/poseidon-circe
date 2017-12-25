@@ -41,6 +41,11 @@ public:
 	const Poseidon::Uuid &get_session_uuid() const NOEXCEPT {
 		return m_session_uuid;
 	}
+
+	bool has_been_shutdown() const NOEXCEPT;
+	bool shutdown(Poseidon::WebSocket::StatusCode status_code, const char *reason = "") NOEXCEPT;
+
+	bool send(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload);
 };
 
 }

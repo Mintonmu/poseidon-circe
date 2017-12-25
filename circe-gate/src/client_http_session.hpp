@@ -47,7 +47,10 @@ public:
 	}
 
 	bool has_been_shutdown() const NOEXCEPT;
-	void shutdown() NOEXCEPT;
+	bool shutdown() NOEXCEPT;
+
+	bool send(Poseidon::Http::ResponseHeaders response_headers, Poseidon::StreamBuffer entity);
+	bool send_default_and_shutdown(Poseidon::Http::StatusCode status_code, const Poseidon::OptionalMap &headers = Poseidon::OptionalMap()) NOEXCEPT;
 };
 
 }

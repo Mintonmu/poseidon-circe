@@ -94,5 +94,24 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 	send(Poseidon::WebSocket::OP_DATA_TEXT, Poseidon::StreamBuffer("hello world!"));
 }
 
+bool ClientWebSocketSession::has_been_shutdown() const NOEXCEPT {
+	PROFILE_ME;
+
+	return Poseidon::WebSocket::Session::has_been_shutdown_write();
+}
+bool ClientWebSocketSession::shutdown(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT {
+	PROFILE_ME;
+
+	LOG_CIRCE_DEBUG("Shutting down WebSocket client: remote = ", get_remote_info(), ", status_code = ", status_code, ", reason = ", reason);
+	return Poseidon::WebSocket::Session::shutdown(status_code, reason);
+}
+
+bool ClientWebSocketSession::send(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
+	PROFILE_ME;
+
+	LOG_CIRCE_DEBUG("Sending to WebSocket client: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
+	return Poseidon::WebSocket::Session::send(opcode, STD_MOVE(payload), false);
+}
+
 }
 }
