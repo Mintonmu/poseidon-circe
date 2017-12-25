@@ -85,8 +85,8 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 
 void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
 	PROFILE_ME;
+	LOG_CIRCE_DEBUG("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
-	LOG_POSEIDON_FATAL("DATA: ", opcode, ": ", payload);
 	send(Poseidon::WebSocket::OP_DATA_TEXT, Poseidon::StreamBuffer("hello world!"));
 }
 
@@ -98,14 +98,14 @@ bool ClientWebSocketSession::has_been_shutdown() const NOEXCEPT {
 bool ClientWebSocketSession::shutdown(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT {
 	PROFILE_ME;
 
-	LOG_CIRCE_DEBUG("Shutting down WebSocket client: remote = ", get_remote_info(), ", status_code = ", status_code, ", reason = ", reason);
+	LOG_CIRCE_DEBUG("Shutting down WebSocket connection: remote = ", get_remote_info(), ", status_code = ", status_code, ", reason = ", reason);
 	return Poseidon::WebSocket::Session::shutdown(status_code, reason);
 }
 
 bool ClientWebSocketSession::send(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
 	PROFILE_ME;
 
-	LOG_CIRCE_DEBUG("Sending to WebSocket client: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
+	LOG_CIRCE_DEBUG("Sending WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 	return Poseidon::WebSocket::Session::send(opcode, STD_MOVE(payload), false);
 }
 
