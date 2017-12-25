@@ -60,9 +60,6 @@ private:
 			http_session->m_decoded_uri = safe_decode_uri(m_request_headers.uri);
 			LOG_CIRCE_TRACE("Decoded URI: ", http_session->m_decoded_uri);
 
-			const AUTO(websocket_enabled, get_config<bool>("client_websocket_enabled", false));
-			DEBUG_THROW_UNLESS(websocket_enabled, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
-
 			AUTO(ws_resp, Poseidon::WebSocket::make_handshake_response(m_request_headers));
 			DEBUG_THROW_UNLESS(ws_resp.status_code == Poseidon::Http::ST_SWITCHING_PROTOCOLS, Poseidon::Http::Exception, ws_resp.status_code, STD_MOVE(ws_resp.headers));
 			http_session->send(STD_MOVE(ws_resp));
@@ -115,6 +112,9 @@ ClientHttpSession::~ClientHttpSession(){
 
 std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers){
 	PROFILE_ME;
+
+	const AUTO(http_enabled, get_config<bool>("client_http_enabled", false));
+	DEBUG_THROW_UNLESS(http_enabled, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
 
 	const AUTO(auth_conn, AuthConnector::get_connection());
 	DEBUG_THROW_UNLESS(auth_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
@@ -194,9 +194,6 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 	case Poseidon::Http::V_HEAD:
 	case Poseidon::Http::V_GET:
 	case Poseidon::Http::V_POST: {
-		const AUTO(http_enabled, get_config<bool>("http_websocket_enabled", false));
-		DEBUG_THROW_UNLESS(http_enabled, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
-
 		const AUTO(foyer_conn, FoyerConnector::get_connection());
 		DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
 

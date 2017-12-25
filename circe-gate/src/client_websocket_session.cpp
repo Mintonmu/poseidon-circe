@@ -44,6 +44,9 @@ bool ClientWebSocketSession::on_low_level_message_end(boost::uint64_t whole_size
 std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params){
 	PROFILE_ME;
 
+	const AUTO(websocket_enabled, get_config<bool>("client_websocket_enabled", false));
+	DEBUG_THROW_UNLESS(websocket_enabled, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY);
+
 	const AUTO(auth_conn, AuthConnector::get_connection());
 	DEBUG_THROW_UNLESS(auth_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY);
 	const AUTO(foyer_conn, FoyerConnector::get_connection());
