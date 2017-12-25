@@ -61,12 +61,7 @@ namespace {
 				const AUTO(http_session, it->second.lock());
 				if(http_session){
 					LOG_CIRCE_DEBUG("Disconnecting client session: remote = ", http_session->get_remote_info());
-					const AUTO(ws_session, boost::dynamic_pointer_cast<ClientWebSocketSession>(http_session->get_upgraded_session()));
-					if(ws_session){
-						ws_session->shutdown(Poseidon::WebSocket::ST_GOING_AWAY);
-					} else {
-						http_session->force_shutdown();
-					}
+					http_session->shutdown();
 				}
 			}
 		}

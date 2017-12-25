@@ -45,6 +45,9 @@ public:
 	const Poseidon::Uuid &get_session_uuid() const {
 		return m_session_uuid;
 	}
+
+	bool has_been_shutdown() const NOEXCEPT;
+	void shutdown() NOEXCEPT;
 };
 
 }

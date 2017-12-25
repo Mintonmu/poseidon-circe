@@ -285,5 +285,23 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders request_h
 	m_auth_token.reset();
 }
 
+bool ClientHttpSession::has_been_shutdown() const NOEXCEPT {
+	PROFILE_ME;
+
+	return Poseidon::Http::Session::has_been_shutdown_write();
+}
+void ClientHttpSession::shutdown() NOEXCEPT {
+	PROFILE_ME;
+
+	const AUTO(ws_session, boost::dynamic_pointer_cast<ClientWebSocketSession>(get_upgraded_session()));
+	if(ws_session){
+		LOG_CIRCE_TRACE("Shutting down client WebSocket session: remote = ", get_remote_info());
+		ws_session->shutdown(Poseidon::WebSocket::ST_GOING_AWAY);
+	} else {
+		LOG_CIRCE_TRACE("Shutting down client HTTP session: remote = ", get_remote_info());
+		force_shutdown();
+	}
+}
+
 }
 }
