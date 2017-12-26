@@ -215,7 +215,9 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		}
 		resp_headers.status_code = foyer_resp.status_code;
 		resp_headers.headers     = Protocol::copy_key_values(STD_MOVE(foyer_resp.headers));
-		resp_entity_as_string    = STD_MOVE(foyer_resp.entity);
+		if(req_headers.verb != Poseidon::Http::V_HEAD){
+			resp_entity_as_string = STD_MOVE(foyer_resp.entity);
+		}
 		break; }
 
 	case Poseidon::Http::V_OPTIONS: {
@@ -248,7 +250,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 	} else {
 		resp_encoding = Poseidon::Http::CE_IDENTITY;
 	}
-	// Compress it if possible
+	// Compress it if possible.
 	Poseidon::StreamBuffer resp_entity;
 	switch(resp_encoding){
 	case Poseidon::Http::CE_GZIP: {
