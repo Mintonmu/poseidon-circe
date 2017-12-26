@@ -29,7 +29,6 @@ private:
 	const Poseidon::Uuid m_client_uuid;
 
 	mutable Poseidon::Mutex m_closure_notification_mutex;
-	boost::weak_ptr<Common::InterserverConnection> m_weak_foyer_conn;
 	boost::shared_ptr<Poseidon::Timer> m_closure_notification_timer;
 	boost::optional<std::pair<Poseidon::WebSocket::StatusCode, std::string> > m_closure_reason;
 
@@ -49,7 +48,7 @@ public:
 	~ClientWebSocketSession() OVERRIDE;
 
 private:
-	void reserve_closure_notification_timer(const boost::shared_ptr<Common::InterserverConnection> &foyer_conn);
+	void reserve_closure_notification_timer();
 	void drop_closure_notification_timer() NOEXCEPT;
 	void deliver_closure_notification(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT;
 

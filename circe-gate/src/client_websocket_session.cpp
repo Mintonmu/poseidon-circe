@@ -147,7 +147,7 @@ ClientWebSocketSession::~ClientWebSocketSession(){
 	LOG_CIRCE_DEBUG("ClientWebSocketSession destructor: remote = ", get_remote_info());
 }
 
-void ClientWebSocketSession::reserve_closure_notification_timer(const boost::shared_ptr<Common::InterserverConnection> &foyer_conn){
+void ClientWebSocketSession::reserve_closure_notification_timer(){
 	PROFILE_ME;
 	LOG_CIRCE_DEBUG("Reserving WebSocket closure notification timer: ws_session = ", (void *)this);
 
@@ -155,7 +155,6 @@ void ClientWebSocketSession::reserve_closure_notification_timer(const boost::sha
 	DEBUG_THROW_ASSERT(!m_closure_notification_timer);
 	// Create a circular reference. We do this deliberately to prevent the session from being deleted after it is detached from epoll.
 	const AUTO(timer, Poseidon::TimerDaemon::register_low_level_timer(0, 60000, boost::bind(&on_closure_notification_low_level_timer, virtual_shared_from_this<ClientWebSocketSession>())));
-	m_weak_foyer_conn = foyer_conn;
 	m_closure_notification_timer = timer;
 }
 void ClientWebSocketSession::drop_closure_notification_timer() NOEXCEPT {
@@ -203,7 +202,7 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 	const AUTO(foyer_conn, FoyerConnector::get_client());
 	DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY);
 
-	reserve_closure_notification_timer(foyer_conn);
+	reserve_closure_notification_timer();
 	try {
 		Protocol::Foyer::WebSocketEstablishmentResponseFromBox foyer_resp;
 		{
