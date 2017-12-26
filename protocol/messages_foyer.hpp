@@ -93,7 +93,7 @@ namespace Foyer {
 #define MESSAGE_ID     1208
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
-	FIELD_ARRAY        (messages,	\
+	FIELD_LIST         (messages,	\
 	  FIELD_VUINT        (opcode)\
 	  FIELD_FLEXIBLE     (payload)	\
 	)	\
