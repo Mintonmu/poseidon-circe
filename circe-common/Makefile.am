@@ -49,7 +49,7 @@ lib_LTLIBRARIES = \
 	lib/libcirce-common.la
 
 lib_libcirce_common_la_SOURCES = \
-	../protocol/messages.cpp	\
+	../protocol/messages_def.cpp	\
 	circe-common/src/cbpp_response.cpp	\
 	circe-common/src/interserver_connection.cpp	\
 	circe-common/src/interserver_servlet_container.cpp	\
