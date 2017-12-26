@@ -63,6 +63,15 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
+#define MESSAGE_NAME   GF_WebSocketClosureNotification
+#define MESSAGE_ID     1205
+#define MESSAGE_FIELDS \
+	FIELD_FIXED        (client_uuid, 16)	\
+	FIELD_VUINT        (status_code)	\
+	FIELD_STRING       (reason)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
 }
 }
 
