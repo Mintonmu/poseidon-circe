@@ -40,7 +40,7 @@ protected:
 	}
 	void perform() FINAL
 	try {
-		Protocol::Foyer::WebSocketClosureNotification foyer_ntfy;
+		Protocol::Foyer::WebSocketClosureNotificationToBox foyer_ntfy;
 		foyer_ntfy.client_uuid = m_session_uuid;
 		foyer_ntfy.status_code = m_status_code;
 		foyer_ntfy.reason      = STD_MOVE(m_reason);
@@ -147,9 +147,9 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 
 	reserve_closure_notification_timer(foyer_conn);
 	try {
-		Protocol::Foyer::WebSocketEstablishmentResponse foyer_resp;
+		Protocol::Foyer::WebSocketEstablishmentResponseFromBox foyer_resp;
 		{
-			Protocol::Foyer::WebSocketEstablishmentRequest foyer_req;
+			Protocol::Foyer::WebSocketEstablishmentRequestToBox foyer_req;
 			foyer_req.client_uuid = get_session_uuid();
 			foyer_req.client_ip   = get_remote_info().ip();
 			foyer_req.auth_token  = auth_resp.auth_token;

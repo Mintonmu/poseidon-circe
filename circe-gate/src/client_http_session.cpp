@@ -198,9 +198,9 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		const AUTO(foyer_conn, FoyerConnector::get_connection());
 		DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
 
-		Protocol::Foyer::HttpResponse foyer_resp;
+		Protocol::Foyer::HttpResponseFromBox foyer_resp;
 		{
-			Protocol::Foyer::HttpRequest foyer_req;
+			Protocol::Foyer::HttpRequestToBox foyer_req;
 			foyer_req.client_uuid = get_session_uuid();
 			foyer_req.client_ip   = get_remote_info().ip();
 			foyer_req.auth_token  = m_auth_token.get();

@@ -18,7 +18,7 @@
 namespace Circe {
 namespace Foyer {
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Foyer::HttpRequest req){
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Foyer::HttpRequestToBox req){
 	const AUTO(box_conn, BoxConnector::get_connection());
 	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 
@@ -39,14 +39,14 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 		LOG_CIRCE_TRACE("Received response: ", box_resp);
 	}
 
-	Protocol::Foyer::HttpResponse resp;
+	Protocol::Foyer::HttpResponseFromBox resp;
 	resp.status_code = box_resp.status_code;
 	Protocol::copy_key_values(resp.headers, STD_MOVE(box_resp.headers));
 	resp.entity      = STD_MOVE(box_resp.entity);
 	return resp;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Foyer::WebSocketEstablishmentRequest req){
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Foyer::WebSocketEstablishmentRequestToBox req){
 	const AUTO(box_conn, BoxConnector::get_connection());
 	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 
@@ -64,13 +64,13 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 		LOG_CIRCE_TRACE("Received response: ", box_resp);
 	}
 
-	Protocol::Foyer::WebSocketEstablishmentResponse resp;
+	Protocol::Foyer::WebSocketEstablishmentResponseFromBox resp;
 	resp.status_code = box_resp.status_code;
 	resp.reason      = STD_MOVE(box_resp.reason);
 	return resp;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Foyer::WebSocketClosureNotification ntfy){
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Foyer::WebSocketClosureNotificationToBox ntfy){
 	const AUTO(box_conn, BoxConnector::get_connection());
 	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 
@@ -87,7 +87,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	return 0;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Foyer::WebSocketKillRequest req){
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Foyer::WebSocketKillRequestToGate req){
 	const AUTO(gate_conn, FoyerAcceptor::get_session(Poseidon::Uuid(req.gate_uuid)));
 	DEBUG_THROW_UNLESS(gate_conn, Poseidon::Cbpp::Exception, Protocol::ERR_GATE_NOT_FOUND, Poseidon::sslit("The specified gate server was not found"));
 
@@ -102,7 +102,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 		LOG_CIRCE_TRACE("Received response: ", gate_resp);
 	}
 
-	Protocol::Foyer::WebSocketKillResponse resp;
+	Protocol::Foyer::WebSocketKillResponseFromGate resp;
 	return resp;
 }
 

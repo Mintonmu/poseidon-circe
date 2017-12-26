@@ -10,7 +10,7 @@ namespace Circe {
 namespace Protocol {
 namespace Foyer {
 
-#define MESSAGE_NAME   HttpRequest
+#define MESSAGE_NAME   HttpRequestToBox
 #define MESSAGE_ID     1201
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
@@ -30,7 +30,7 @@ namespace Foyer {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   HttpResponse
+#define MESSAGE_NAME   HttpResponseFromBox
 #define MESSAGE_ID     1202
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
@@ -42,7 +42,7 @@ namespace Foyer {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketEstablishmentRequest
+#define MESSAGE_NAME   WebSocketEstablishmentRequestToBox
 #define MESSAGE_ID     1203
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
@@ -56,7 +56,7 @@ namespace Foyer {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketEstablishmentResponse
+#define MESSAGE_NAME   WebSocketEstablishmentResponseFromBox
 #define MESSAGE_ID     1204
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
@@ -64,7 +64,7 @@ namespace Foyer {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketClosureNotification
+#define MESSAGE_NAME   WebSocketClosureNotificationToBox
 #define MESSAGE_ID     1205
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
@@ -73,7 +73,7 @@ namespace Foyer {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketKillRequest
+#define MESSAGE_NAME   WebSocketKillRequestToGate
 #define MESSAGE_ID     1206
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
@@ -83,7 +83,7 @@ namespace Foyer {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketKillResponse
+#define MESSAGE_NAME   WebSocketKillResponseFromGate
 #define MESSAGE_ID     1207
 #define MESSAGE_FIELDS \
 	//
