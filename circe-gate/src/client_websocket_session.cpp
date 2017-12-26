@@ -165,6 +165,7 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 		throw;
 	}
 
+	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("Connection has been shut down"));
 	LOG_CIRCE_DEBUG("Established WebSocketConnection: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 	return STD_MOVE(auth_resp.auth_token);
 }

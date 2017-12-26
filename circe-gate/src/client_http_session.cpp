@@ -135,6 +135,7 @@ std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, cons
 	}
 	DEBUG_THROW_UNLESS(auth_resp.status_code == 0, Poseidon::Http::Exception, auth_resp.status_code, Protocol::copy_key_values(STD_MOVE(auth_resp.headers)));
 
+	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("Connection has been shut down"));
 	LOG_CIRCE_DEBUG("Got authentication token: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 	return STD_MOVE(auth_resp.auth_token);
 }
