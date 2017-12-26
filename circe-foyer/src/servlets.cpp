@@ -68,5 +68,22 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn
 	return gate_resp;
 }
 
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GF_WebSocketClosureNotification gate_ntfy){
+	const AUTO(box_conn, BoxConnector::get_connection());
+	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
+
+	{
+		Protocol::FB_WebSocketClosureNotification box_ntfy;
+		box_ntfy.gate_uuid   = gate_conn->get_connection_uuid();
+		box_ntfy.client_uuid = gate_ntfy.client_uuid;
+		box_ntfy.status_code = gate_ntfy.status_code;
+		box_ntfy.reason      = STD_MOVE(gate_ntfy.reason);
+		LOG_CIRCE_TRACE("Sending ntfyuest: ", box_ntfy);
+		box_conn->send_notification(box_ntfy);
+	}
+
+	return 0;
+}
+
 }
 }

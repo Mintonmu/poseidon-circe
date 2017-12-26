@@ -173,7 +173,9 @@ void ClientWebSocketSession::on_close(int err_code){
 	PROFILE_ME;
 	LOG_CIRCE_DEBUG("WebSocket connection closed: remote = ", get_remote_info(), ", err_code = ", err_code);
 
-	deliver_closure_notification(Poseidon::WebSocket::ST_RESERVED_ABNORMAL, "");
+	Poseidon::Buffer_ostream bos;
+	bos <<"WebSocket connection closed without a closure frame: Socket error was " <<err_code <<" (" <<Poseidon::get_error_desc(err_code) <<")" <<std::ends;
+	deliver_closure_notification(Poseidon::WebSocket::ST_RESERVED_ABNORMAL, static_cast<const char *>(bos.get_buffer().squash()));
 
 	Poseidon::WebSocket::Session::on_close(err_code);
 }

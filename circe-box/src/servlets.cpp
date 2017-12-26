@@ -34,5 +34,11 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &foyer_con
 	return foyer_resp;
 }
 
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &foyer_conn, Protocol::FB_WebSocketClosureNotification foyer_ntfy){
+	LOG_CIRCE_FATAL("TODO: CLIENT WEBSOCKET CLOSURE ", foyer_ntfy);
+
+	return 0;
+}
+
 }
 }
