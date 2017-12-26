@@ -96,7 +96,7 @@ void ClientWebSocketSession::reserve_closure_notification_timer(const boost::sha
 	const Poseidon::Mutex::UniqueLock lock(m_closure_notification_mutex);
 	DEBUG_THROW_ASSERT(!m_closure_notification_timer);
 	// Create a circular reference. We do this deliberately to prevent the session from being deleted after it is detached from epoll.
-	const AUTO(timer, Poseidon::TimerDaemon::register_low_level_timer(0, 300000, boost::bind(&on_closure_notification_low_level_timer, virtual_shared_from_this<ClientWebSocketSession>())));
+	const AUTO(timer, Poseidon::TimerDaemon::register_low_level_timer(0, 60000, boost::bind(&on_closure_notification_low_level_timer, virtual_shared_from_this<ClientWebSocketSession>())));
 	m_weak_foyer_conn = foyer_conn;
 	m_closure_notification_timer = timer;
 }
