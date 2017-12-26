@@ -26,9 +26,10 @@ pkginclude_HEADERS =
 
 pkginclude_protocoldir = $(pkgincludedir)/protocol
 pkginclude_protocol_HEADERS = \
-	../protocol/messages_gate_auth.hpp	\
-	../protocol/messages_gate_foyer.hpp	\
-	../protocol/messages_foyer_box.hpp	\
+	../protocol/messages_gate.hpp	\
+	../protocol/messages_foyer.hpp	\
+	../protocol/messages_auth.hpp	\
+	../protocol/messages_box.hpp	\
 	../protocol/error_codes.hpp	\
 	../protocol/utilities.hpp
 

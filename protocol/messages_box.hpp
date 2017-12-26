@@ -1,15 +1,16 @@
 // 这个文件是 Circe 服务器应用程序框架的一部分。
 // Copyleft 2017, LH_Mouse. All wrongs reserved.
 
-#ifndef CIRCE_PROTOCOL_FOYER_BOX_HPP_
-#define CIRCE_PROTOCOL_FOYER_BOX_HPP_
+#ifndef CIRCE_PROTOCOL_BOX_HPP_
+#define CIRCE_PROTOCOL_BOX_HPP_
 
 #include <poseidon/cbpp/message_base.hpp>
 
 namespace Circe {
 namespace Protocol {
+namespace Box {
 
-#define MESSAGE_NAME   FB_HttpRequest
+#define MESSAGE_NAME   HttpRequest
 #define MESSAGE_ID     1901
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
@@ -30,7 +31,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   BF_HttpResponse
+#define MESSAGE_NAME   HttpResponse
 #define MESSAGE_ID     1902
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
@@ -42,7 +43,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   FB_WebSocketEstablishmentRequest
+#define MESSAGE_NAME   WebSocketEstablishmentRequest
 #define MESSAGE_ID     1903
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
@@ -57,7 +58,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   BF_WebSocketEstablishmentResponse
+#define MESSAGE_NAME   WebSocketEstablishmentResponse
 #define MESSAGE_ID     1904
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
@@ -65,7 +66,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   FB_WebSocketClosureNotification
+#define MESSAGE_NAME   WebSocketClosureNotification
 #define MESSAGE_ID     1905
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
@@ -75,6 +76,7 @@ namespace Protocol {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
+}
 }
 }
 

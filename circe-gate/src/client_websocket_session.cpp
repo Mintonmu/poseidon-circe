@@ -9,8 +9,8 @@
 #include "singletons/foyer_connector.hpp"
 #include "common/cbpp_response.hpp"
 #include "protocol/error_codes.hpp"
-#include "protocol/messages_gate_auth.hpp"
-#include "protocol/messages_gate_foyer.hpp"
+#include "protocol/messages_auth.hpp"
+#include "protocol/messages_foyer.hpp"
 #include "protocol/utilities.hpp"
 #include <poseidon/websocket/exception.hpp>
 #include <poseidon/singletons/timer_daemon.hpp>
@@ -40,7 +40,7 @@ protected:
 	}
 	void perform() FINAL
 	try {
-		Protocol::GF_WebSocketClosureNotification foyer_ntfy;
+		Protocol::Foyer::WebSocketClosureNotification foyer_ntfy;
 		foyer_ntfy.client_uuid = m_session_uuid;
 		foyer_ntfy.status_code = m_status_code;
 		foyer_ntfy.reason      = STD_MOVE(m_reason);
@@ -129,9 +129,9 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 	const AUTO(auth_conn, AuthConnector::get_connection());
 	DEBUG_THROW_UNLESS(auth_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY);
 
-	Protocol::AG_WebSocketAuthenticationResponse auth_resp;
+	Protocol::Auth::WebSocketAuthenticationResponse auth_resp;
 	{
-		Protocol::GA_WebSocketAuthenticationRequest auth_req;
+		Protocol::Auth::WebSocketAuthenticationRequest auth_req;
 		auth_req.client_uuid = get_session_uuid();
 		auth_req.client_ip   = get_remote_info().ip();
 		auth_req.decoded_uri = decoded_uri;
@@ -147,9 +147,9 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 
 	reserve_closure_notification_timer(foyer_conn);
 	try {
-		Protocol::FG_WebSocketEstablishmentResponse foyer_resp;
+		Protocol::Foyer::WebSocketEstablishmentResponse foyer_resp;
 		{
-			Protocol::GF_WebSocketEstablishmentRequest foyer_req;
+			Protocol::Foyer::WebSocketEstablishmentRequest foyer_req;
 			foyer_req.client_uuid = get_session_uuid();
 			foyer_req.client_ip   = get_remote_info().ip();
 			foyer_req.auth_token  = auth_resp.auth_token;

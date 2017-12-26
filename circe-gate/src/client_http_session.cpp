@@ -9,8 +9,8 @@
 #include "singletons/foyer_connector.hpp"
 #include "common/cbpp_response.hpp"
 #include "protocol/error_codes.hpp"
-#include "protocol/messages_gate_auth.hpp"
-#include "protocol/messages_gate_foyer.hpp"
+#include "protocol/messages_auth.hpp"
+#include "protocol/messages_foyer.hpp"
 #include "protocol/utilities.hpp"
 #include <poseidon/job_base.hpp>
 #include <poseidon/http/request_headers.hpp>
@@ -120,9 +120,9 @@ std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, cons
 	const AUTO(auth_conn, AuthConnector::get_connection());
 	DEBUG_THROW_UNLESS(auth_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
 
-	Protocol::AG_HttpAuthenticationResponse auth_resp;
+	Protocol::Auth::HttpAuthenticationResponse auth_resp;
 	{
-		Protocol::GA_HttpAuthenticationRequest auth_req;
+		Protocol::Auth::HttpAuthenticationRequest auth_req;
 		auth_req.client_uuid = get_session_uuid();
 		auth_req.client_ip   = get_remote_info().ip();
 		auth_req.verb        = verb;
@@ -197,9 +197,9 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		const AUTO(foyer_conn, FoyerConnector::get_connection());
 		DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
 
-		Protocol::FG_HttpResponse foyer_resp;
+		Protocol::Foyer::HttpResponse foyer_resp;
 		{
-			Protocol::GF_HttpRequest foyer_req;
+			Protocol::Foyer::HttpRequest foyer_req;
 			foyer_req.client_uuid = get_session_uuid();
 			foyer_req.client_ip   = get_remote_info().ip();
 			foyer_req.auth_token  = m_auth_token.get();

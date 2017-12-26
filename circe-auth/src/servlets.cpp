@@ -6,25 +6,25 @@
 #include "common/interserver_connection.hpp"
 #include "common/define_interserver_servlet.hpp"
 #include "protocol/error_codes.hpp"
-#include "protocol/messages_gate_auth.hpp"
+#include "protocol/messages_auth.hpp"
 
 #define DEFINE_SERVLET(...)   CIRCE_DEFINE_INTERSERVER_SERVLET(::Circe::Auth::ServletContainer::insert_servlet, __VA_ARGS__)
 
 namespace Circe {
 namespace Auth {
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GA_HttpAuthenticationRequest gate_req){
-	LOG_POSEIDON_FATAL("TODO: CHECK AUTHENTICATION: ", gate_req);
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Auth::HttpAuthenticationRequest req){
+	LOG_POSEIDON_FATAL("TODO: CHECK AUTHENTICATION: ", req);
 
-	Protocol::AG_HttpAuthenticationResponse gate_resp;
-	return gate_resp;
+	Protocol::Auth::HttpAuthenticationResponse resp;
+	return resp;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &gate_conn, Protocol::GA_WebSocketAuthenticationRequest gate_req){
-	LOG_POSEIDON_FATAL("TODO: CHECK AUTHENTICATION: ", gate_req);
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Auth::WebSocketAuthenticationRequest req){
+	LOG_POSEIDON_FATAL("TODO: CHECK AUTHENTICATION: ", req);
 
-	Protocol::AG_WebSocketAuthenticationResponse gate_resp;
-	return gate_resp;
+	Protocol::Auth::WebSocketAuthenticationResponse resp;
+	return resp;
 }
 
 }
