@@ -106,5 +106,29 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 	return resp;
 }
 
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Foyer::WebSocketPackedMessageRequestToBox req){
+	const AUTO(box_conn, BoxConnector::get_connection());
+	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
+
+	Protocol::Box::WebSocketPackedMessageResponse box_resp;
+	{
+		Protocol::Box::WebSocketPackedMessageRequest box_req;
+		box_req.gate_uuid   = conn->get_connection_uuid();
+		box_req.client_uuid = req.client_uuid;
+		box_req.messages.reserve(req.messages.size());
+		for(AUTO(rit, req.messages.begin()); rit != req.messages.end(); ++rit){
+			AUTO(wit, box_req.messages.emplace(box_req.messages.end()));
+			wit->opcode  = rit->opcode;
+			wit->payload = STD_MOVE(rit->payload);
+		}
+		LOG_CIRCE_TRACE("Sending request: ", box_req);
+		Common::wait_for_response(box_resp, box_conn->send_request(box_req));
+		LOG_CIRCE_TRACE("Received response: ", box_resp);
+	}
+
+	Protocol::Foyer::WebSocketPackedMessageResponseFromBox resp;
+	return resp;
+}
+
 }
 }

@@ -19,6 +19,7 @@ class ClientWebSocketSession : public Poseidon::WebSocket::Session {
 	friend ClientHttpSession;
 
 private:
+	class WebSocketDeliverJob;
 	class WebSocketClosureJob;
 
 private:
@@ -49,7 +50,6 @@ private:
 	void deliver_closure_notification(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT;
 
 	std::string sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params);
-	void sync_notify_closure(Poseidon::WebSocket::StatusCode status_code, std::string message);
 
 protected:
 	// Callbacks run in the epoll thread.

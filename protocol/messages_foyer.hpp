@@ -89,6 +89,23 @@ namespace Foyer {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
+#define MESSAGE_NAME   WebSocketPackedMessageRequestToBox
+#define MESSAGE_ID     1208
+#define MESSAGE_FIELDS \
+	FIELD_FIXED        (client_uuid, 16)	\
+	FIELD_ARRAY        (messages,	\
+	  FIELD_VUINT        (opcode)\
+	  FIELD_FLEXIBLE     (payload)	\
+	)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
+#define MESSAGE_NAME   WebSocketPackedMessageResponseFromBox
+#define MESSAGE_ID     1209
+#define MESSAGE_FIELDS \
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
 }
 }
 }
