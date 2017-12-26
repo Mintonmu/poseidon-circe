@@ -4,6 +4,7 @@
 #ifndef CIRCE_GATE_CLIENT_HTTP_SESSION_HPP_
 #define CIRCE_GATE_CLIENT_HTTP_SESSION_HPP_
 
+#include <poseidon/fwd.hpp>
 #include <poseidon/http/session.hpp>
 #include <poseidon/uuid.hpp>
 #include <boost/optional.hpp>
@@ -25,6 +26,7 @@ private:
 private:
 	const Poseidon::Uuid m_session_uuid;
 
+	// These are accessed only by the primary thread.
 	std::string m_decoded_uri;
 	boost::optional<std::string> m_auth_token;
 
@@ -36,8 +38,10 @@ private:
 	std::string sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers);
 
 protected:
+	// Callbacks run in the epoll thread.
 	boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers) OVERRIDE;
 
+	// Callbacks run in the primary thread.
 	void on_sync_expect(Poseidon::Http::RequestHeaders req_headers) OVERRIDE;
 	void on_sync_request(Poseidon::Http::RequestHeaders req_headers, Poseidon::StreamBuffer req_entity) OVERRIDE;
 
