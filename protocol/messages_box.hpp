@@ -81,7 +81,7 @@ namespace Box {
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
 	FIELD_FIXED        (client_uuid, 16)	\
-	FIELD_ARRAY        (messages,	\
+	FIELD_LIST         (messages,	\
 	  FIELD_VUINT        (opcode)\
 	  FIELD_FLEXIBLE     (payload)	\
 	)	\

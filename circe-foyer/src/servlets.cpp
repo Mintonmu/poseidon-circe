@@ -115,7 +115,6 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 		Protocol::Box::WebSocketPackedMessageRequest box_req;
 		box_req.gate_uuid   = conn->get_connection_uuid();
 		box_req.client_uuid = req.client_uuid;
-		box_req.messages.reserve(req.messages.size());
 		for(AUTO(rit, req.messages.begin()); rit != req.messages.end(); ++rit){
 			AUTO(wit, box_req.messages.emplace(box_req.messages.end()));
 			wit->opcode  = rit->opcode;
