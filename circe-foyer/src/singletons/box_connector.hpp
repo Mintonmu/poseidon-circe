@@ -14,7 +14,7 @@ private:
 	BoxConnector();
 
 public:
-	static boost::shared_ptr<Common::InterserverConnection> get_connection();
+	static boost::shared_ptr<Common::InterserverConnection> get_client();
 	static void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 

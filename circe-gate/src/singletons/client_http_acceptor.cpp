@@ -37,17 +37,17 @@ namespace {
 				for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); erase_it ? (it = m_weak_sessions.erase(it)) : ++it){
 					erase_it = it->second.expired();
 				}
-				DEBUG_THROW_ASSERT(m_weak_sessions.emplace(session->get_session_uuid(), session).second);
+				DEBUG_THROW_ASSERT(m_weak_sessions.emplace(session->get_client_uuid(), session).second);
 			}
 			return STD_MOVE_IDN(session);
 		}
 
 	public:
-		boost::shared_ptr<ClientHttpSession> get_session(const Poseidon::Uuid &session_uuid) const {
+		boost::shared_ptr<ClientHttpSession> get_session(const Poseidon::Uuid &client_uuid) const {
 			PROFILE_ME;
 
 			const Poseidon::Mutex::UniqueLock lock(m_mutex);
-			const AUTO(it, m_weak_sessions.find(session_uuid));
+			const AUTO(it, m_weak_sessions.find(client_uuid));
 			if(it == m_weak_sessions.end()){
 				return VAL_INIT;
 			}
@@ -81,14 +81,14 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 	g_weak_acceptor = acceptor;
 }
 
-boost::shared_ptr<ClientHttpSession> ClientHttpAcceptor::get_session(const Poseidon::Uuid &session_uuid){
+boost::shared_ptr<ClientHttpSession> ClientHttpAcceptor::get_session(const Poseidon::Uuid &client_uuid){
 	PROFILE_ME;
 
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
 		return VAL_INIT;
 	}
-	return acceptor->get_session(session_uuid);
+	return acceptor->get_session(client_uuid);
 }
 void ClientHttpAcceptor::clear(long /*err_code*/, const char */*err_msg*/) NOEXCEPT {
 	PROFILE_ME;

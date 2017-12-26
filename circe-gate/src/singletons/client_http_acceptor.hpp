@@ -14,7 +14,7 @@ private:
 	ClientHttpAcceptor();
 
 public:
-	static boost::shared_ptr<ClientHttpSession> get_session(const Poseidon::Uuid &session_uuid);
+	static boost::shared_ptr<ClientHttpSession> get_session(const Poseidon::Uuid &client_uuid);
 	static void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 

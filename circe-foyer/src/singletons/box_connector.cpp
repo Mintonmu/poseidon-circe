@@ -42,7 +42,7 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 	g_weak_connector = connector;
 }
 
-boost::shared_ptr<Common::InterserverConnection> BoxConnector::get_connection(){
+boost::shared_ptr<Common::InterserverConnection> BoxConnector::get_client(){
 	PROFILE_ME;
 
 	const AUTO(connector, g_weak_connector.lock());

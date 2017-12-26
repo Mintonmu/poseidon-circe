@@ -19,14 +19,14 @@ class ClientWebSocketSession : public Poseidon::WebSocket::Session {
 	friend ClientHttpSession;
 
 private:
-	class WebSocketDeliverJob;
+	class WebSocketDeliveryJob;
 	class WebSocketClosureJob;
 
 private:
 	static void on_closure_notification_low_level_timer(const boost::shared_ptr<ClientWebSocketSession> &session);
 
 private:
-	const Poseidon::Uuid m_session_uuid;
+	const Poseidon::Uuid m_client_uuid;
 
 	mutable Poseidon::Mutex m_closure_notification_mutex;
 	boost::weak_ptr<Common::InterserverConnection> m_weak_foyer_conn;
@@ -39,6 +39,10 @@ private:
 
 	// These are accessed only by the primary thread.
 	boost::optional<std::string> m_auth_token;
+
+	boost::container::deque<std::pair<Poseidon::WebSocket::StatusCode, Poseidon::StreamBuffer> > m_messages_pending;
+	boost::shared_ptr<WebSocketDeliveryJob> m_delivery_job;
+	bool m_delivery_job_active;
 
 public:
 	explicit ClientWebSocketSession(const boost::shared_ptr<ClientHttpSession> &parent);
@@ -61,8 +65,8 @@ protected:
 	void on_sync_control_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload) OVERRIDE;
 
 public:
-	const Poseidon::Uuid &get_session_uuid() const NOEXCEPT {
-		return m_session_uuid;
+	const Poseidon::Uuid &get_client_uuid() const NOEXCEPT {
+		return m_client_uuid;
 	}
 
 	bool has_been_shutdown() const NOEXCEPT;

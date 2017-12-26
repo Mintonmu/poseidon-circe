@@ -24,7 +24,7 @@ private:
 	static std::string safe_decode_uri(const std::string &uri);
 
 private:
-	const Poseidon::Uuid m_session_uuid;
+	const Poseidon::Uuid m_client_uuid;
 
 	// These are accessed only by the primary thread.
 	std::string m_decoded_uri;
@@ -46,8 +46,8 @@ protected:
 	void on_sync_request(Poseidon::Http::RequestHeaders req_headers, Poseidon::StreamBuffer req_entity) OVERRIDE;
 
 public:
-	const Poseidon::Uuid &get_session_uuid() const {
-		return m_session_uuid;
+	const Poseidon::Uuid &get_client_uuid() const {
+		return m_client_uuid;
 	}
 
 	bool has_been_shutdown() const NOEXCEPT;

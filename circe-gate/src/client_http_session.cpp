@@ -103,7 +103,7 @@ std::string ClientHttpSession::safe_decode_uri(const std::string &uri){
 
 ClientHttpSession::ClientHttpSession(Poseidon::Move<Poseidon::UniqueFile> socket)
 	: Poseidon::Http::Session(STD_MOVE(socket))
-	, m_session_uuid(Poseidon::Uuid::random())
+	, m_client_uuid(Poseidon::Uuid::random())
 {
 	LOG_CIRCE_DEBUG("ClientHttpSession constructor: remote = ", get_remote_info());
 }
@@ -117,13 +117,13 @@ std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, cons
 	const AUTO(http_enabled, get_config<bool>("client_http_enabled", false));
 	DEBUG_THROW_UNLESS(http_enabled, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
 
-	const AUTO(auth_conn, AuthConnector::get_connection());
+	const AUTO(auth_conn, AuthConnector::get_client());
 	DEBUG_THROW_UNLESS(auth_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
 
 	Protocol::Auth::HttpAuthenticationResponse auth_resp;
 	{
 		Protocol::Auth::HttpAuthenticationRequest auth_req;
-		auth_req.client_uuid = get_session_uuid();
+		auth_req.client_uuid = get_client_uuid();
 		auth_req.client_ip   = get_remote_info().ip();
 		auth_req.verb        = verb;
 		auth_req.decoded_uri = decoded_uri;
@@ -195,13 +195,13 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 	case Poseidon::Http::V_HEAD:
 	case Poseidon::Http::V_GET:
 	case Poseidon::Http::V_POST: {
-		const AUTO(foyer_conn, FoyerConnector::get_connection());
+		const AUTO(foyer_conn, FoyerConnector::get_client());
 		DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
 
 		Protocol::Foyer::HttpResponseFromBox foyer_resp;
 		{
 			Protocol::Foyer::HttpRequestToBox foyer_req;
-			foyer_req.client_uuid = get_session_uuid();
+			foyer_req.client_uuid = get_client_uuid();
 			foyer_req.client_ip   = get_remote_info().ip();
 			foyer_req.auth_token  = m_auth_token.get();
 			foyer_req.verb        = req_headers.verb;
