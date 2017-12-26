@@ -68,6 +68,7 @@ protected:
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 			ws_session->shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
 		}
+
 		ws_session->m_delivery_job_active = false;
 	}
 };
