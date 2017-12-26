@@ -39,9 +39,10 @@ private:
 	// These are accessed only by the primary thread.
 	boost::optional<std::string> m_auth_token;
 
-	boost::container::deque<std::pair<Poseidon::WebSocket::StatusCode, Poseidon::StreamBuffer> > m_messages_pending;
-	boost::shared_ptr<WebSocketDeliveryJob> m_delivery_job;
+	boost::shared_ptr<const Poseidon::PromiseContainer<Common::CbppResponse> > m_promised_acknowledgement;
+	boost::shared_ptr<WebSocketDeliveryJob> m_delivery_job_spare;
 	bool m_delivery_job_active;
+	boost::container::deque<std::pair<Poseidon::WebSocket::StatusCode, Poseidon::StreamBuffer> > m_messages_pending;
 
 public:
 	explicit ClientWebSocketSession(const boost::shared_ptr<ClientHttpSession> &parent);

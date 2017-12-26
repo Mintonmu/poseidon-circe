@@ -41,35 +41,41 @@ protected:
 		}
 
 		try {
-			DEBUG_THROW_ASSERT(ws_session->m_delivery_job_active);
-
 			const AUTO(foyer_conn, FoyerConnector::get_client());
 			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_INTERNAL_ERROR, Poseidon::sslit("Connection to foyer server was lost"));
 
-			while(!ws_session->m_messages_pending.empty()){
-				LOG_CIRCE_DEBUG("Collecting messages pending: ws_session = ", (void *)ws_session.get(), ", count = ", ws_session->m_messages_pending.size());
+			DEBUG_THROW_ASSERT(ws_session->m_delivery_job_active);
+			for(;;){
+				// Wait for the acknowledgement of messages sent previously.
+				DEBUG_THROW_ASSERT(ws_session->m_promised_acknowledgement);
 				Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
-				{
-					Protocol::Foyer::WebSocketPackedMessageRequestToBox foyer_req;
-					foyer_req.client_uuid = ws_session->get_client_uuid();
-					for(AUTO(rit, ws_session->m_messages_pending.begin()); rit != ws_session->m_messages_pending.end(); ++rit){
-						AUTO(wit, foyer_req.messages.emplace(foyer_req.messages.end()));
-						wit->opcode  = rit->first;
-						wit->payload = rit->second.dump_byte_string();
-					}
-					ws_session->m_messages_pending.clear();
-					LOG_CIRCE_TRACE("Sending request: ", foyer_req);
-					Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
-					LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+				Common::wait_for_response(foyer_resp, ws_session->m_promised_acknowledgement);
+				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+				// If there is no error, drop the acknowledgement.
+				ws_session->m_promised_acknowledgement.reset();
+
+				// Another fiber might have sneaked in and enqueued more messages, so we have to check again.
+				LOG_CIRCE_DEBUG("Collecting messages pending: ws_session = ", (void *)ws_session.get(), ", count = ", ws_session->m_messages_pending.size());
+				if(ws_session->m_messages_pending.empty()){
+					break;
 				}
-				// Check for messages that could possibly be enqueued when the fiber is yielded out.
+				// Send messages that have been enqueued.
+				Protocol::Foyer::WebSocketPackedMessageRequestToBox foyer_req;
+				foyer_req.client_uuid = ws_session->get_client_uuid();
+				for(AUTO(rit, ws_session->m_messages_pending.begin()); rit != ws_session->m_messages_pending.end(); ++rit){
+					AUTO(wit, foyer_req.messages.emplace(foyer_req.messages.end()));
+					wit->opcode  = rit->first;
+					wit->payload = rit->second.dump_byte_string();
+				}
+				ws_session->m_messages_pending.clear();
+				LOG_CIRCE_TRACE("Sending request: ", foyer_req);
+				ws_session->m_promised_acknowledgement = foyer_conn->send_request(foyer_req);
 			}
+			ws_session->m_delivery_job_active = false;
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 			ws_session->shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
 		}
-
-		ws_session->m_delivery_job_active = false;
 	}
 };
 
@@ -246,7 +252,7 @@ bool ClientWebSocketSession::on_low_level_message_end(boost::uint64_t whole_size
 		m_request_counter_reset_time = Poseidon::saturated_add<boost::uint64_t>(now, 60000);
 	}
 	const AUTO(max_requests_per_minute, get_config<boost::uint64_t>("client_websocket_max_requests_per_minute", 300));
-	DEBUG_THROW_UNLESS(m_request_counter < max_requests_per_minute, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_ACCESS_DENIED, Poseidon::sslit("Max number of requests per minute exceeded"));
+	DEBUG_THROW_UNLESS(m_request_counter < max_requests_per_minute, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Max number of requests per minute exceeded"));
 	++m_request_counter;
 
 	return Poseidon::WebSocket::Session::on_low_level_message_end(whole_size);
@@ -256,21 +262,42 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 	PROFILE_ME;
 	LOG_CIRCE_DEBUG("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
-	const AUTO(max_requests_pending, get_config<boost::uint64_t>("client_websocket_max_requests_pending", 100));
-	DEBUG_THROW_UNLESS(m_messages_pending.size() < max_requests_pending, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_ACCESS_DENIED, Poseidon::sslit("Max number of requests pending exceeded"));
-	m_messages_pending.emplace_back(opcode, STD_MOVE(payload));
-
-	// Create a job to deliver messages enqueued so the current fiber will not be blocked.
-	// N.B. The job object can be reused.
-	if(!m_delivery_job){
-		LOG_CIRCE_DEBUG("Creating delivery job: ws_session = ", (void *)this);
-		m_delivery_job = boost::make_shared<WebSocketDeliveryJob>(virtual_shared_from_this<ClientWebSocketSession>());
-		m_delivery_job_active = false;
+	// If the acknowledgement of messages sent previously has arrived, check it.
+	if(m_promised_acknowledgement && m_promised_acknowledgement->is_satisfied()){
+		Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
+		Common::wait_for_response(foyer_resp, m_promised_acknowledgement);
+		LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+		// If there is no error, drop the acknowledgement.
+		m_promised_acknowledgement.reset();
 	}
-	if(!m_delivery_job_active){
-		LOG_CIRCE_DEBUG("Activating delivery job: ws_session = ", (void *)this);
-		Poseidon::enqueue(m_delivery_job);
-		m_delivery_job_active = true;
+
+	if(!m_promised_acknowledgement){
+		// There is no message unacknowledged by the box server. We can send this message immediately, but any messages after this will have to wait.
+		const AUTO(foyer_conn, FoyerConnector::get_client());
+		DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Connection to foyer server was lost"));
+
+		Protocol::Foyer::WebSocketPackedMessageRequestToBox foyer_req;
+		foyer_req.client_uuid = get_client_uuid();
+		AUTO(wit, foyer_req.messages.emplace(foyer_req.messages.end()));
+		wit->opcode  = static_cast<unsigned>(opcode);
+		wit->payload = payload.dump_byte_string();
+		LOG_CIRCE_TRACE("Sending request: ", foyer_req);
+		m_promised_acknowledgement = foyer_conn->send_request(foyer_req);
+	} else {
+		// There are messages on the way. We must wait for the acknowledgement. Do it in a new fiber to prevent any further messages from being blocked.
+		if(!m_delivery_job_spare){
+			m_delivery_job_spare  = boost::make_shared<WebSocketDeliveryJob>(virtual_shared_from_this<ClientWebSocketSession>());
+			m_delivery_job_active = false;
+		}
+		if(!m_delivery_job_active){
+			Poseidon::enqueue(m_delivery_job_spare);
+			m_delivery_job_active = true;
+		}
+
+		const AUTO(max_requests_pending, get_config<boost::uint64_t>("client_websocket_max_requests_pending", 100));
+		DEBUG_THROW_UNLESS(m_messages_pending.size() < max_requests_pending, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Max number of requests pending exceeded"));
+		LOG_CIRCE_TRACE("Enqueueing message: opcode = ", opcode, ", payload.size() = ", payload.size());
+		m_messages_pending.emplace_back(opcode, STD_MOVE(payload));
 	}
 }
 void ClientWebSocketSession::on_sync_control_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
