@@ -129,5 +129,27 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	return resp;
 }
 
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Foyer::WebSocketPackedMessageRequestToGate req){
+	const AUTO(gate_conn, FoyerAcceptor::get_session(Poseidon::Uuid(req.gate_uuid)));
+	DEBUG_THROW_UNLESS(gate_conn, Poseidon::Cbpp::Exception, Protocol::ERR_GATE_NOT_FOUND, Poseidon::sslit("The specified gate server was not found"));
+
+	Protocol::Gate::WebSocketPackedMessageResponse gate_resp;
+	{
+		Protocol::Gate::WebSocketPackedMessageRequest gate_req;
+		gate_req.client_uuid = req.client_uuid;
+		for(AUTO(rit, req.messages.begin()); rit != req.messages.end(); ++rit){
+			AUTO(wit, gate_req.messages.emplace(gate_req.messages.end()));
+			wit->opcode  = rit->opcode;
+			wit->payload = STD_MOVE(rit->payload);
+		}
+		LOG_CIRCE_TRACE("Sending request: ", gate_req);
+		Common::wait_for_response(gate_resp, gate_conn->send_request(gate_req));
+		LOG_CIRCE_TRACE("Received response: ", gate_resp);
+	}
+
+	Protocol::Foyer::WebSocketPackedMessageResponseFromGate resp;
+	return resp;
+}
+
 }
 }

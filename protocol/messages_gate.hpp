@@ -25,6 +25,23 @@ namespace Gate {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
+#define MESSAGE_NAME   WebSocketPackedMessageRequest
+#define MESSAGE_ID     1103
+#define MESSAGE_FIELDS \
+	FIELD_FIXED        (client_uuid, 16)	\
+	FIELD_LIST         (messages,	\
+	  FIELD_VUINT        (opcode)\
+	  FIELD_FLEXIBLE     (payload)	\
+	)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
+#define MESSAGE_NAME   WebSocketPackedMessageResponse
+#define MESSAGE_ID     1104
+#define MESSAGE_FIELDS \
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
 }
 }
 }

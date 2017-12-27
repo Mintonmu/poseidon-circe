@@ -29,5 +29,19 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 	return resp;
 }
 
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Gate::WebSocketPackedMessageRequest req){
+	const AUTO(http_session, ClientHttpAcceptor::get_session(Poseidon::Uuid(req.client_uuid)));
+	DEBUG_THROW_UNLESS(http_session, Poseidon::Cbpp::Exception, Protocol::ERR_CLIENT_NOT_FOUND, Poseidon::sslit("The specified WebSocket client was not found"));
+	const AUTO(ws_session, boost::dynamic_pointer_cast<ClientWebSocketSession>(http_session->get_upgraded_session()));
+	DEBUG_THROW_UNLESS(ws_session, Poseidon::Cbpp::Exception, Protocol::ERR_CLIENT_NOT_FOUND, Poseidon::sslit("The specified WebSocket client was not found"));
+
+	for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
+		ws_session->send(it->opcode, Poseidon::StreamBuffer(it->payload));
+	}
+
+	Protocol::Gate::WebSocketPackedMessageResponse resp;
+	return resp;
+}
+
 }
 }
