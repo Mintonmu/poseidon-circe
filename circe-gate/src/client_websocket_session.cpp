@@ -65,7 +65,7 @@ protected:
 				for(AUTO(rit, ws_session->m_messages_pending.begin()); rit != ws_session->m_messages_pending.end(); ++rit){
 					AUTO(wit, foyer_req.messages.emplace(foyer_req.messages.end()));
 					wit->opcode  = rit->first;
-					wit->payload = rit->second.dump_byte_string();
+					wit->payload = STD_MOVE(rit->second);
 				}
 				LOG_CIRCE_TRACE("Sending request: ", foyer_req);
 				ws_session->m_promised_acknowledgement = foyer_conn->send_request(foyer_req);
@@ -279,7 +279,7 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 		foyer_req.client_uuid = get_client_uuid();
 		AUTO(wit, foyer_req.messages.emplace(foyer_req.messages.end()));
 		wit->opcode  = static_cast<unsigned>(opcode);
-		wit->payload = payload.dump_byte_string();
+		wit->payload = STD_MOVE(payload);
 		LOG_CIRCE_TRACE("Sending request: ", foyer_req);
 		m_promised_acknowledgement = foyer_conn->send_request(foyer_req);
 	} else {

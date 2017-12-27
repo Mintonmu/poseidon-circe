@@ -23,7 +23,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	resp.headers.at(0).value = "text/plain";
 	resp.headers.at(1).key   = "X-FANCY";
 	resp.headers.at(1).value = "TRUE";
-	resp.entity      = (const unsigned char *)"<h1>hello world!</h1>";
+	resp.entity.put("<h1>hello world!</h1>");
 	return resp;
 }
 

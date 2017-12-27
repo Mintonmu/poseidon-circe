@@ -187,7 +187,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 	DEBUG_THROW_UNLESS(resp_encoding_preferred != Poseidon::Http::CE_NOT_ACCEPTABLE, Poseidon::Http::Exception, Poseidon::Http::ST_NOT_ACCEPTABLE);
 
 	Poseidon::Http::ResponseHeaders resp_headers = { 10001 };
-	std::basic_string<unsigned char> resp_entity_as_string;
+	Poseidon::StreamBuffer resp_entity;
 
 	// Process the request. `HEAD` is handled in the same way as `GET`.
 	// Fill in `resp_headers.status_code` and `resp_entity`.
@@ -208,7 +208,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 			foyer_req.decoded_uri = m_decoded_uri;
 			Protocol::copy_key_values(foyer_req.params, STD_MOVE(req_headers.get_params));
 			Protocol::copy_key_values(foyer_req.headers, STD_MOVE(req_headers.headers));
-			foyer_req.entity      = req_entity.dump_byte_string();
+			foyer_req.entity      = STD_MOVE(req_entity);
 			LOG_CIRCE_TRACE("Sending request: ", foyer_req);
 			Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
 			LOG_CIRCE_TRACE("Received response: ", foyer_resp);
@@ -216,7 +216,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		resp_headers.status_code = foyer_resp.status_code;
 		resp_headers.headers     = Protocol::copy_key_values(STD_MOVE(foyer_resp.headers));
 		if(req_headers.verb != Poseidon::Http::V_HEAD){
-			resp_entity_as_string = STD_MOVE(foyer_resp.entity);
+			resp_entity = STD_MOVE(foyer_resp.entity);
 		}
 		break; }
 
@@ -238,7 +238,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 
 	// Select an encoding for compression if the response entity is not empty and no explicit encoding is given.
 	Poseidon::Http::ContentEncoding resp_encoding;
-	const std::size_t size_original = resp_entity_as_string.size();
+	const std::size_t size_original = resp_entity.size();
 	if(size_original == 0){
 		resp_encoding = Poseidon::Http::CE_IDENTITY;
 	} else if(resp_headers.headers.has("Content-Encoding")){
@@ -251,13 +251,12 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		resp_encoding = Poseidon::Http::CE_IDENTITY;
 	}
 	// Compress it if possible.
-	Poseidon::StreamBuffer resp_entity;
 	switch(resp_encoding){
 	case Poseidon::Http::CE_GZIP: {
 		const AUTO(compression_level, get_config<int>("client_http_compression_level", 8));
 		LOG_CIRCE_TRACE("Compressing HTTP response using GZIP: compression_level = ", compression_level);
 		Poseidon::Deflator deflator(true, compression_level);
-		deflator.put(resp_entity_as_string.data(), resp_entity_as_string.size());
+		deflator.put(resp_entity);
 		resp_entity = deflator.finalize();
 		const std::size_t size_deflated = resp_entity.size();
 		LOG_CIRCE_TRACE("GZIP result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0 / size_original, "%)");
@@ -267,15 +266,14 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		const AUTO(compression_level, get_config<int>("client_http_compression_level", 8));
 		LOG_CIRCE_TRACE("Compressing HTTP response using DEFLATE: compression_level = ", compression_level);
 		Poseidon::Deflator deflator(false, compression_level);
-		deflator.put(resp_entity_as_string.data(), resp_entity_as_string.size());
+		deflator.put(resp_entity);
 		resp_entity = deflator.finalize();
 		const std::size_t size_deflated = resp_entity.size();
 		LOG_CIRCE_TRACE("DEFLATE result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0 / size_original, "%)");
 		resp_headers.headers.set(Poseidon::sslit("Content-Encoding"), "deflate");
 		break; }
-	default: {
-		resp_entity.put(resp_entity_as_string.data(), resp_entity_as_string.size());
-		break; }
+	default:
+		break;
 	}
 	// For 4xx and 5xx responses, create a default entity if there isn't one.
 	if((resp_headers.status_code / 100 >= 4) && resp_entity.empty()){
