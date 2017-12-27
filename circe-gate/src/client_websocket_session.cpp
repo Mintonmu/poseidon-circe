@@ -330,6 +330,9 @@ bool ClientWebSocketSession::shutdown(Poseidon::WebSocket::StatusCode status_cod
 	PROFILE_ME;
 	LOG_CIRCE_DEBUG("Shutting down WebSocket connection: remote = ", get_remote_info(), ", status_code = ", status_code, ", reason = ", reason);
 
+	if(Poseidon::WebSocket::Session::has_been_shutdown_write()){
+		return false;
+	}
 	deliver_closure_notification(status_code, reason);
 	return Poseidon::WebSocket::Session::shutdown(status_code, reason);
 }
