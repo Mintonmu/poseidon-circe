@@ -23,7 +23,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 	DEBUG_THROW_UNLESS(ws_session, Poseidon::Cbpp::Exception, Protocol::ERR_CLIENT_NOT_FOUND, Poseidon::sslit("The specified WebSocket client was not found"));
 
 	LOG_CIRCE_INFO("Killing client WebSocket session: remote = ", ws_session->get_remote_info(), ", req = ", req);
-	ws_session->shutdown(req.status_code, req.reason.c_str());
+	ws_session->shutdown(boost::numeric_cast<Poseidon::WebSocket::StatusCode>(req.status_code), req.reason.c_str());
 
 	Protocol::Gate::WebSocketKillResponse resp;
 	return resp;
@@ -36,7 +36,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 	DEBUG_THROW_UNLESS(ws_session, Poseidon::Cbpp::Exception, Protocol::ERR_CLIENT_NOT_FOUND, Poseidon::sslit("The specified WebSocket client was not found"));
 
 	for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
-		ws_session->send(it->opcode, Poseidon::StreamBuffer(it->payload));
+		ws_session->send(boost::numeric_cast<Poseidon::WebSocket::OpCode>(it->opcode), Poseidon::StreamBuffer(it->payload));
 	}
 
 	Protocol::Gate::WebSocketPackedMessageResponse resp;

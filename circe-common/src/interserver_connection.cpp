@@ -118,7 +118,7 @@ private:
 		void generate(RandomAccessIteratorT from, RandomAccessIteratorT to){
 			for(RandomAccessIteratorT it = from; it != to; ++it){
 				const std::size_t off = static_cast<std::size_t>(it - from);
-				*it = off ^ m_seed[off % sizeof(m_seed)];
+				*it = static_cast<VALUE_TYPE(*it)>(off ^ m_seed[off % sizeof(m_seed)]);
 			}
 		}
 	};
@@ -148,18 +148,19 @@ public:
 	Poseidon::StreamBuffer decode(Poseidon::StreamBuffer encoded_payload){
 		PROFILE_ME;
 
-		std::string temp;
+		std::basic_string<unsigned char> temp;
 		temp.reserve(encoded_payload.size() + 4);
 		// Step 1: Decrypt the payload.
 		temp.resize(encoded_payload.size());
 		DEBUG_THROW_ASSERT((encoded_payload.get(&*temp.begin(), temp.size()) == temp.size()) && encoded_payload.empty());
 		for(AUTO(it, temp.begin()); it != temp.end(); ++it){
-			*it ^= static_cast<unsigned char>(m_decryptor_prng());
+			*it = static_cast<unsigned char>(*it ^ m_decryptor_prng());
 		}
 		// Step 2: Append the terminator bytes to this block.
-		temp.append("\x00\x00\xFF\xFF", 4);
+		static CONSTEXPR const unsigned char s_trailer[4] = { 0x00, 0x00, 0xFF, 0xFF };
+		temp.append(s_trailer, sizeof(s_trailer));
 		// Step 3: Inflate the buffer.
-		m_inflator.put(temp);
+		m_inflator.put(temp.data(), temp.size());
 		m_inflator.flush();
 		Poseidon::StreamBuffer magic_payload = STD_MOVE(m_inflator.get_buffer());
 		m_inflator.get_buffer().clear();
@@ -174,19 +175,20 @@ public:
 	Poseidon::StreamBuffer encode(Poseidon::StreamBuffer magic_payload){
 		PROFILE_ME;
 
-		std::string temp;
+		std::basic_string<unsigned char> temp;
 		temp.reserve(magic_payload.size());
 		// Step 1: Deflate the buffer.
 		m_deflator.put(magic_payload);
 		m_deflator.flush();
-		temp = m_deflator.get_buffer().dump_string();
+		temp = m_deflator.get_buffer().dump_byte_string();
 		m_deflator.get_buffer().clear();
-		DEBUG_THROW_ASSERT((temp.size() >= 4) && (temp.compare(temp.size() - 4, 4, "\x00\x00\xFF\xFF", 4) == 0));
+		static CONSTEXPR const unsigned char s_trailer[4] = { 0x00, 0x00, 0xFF, 0xFF };
+		DEBUG_THROW_ASSERT(temp.compare(temp.size() - sizeof(s_trailer), std::string::npos, s_trailer, sizeof(s_trailer)) == 0);
 		// Step 2: Drop the the terminator bytes from this block.
-		temp.erase(temp.size() - 4);
+		temp.erase(temp.size() - sizeof(s_trailer));
 		// Step 3: Encrypt the payload.
 		for(AUTO(it, temp.begin()); it != temp.end(); ++it){
-			*it ^= static_cast<unsigned char>(m_encryptor_prng());
+			*it = static_cast<unsigned char>(*it ^ m_encryptor_prng());
 		}
 		Poseidon::StreamBuffer encoded_payload = Poseidon::StreamBuffer(temp);
 		return encoded_payload;
@@ -291,7 +293,7 @@ void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection
 		const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, connection_uuid, timestamp));
 		msg.checksum_resp = checksum_resp;
 		LOG_CIRCE_TRACE("Sending server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
-		launch_deflate_and_send(msg.get_id(), msg);
+		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
 	}
 	m_connection_uuid = connection_uuid;
 	m_timestamp = timestamp;
@@ -303,7 +305,7 @@ void InterserverConnection::send_response(boost::uint64_t serial, CbppResponse r
 	const boost::uint64_t message_id = resp.get_message_id();
 	DEBUG_THROW_UNLESS((message_id == 0) || is_message_id_valid(resp.get_message_id()), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 
-	boost::uint16_t magic_number = message_id;
+	boost::uint16_t magic_number = boost::numeric_cast<boost::uint16_t>(message_id);
 	Poseidon::add_flags(magic_number, MFL_IS_RESPONSE);
 	// Initialize the header.
 	IS_UserResponseHeader hdr;
@@ -372,7 +374,7 @@ try {
 	const std::size_t size_deflated = encoded_payload.size();
 	Poseidon::StreamBuffer magic_payload = require_message_filter()->decode(STD_MOVE(encoded_payload));
 	const std::size_t size_original = magic_payload.size();
-	LOG_CIRCE_TRACE("Inflate result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), (size_original != 0) ? size_deflated * 100.0 / size_original : 0.0, "%)");
+	LOG_CIRCE_TRACE("Inflate result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), (size_original != 0) ? size_deflated * 100.0l / size_original : 0.0l, "%)");
 
 	boost::uint16_t message_id = magic_number & MESSAGE_ID_MAX;
 	if(Poseidon::has_any_flags_of(magic_number, MFL_IS_RESPONSE)){
@@ -447,7 +449,7 @@ try {
 	const std::size_t size_original = magic_payload.size();
 	Poseidon::StreamBuffer encoded_payload = require_message_filter()->encode(STD_MOVE(magic_payload));
 	const std::size_t size_deflated = encoded_payload.size();
-	LOG_CIRCE_TRACE("Deflate result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), (size_original != 0) ? size_deflated * 100.0 / size_original : 0.0, "%)");
+	LOG_CIRCE_TRACE("Deflate result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), (size_original != 0) ? size_deflated * 100.0l / size_original : 0.0l, "%)");
 
 	layer5_send_data(magic_number, STD_MOVE(encoded_payload));
 } catch(Poseidon::Cbpp::Exception &e){
@@ -519,7 +521,7 @@ void InterserverConnection::layer7_client_say_hello(){
 		msg.timestamp = timestamp;
 		msg.checksum_req = checksum_req;
 		LOG_CIRCE_TRACE("Sending client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
-		launch_deflate_and_send(msg.get_id(), msg);
+		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
 	}
 	m_connection_uuid = connection_uuid;
 	m_timestamp = timestamp;
@@ -540,11 +542,11 @@ boost::shared_ptr<const PromisedResponse> InterserverConnection::send_request(co
 
 	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("InterserverConnection was lost"));
-	const boost::uint32_t serial = ++m_next_serial;
+	const boost::uint64_t serial = ++m_next_serial;
 	AUTO(promise, boost::make_shared<PromisedResponse>());
 	const AUTO(it, m_weak_promises.emplace(serial, promise));
 	try {
-		boost::uint16_t magic_number = message_id;
+		boost::uint16_t magic_number = boost::numeric_cast<boost::uint16_t>(message_id);
 		Poseidon::add_flags(magic_number, MFL_WANTS_RESPONSE);
 		// Initialize the header.
 		IS_UserRequestHeader hdr;
@@ -569,7 +571,7 @@ void InterserverConnection::send_notification(const Poseidon::Cbpp::MessageBase 
 
 	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("InterserverConnection was lost"));
-	boost::uint16_t magic_number = message_id;
+	boost::uint16_t magic_number = boost::numeric_cast<boost::uint16_t>(message_id);
 	launch_deflate_and_send(magic_number, msg);
 }
 

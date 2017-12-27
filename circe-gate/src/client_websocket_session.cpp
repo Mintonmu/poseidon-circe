@@ -195,7 +195,7 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 		Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 		LOG_CIRCE_TRACE("Received response: ", auth_resp);
 	}
-	DEBUG_THROW_UNLESS(auth_resp.status_code == 0, Poseidon::WebSocket::Exception, auth_resp.status_code, Poseidon::SharedNts(auth_resp.reason));
+	DEBUG_THROW_UNLESS(auth_resp.status_code == 0, Poseidon::WebSocket::Exception, boost::numeric_cast<Poseidon::WebSocket::StatusCode>(auth_resp.status_code), Poseidon::SharedNts(auth_resp.reason));
 
 	const AUTO(foyer_conn, FoyerConnector::get_client());
 	DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY);
@@ -214,7 +214,7 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 			Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
 			LOG_CIRCE_TRACE("Received response: ", foyer_resp);
 		}
-		DEBUG_THROW_UNLESS(foyer_resp.status_code == 0, Poseidon::WebSocket::Exception, foyer_resp.status_code, Poseidon::SharedNts(foyer_resp.reason));
+		DEBUG_THROW_UNLESS(foyer_resp.status_code == 0, Poseidon::WebSocket::Exception, boost::numeric_cast<Poseidon::WebSocket::StatusCode>(foyer_resp.status_code), Poseidon::SharedNts(foyer_resp.reason));
 	} catch(...){
 		drop_closure_notification_timer();
 		throw;

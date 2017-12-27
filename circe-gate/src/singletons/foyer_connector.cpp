@@ -14,7 +14,7 @@ namespace Gate {
 namespace {
 	class SpecializedConnector : public Common::InterserverConnector {
 	public:
-		SpecializedConnector(std::string host, unsigned port, std::string application_key)
+		SpecializedConnector(std::string host, boost::uint16_t port, std::string application_key)
 			: Common::InterserverConnector(STD_MOVE(host), port, STD_MOVE(application_key))
 		{ }
 

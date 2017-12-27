@@ -18,7 +18,7 @@ namespace {
 		boost::container::flat_map<Poseidon::Uuid, boost::weak_ptr<ClientHttpSession> > m_weak_sessions;
 
 	public:
-		SpecializedAcceptor(const std::string &bind, unsigned port, const std::string &cert, const std::string &pkey)
+		SpecializedAcceptor(const std::string &bind, boost::uint16_t port, const std::string &cert, const std::string &pkey)
 			: Poseidon::TcpServerBase(Poseidon::IpPort(bind.c_str(), port), cert.c_str(), pkey.c_str())
 		{ }
 		~SpecializedAcceptor() OVERRIDE {

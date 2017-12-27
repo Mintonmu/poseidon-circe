@@ -79,8 +79,8 @@ private:
 			DEBUG_THROW_ASSERT(!ws_session->m_auth_token);
 			ws_session->m_auth_token = STD_MOVE_IDN(auth_token);
 		} catch(Poseidon::WebSocket::Exception &e){
-			LOG_CIRCE_WARNING("Poseidon::WebSocket::Exception thrown: code = ", e.get_code(), ", what = ", e.what());
-			ws_session->shutdown(e.get_code(), e.what());
+			LOG_CIRCE_WARNING("Poseidon::WebSocket::Exception thrown: code = ", e.get_status_code(), ", what = ", e.what());
+			ws_session->shutdown(e.get_status_code(), e.what());
 			return;
 		} catch(std::exception &e){
 			LOG_CIRCE_WARNING("std::exception thrown: what = ", e.what());
@@ -133,7 +133,7 @@ std::string ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, cons
 		Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 		LOG_CIRCE_TRACE("Received response: ", auth_resp);
 	}
-	DEBUG_THROW_UNLESS(auth_resp.status_code == 0, Poseidon::Http::Exception, auth_resp.status_code, Protocol::copy_key_values(STD_MOVE(auth_resp.headers)));
+	DEBUG_THROW_UNLESS(auth_resp.status_code == 0, Poseidon::Http::Exception, boost::numeric_cast<Poseidon::Http::StatusCode>(auth_resp.status_code), Protocol::copy_key_values(STD_MOVE(auth_resp.headers)));
 
 	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("Connection has been shut down"));
 	LOG_CIRCE_DEBUG("Got authentication token: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
@@ -213,7 +213,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 			Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
 			LOG_CIRCE_TRACE("Received response: ", foyer_resp);
 		}
-		resp_headers.status_code = foyer_resp.status_code;
+		resp_headers.status_code = boost::numeric_cast<Poseidon::Http::StatusCode>(foyer_resp.status_code);
 		resp_headers.headers     = Protocol::copy_key_values(STD_MOVE(foyer_resp.headers));
 		if(req_headers.verb != Poseidon::Http::V_HEAD){
 			resp_entity = STD_MOVE(foyer_resp.entity);
@@ -259,7 +259,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		deflator.put(resp_entity);
 		resp_entity = deflator.finalize();
 		const std::size_t size_deflated = resp_entity.size();
-		LOG_CIRCE_TRACE("GZIP result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0 / size_original, "%)");
+		LOG_CIRCE_TRACE("GZIP result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0l / size_original, "%)");
 		resp_headers.headers.set(Poseidon::sslit("Content-Encoding"), "gzip");
 		break; }
 	case Poseidon::Http::CE_DEFLATE: {
@@ -269,7 +269,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		deflator.put(resp_entity);
 		resp_entity = deflator.finalize();
 		const std::size_t size_deflated = resp_entity.size();
-		LOG_CIRCE_TRACE("DEFLATE result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0 / size_original, "%)");
+		LOG_CIRCE_TRACE("DEFLATE result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0l / size_original, "%)");
 		resp_headers.headers.set(Poseidon::sslit("Content-Encoding"), "deflate");
 		break; }
 	default:

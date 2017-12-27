@@ -117,7 +117,7 @@ private:
 	const boost::weak_ptr<InterserverAcceptor> m_weak_acceptor;
 
 public:
-	InterserverServer(const std::string &bind, unsigned port, const boost::shared_ptr<InterserverAcceptor> &acceptor)
+	InterserverServer(const std::string &bind, boost::uint16_t port, const boost::shared_ptr<InterserverAcceptor> &acceptor)
 		: Poseidon::TcpServerBase(Poseidon::IpPort(bind.c_str(), port), "", "")
 		, m_weak_acceptor(acceptor)
 	{

@@ -25,7 +25,7 @@ private:
 
 private:
 	const std::string m_host;
-	const unsigned m_port;
+	const boost::uint16_t m_port;
 	const std::string m_application_key;
 
 	mutable Poseidon::Mutex m_mutex;
@@ -33,7 +33,7 @@ private:
 	boost::weak_ptr<InterserverClient> m_weak_client;
 
 public:
-	InterserverConnector(std::string host, unsigned port, std::string application_key);
+	InterserverConnector(std::string host, boost::uint16_t port, std::string application_key);
 	~InterserverConnector() OVERRIDE;
 
 protected:
