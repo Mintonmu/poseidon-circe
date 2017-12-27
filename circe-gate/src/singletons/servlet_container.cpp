@@ -31,7 +31,7 @@ void ServletContainer::insert_servlet(boost::uint16_t message_id, const boost::s
 
 	const AUTO(container, g_weak_container.lock());
 	if(!container){
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Another servlet with the same message_id already exists"));
+		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("ServletContainer has not been initialized"));
 	}
 	container->insert_servlet(message_id, servlet);
 }
