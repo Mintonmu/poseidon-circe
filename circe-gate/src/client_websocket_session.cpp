@@ -121,24 +121,16 @@ protected:
 void ClientWebSocketSession::on_closure_notification_low_level_timer(const boost::shared_ptr<ClientWebSocketSession> &ws_session){
 	PROFILE_ME;
 
-	Poseidon::WebSocket::StatusCode status_code;
-	std::string reason;
-	{
-		const Poseidon::Mutex::UniqueLock lock(ws_session->m_closure_notification_mutex);
-		const AUTO(ptr, ws_session->m_closure_reason.get_ptr());
-		if(!ptr){
-			return;
-		}
-		LOG_CIRCE_DEBUG("Reaping WebSocket client: ws_session = ", (void *)ws_session.get());
-		status_code = ptr->first;
-		reason      = ptr->second;
+	const Poseidon::Mutex::UniqueLock lock(ws_session->m_closure_notification_mutex);
+	const AUTO(ptr, ws_session->m_closure_reason.get_ptr());
+	if(!ptr){
+		return;
 	}
+	LOG_CIRCE_DEBUG("Reaping WebSocket client: ws_session = ", (void *)ws_session.get());
 	// Enqueue a job to notify the foyer server about closure of this connection.
 	// If this operation throws an exception, the timer will be rerun, so there is no cleanup to be done.
-	Poseidon::enqueue(boost::make_shared<WebSocketClosureJob>(ws_session, status_code, STD_MOVE(reason)));
-
+	Poseidon::enqueue(boost::make_shared<WebSocketClosureJob>(ws_session, ptr->first, ptr->second));
 	// If the job has been enqueued successfully, we can break the circular reference, destroying this timer.
-	const Poseidon::Mutex::UniqueLock lock(ws_session->m_closure_notification_mutex);
 	ws_session->m_closure_notification_timer.reset();
 }
 
