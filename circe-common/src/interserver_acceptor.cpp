@@ -183,6 +183,7 @@ void InterserverAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
 			session->layer5_shutdown(err_code, err_msg);
 		}
 	}
+	m_weak_sessions_pending.clear();
 	for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); ++it){
 		const AUTO(session, it->second.lock());
 		if(session){
@@ -190,8 +191,24 @@ void InterserverAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
 			session->layer5_shutdown(err_code, err_msg);
 		}
 	}
-	m_weak_sessions_pending.clear();
 	m_weak_sessions.clear();
+}
+void InterserverAcceptor::safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) const NOEXCEPT {
+	PROFILE_ME;
+
+	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); ++it){
+		const AUTO(session, it->second.lock());
+		if(session){
+			try {
+				LOG_CIRCE_DEBUG("Sending notification to interserver session: remote = ", session->layer5_get_remote_info(), ": ", msg);
+				session->send_notification(msg);
+			} catch(std::exception &e){
+				LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+				session->layer5_shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+			}
+		}
+	}
 }
 
 }

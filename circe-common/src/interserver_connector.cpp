@@ -169,6 +169,21 @@ void InterserverConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
 	}
 	m_weak_client.reset();
 }
+void InterserverConnector::safe_send_notification(const Poseidon::Cbpp::MessageBase &msg) const NOEXCEPT {
+	PROFILE_ME;
+
+	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	const AUTO(client, m_weak_client.lock());
+	if(client){
+		try {
+			LOG_CIRCE_DEBUG("Sending notification to interserver client: remote = ", client->layer5_get_remote_info(), ": ", msg);
+			client->send_notification(msg);
+		} catch(std::exception &e){
+			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			client->layer5_shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+		}
+	}
+}
 
 }
 }

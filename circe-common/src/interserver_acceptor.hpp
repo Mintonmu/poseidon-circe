@@ -5,6 +5,7 @@
 #define CIRCE_COMMON_INTERSERVER_ACCEPTOR_HPP_
 
 #include <poseidon/fwd.hpp>
+#include <poseidon/cbpp/fwd.hpp>
 #include <poseidon/virtual_shared_from_this.hpp>
 #include <poseidon/mutex.hpp>
 #include <boost/container/flat_set.hpp>
@@ -44,6 +45,7 @@ public:
 
 	boost::shared_ptr<InterserverConnection> get_session(const Poseidon::Uuid &connection_uuid) const;
 	void clear(long err_code, const char *err_msg = "") NOEXCEPT;
+	void safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) const NOEXCEPT;
 };
 
 }

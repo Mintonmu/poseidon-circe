@@ -86,6 +86,7 @@ boost::shared_ptr<ClientHttpSession> ClientHttpAcceptor::get_session(const Posei
 
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
+		LOG_CIRCE_WARNING("ClientHttpAcceptor has not been initialized.");
 		return VAL_INIT;
 	}
 	return acceptor->get_session(client_uuid);
@@ -95,6 +96,7 @@ void ClientHttpAcceptor::clear(long /*err_code*/, const char */*err_msg*/) NOEXC
 
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
+		LOG_CIRCE_WARNING("ClientHttpAcceptor has not been initialized.");
 		return;
 	}
 	acceptor->clear();
