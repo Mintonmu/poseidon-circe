@@ -52,16 +52,6 @@ boost::shared_ptr<Common::InterserverConnection> BoxConnector::get_client(){
 	}
 	return connector->get_client();
 }
-void BoxConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
-	PROFILE_ME;
-
-	const AUTO(connector, g_weak_connector.lock());
-	if(!connector){
-		LOG_CIRCE_WARNING("BoxConnector has not been initialized.");
-		return;
-	}
-	connector->clear(err_code, err_msg);
-}
 void BoxConnector::safe_send_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT {
 	PROFILE_ME;
 
@@ -71,6 +61,16 @@ void BoxConnector::safe_send_notification(const Poseidon::Cbpp::MessageBase &msg
 		return;
 	}
 	return connector->safe_send_notification(msg);
+}
+void BoxConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
+	PROFILE_ME;
+
+	const AUTO(connector, g_weak_connector.lock());
+	if(!connector){
+		LOG_CIRCE_WARNING("BoxConnector has not been initialized.");
+		return;
+	}
+	connector->clear(err_code, err_msg);
 }
 
 }

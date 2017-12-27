@@ -52,16 +52,6 @@ boost::shared_ptr<Common::InterserverConnection> FoyerConnector::get_client(){
 	}
 	return connector->get_client();
 }
-void FoyerConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
-	PROFILE_ME;
-
-	const AUTO(connector, g_weak_connector.lock());
-	if(!connector){
-		LOG_CIRCE_WARNING("FoyerConnector has not been initialized.");
-		return;
-	}
-	connector->clear(err_code, err_msg);
-}
 void FoyerConnector::safe_send_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT {
 	PROFILE_ME;
 
@@ -71,6 +61,16 @@ void FoyerConnector::safe_send_notification(const Poseidon::Cbpp::MessageBase &m
 		return;
 	}
 	return connector->safe_send_notification(msg);
+}
+void FoyerConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
+	PROFILE_ME;
+
+	const AUTO(connector, g_weak_connector.lock());
+	if(!connector){
+		LOG_CIRCE_WARNING("FoyerConnector has not been initialized.");
+		return;
+	}
+	connector->clear(err_code, err_msg);
 }
 
 }

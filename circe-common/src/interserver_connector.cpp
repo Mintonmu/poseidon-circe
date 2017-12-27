@@ -158,17 +158,6 @@ boost::shared_ptr<InterserverConnection> InterserverConnector::get_client() cons
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
 	return m_weak_client.lock();
 }
-void InterserverConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
-	PROFILE_ME;
-
-	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	const AUTO(client, m_weak_client.lock());
-	if(client){
-		LOG_CIRCE_DEBUG("Disconnecting interserver client: remote = ", client->layer5_get_remote_info());
-		client->layer5_shutdown(err_code, err_msg);
-	}
-	m_weak_client.reset();
-}
 void InterserverConnector::safe_send_notification(const Poseidon::Cbpp::MessageBase &msg) const NOEXCEPT {
 	PROFILE_ME;
 
@@ -183,6 +172,17 @@ void InterserverConnector::safe_send_notification(const Poseidon::Cbpp::MessageB
 			client->layer5_shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
 		}
 	}
+}
+void InterserverConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
+	PROFILE_ME;
+
+	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	const AUTO(client, m_weak_client.lock());
+	if(client){
+		LOG_CIRCE_DEBUG("Disconnecting interserver client: remote = ", client->layer5_get_remote_info());
+		client->layer5_shutdown(err_code, err_msg);
+	}
+	m_weak_client.reset();
 }
 
 }

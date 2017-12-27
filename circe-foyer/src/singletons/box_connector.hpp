@@ -15,8 +15,8 @@ private:
 
 public:
 	static boost::shared_ptr<Common::InterserverConnection> get_client();
-	static void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 	static void safe_send_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT;
+	static void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 
 }

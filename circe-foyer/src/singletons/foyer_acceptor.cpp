@@ -48,15 +48,6 @@ boost::shared_ptr<Common::InterserverConnection> FoyerAcceptor::get_session(cons
 	}
 	return acceptor->get_session(connection_uuid);
 }
-void FoyerAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
-	PROFILE_ME;
-
-	const AUTO(acceptor, g_weak_acceptor.lock());
-	if(!acceptor){
-		return;
-	}
-	return acceptor->clear(err_code, err_msg);
-}
 void FoyerAcceptor::safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT {
 	PROFILE_ME;
 
@@ -65,6 +56,15 @@ void FoyerAcceptor::safe_broadcast_notification(const Poseidon::Cbpp::MessageBas
 		return;
 	}
 	return acceptor->safe_broadcast_notification(msg);
+}
+void FoyerAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
+	PROFILE_ME;
+
+	const AUTO(acceptor, g_weak_acceptor.lock());
+	if(!acceptor){
+		return;
+	}
+	return acceptor->clear(err_code, err_msg);
 }
 
 }

@@ -52,16 +52,6 @@ boost::shared_ptr<Common::InterserverConnection> AuthConnector::get_client(){
 	}
 	return connector->get_client();
 }
-void AuthConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
-	PROFILE_ME;
-
-	const AUTO(connector, g_weak_connector.lock());
-	if(!connector){
-		LOG_CIRCE_WARNING("AuthConnector has not been initialized.");
-		return;
-	}
-	connector->clear(err_code, err_msg);
-}
 void AuthConnector::safe_send_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT {
 	PROFILE_ME;
 
@@ -71,6 +61,16 @@ void AuthConnector::safe_send_notification(const Poseidon::Cbpp::MessageBase &ms
 		return;
 	}
 	return connector->safe_send_notification(msg);
+}
+void AuthConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
+	PROFILE_ME;
+
+	const AUTO(connector, g_weak_connector.lock());
+	if(!connector){
+		LOG_CIRCE_WARNING("AuthConnector has not been initialized.");
+		return;
+	}
+	connector->clear(err_code, err_msg);
 }
 
 }

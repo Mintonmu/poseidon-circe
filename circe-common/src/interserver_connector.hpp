@@ -44,8 +44,8 @@ public:
 	void activate();
 
 	boost::shared_ptr<InterserverConnection> get_client() const;
-	void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 	void safe_send_notification(const Poseidon::Cbpp::MessageBase &msg) const NOEXCEPT;
+	void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 
 }
