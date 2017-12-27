@@ -13,7 +13,11 @@
 namespace Circe {
 namespace Common {
 
+class InterserverConnection;
+
 class CbppResponse {
+	friend InterserverConnection;
+
 private:
 	long m_err_code;
 	std::string m_err_msg;
@@ -22,9 +26,7 @@ private:
 	Poseidon::StreamBuffer m_payload;
 
 public:
-	CbppResponse();
-	CbppResponse(long err_code, std::string err_msg = std::string());
-	CbppResponse(boost::uint64_t message_id, Poseidon::StreamBuffer payload);
+	CbppResponse(long err_code = Protocol::ERR_SUCCESS, std::string err_msg = std::string());
 	CbppResponse(const Poseidon::Cbpp::MessageBase &msg);
 	~CbppResponse();
 

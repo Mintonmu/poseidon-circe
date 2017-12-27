@@ -7,21 +7,11 @@
 namespace Circe {
 namespace Common {
 
-CbppResponse::CbppResponse()
-	: m_err_code(Protocol::ERR_SUCCESS), m_err_msg()
-	, m_message_id(), m_payload()
-{ }
 CbppResponse::CbppResponse(long err_code, std::string err_msg)
 	: m_err_code(err_code), m_err_msg(STD_MOVE(err_msg))
 	, m_message_id(), m_payload()
 {
 	LOG_CIRCE_TRACE("Constructing CbppResponse without a payload: err_code = ", get_err_code(), ", err_msg = ", get_err_msg());
-}
-CbppResponse::CbppResponse(boost::uint64_t message_id, Poseidon::StreamBuffer payload)
-	: m_err_code(Protocol::ERR_SUCCESS), m_err_msg()
-	, m_message_id(message_id), m_payload(STD_MOVE(payload))
-{
-	LOG_CIRCE_DEBUG("Constructing CbppResponse from message: message_id = ", message_id, ", payload.size() = ", payload.size());
 }
 CbppResponse::CbppResponse(const Poseidon::Cbpp::MessageBase &msg)
 	: m_err_code(Protocol::ERR_SUCCESS), m_err_msg()

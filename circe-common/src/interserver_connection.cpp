@@ -379,8 +379,6 @@ try {
 		IS_UserResponseHeader hdr;
 		hdr.deserialize(magic_payload);
 		LOG_CIRCE_TRACE("Received user-defined response: remote = ", get_remote_info(), ", hdr = ", hdr, ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
-		CbppResponse resp = (message_id == 0) ? CbppResponse(hdr.err_code, STD_MOVE_IDN(hdr.err_msg))
-		                                      : CbppResponse(message_id, STD_MOVE_IDN(magic_payload));
 		// Satisfy the promise.
 		boost::shared_ptr<PromisedResponse> promise;
 		{
@@ -392,6 +390,11 @@ try {
 			}
 		}
 		if(promise){
+			CbppResponse resp;
+			resp.m_err_code   = hdr.err_code;
+			resp.m_err_msg    = hdr.err_msg;
+			resp.m_message_id = message_id;
+			resp.m_payload    = STD_MOVE(magic_payload);
 			promise->set_success(STD_MOVE(resp));
 		}
 	} else if(Poseidon::has_any_flags_of(magic_number, MFL_WANTS_RESPONSE)){
@@ -528,8 +531,11 @@ const Poseidon::Uuid &InterserverConnection::get_connection_uuid() const {
 	return m_connection_uuid;
 }
 
-boost::shared_ptr<const PromisedResponse> InterserverConnection::send_request(boost::uint16_t message_id, Poseidon::StreamBuffer payload){
+boost::shared_ptr<const PromisedResponse> InterserverConnection::send_request(const Poseidon::Cbpp::MessageBase &msg){
 	PROFILE_ME;
+
+	LOG_CIRCE_TRACE("Sending user-defined request: remote = ", get_remote_info(), ", msg = ", msg);
+	const boost::uint64_t message_id = msg.get_id();
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 
 	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
@@ -546,8 +552,7 @@ boost::shared_ptr<const PromisedResponse> InterserverConnection::send_request(bo
 		// Concatenate the payload to the header.
 		Poseidon::StreamBuffer magic_payload;
 		hdr.serialize(magic_payload);
-		LOG_CIRCE_TRACE("Sending user-defined request: remote = ", get_remote_info(), ", hdr = ", hdr, ", message_id = ", message_id, ", payload_size = ", payload.size());
-		magic_payload.splice(payload);
+		msg.serialize(magic_payload);
 		launch_deflate_and_send(magic_number, STD_MOVE(magic_payload));
 	} catch(...){
 		m_weak_promises.erase(it);
@@ -555,31 +560,17 @@ boost::shared_ptr<const PromisedResponse> InterserverConnection::send_request(bo
 	}
 	return STD_MOVE_IDN(promise);
 }
-boost::shared_ptr<const PromisedResponse> InterserverConnection::send_request(const Poseidon::Cbpp::MessageBase &msg){
-	PROFILE_ME;
-
-	LOG_CIRCE_TRACE("Sending user-defined request: remote = ", get_remote_info(), ", msg = ", msg);
-	const boost::uint64_t message_id = msg.get_id();
-	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
-	return send_request(message_id, msg);
-}
-void InterserverConnection::send_notification(boost::uint16_t message_id, Poseidon::StreamBuffer payload){
-	PROFILE_ME;
-	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
-
-	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("InterserverConnection was lost"));
-	boost::uint16_t magic_number = message_id;
-	LOG_CIRCE_TRACE("Sending user-defined notification: remote = ", get_remote_info(), ", message_id = ", message_id, ", payload_size = ", payload.size());
-	launch_deflate_and_send(magic_number, STD_MOVE(payload));
-}
 void InterserverConnection::send_notification(const Poseidon::Cbpp::MessageBase &msg){
 	PROFILE_ME;
 
 	LOG_CIRCE_TRACE("Sending user-defined notification: remote = ", get_remote_info(), ", msg = ", msg);
 	const boost::uint64_t message_id = msg.get_id();
 	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
-	return send_notification(message_id, msg);
+
+	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
+	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("InterserverConnection was lost"));
+	boost::uint16_t magic_number = message_id;
+	launch_deflate_and_send(magic_number, msg);
 }
 
 // Non-member functions.

@@ -111,9 +111,7 @@ public:
 		return layer4_force_shutdown();
 	}
 
-	boost::shared_ptr<const PromisedResponse> send_request(boost::uint16_t message_id, Poseidon::StreamBuffer payload);
 	boost::shared_ptr<const PromisedResponse> send_request(const Poseidon::Cbpp::MessageBase &msg);
-	void send_notification(boost::uint16_t message_id, Poseidon::StreamBuffer payload);
 	void send_notification(const Poseidon::Cbpp::MessageBase &msg);
 };
 
