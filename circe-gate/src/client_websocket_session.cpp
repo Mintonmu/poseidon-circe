@@ -21,16 +21,17 @@ namespace Gate {
 
 class ClientWebSocketSession::DeliveryJob : public Poseidon::JobBase {
 private:
+	const boost::weak_ptr<Poseidon::TcpSessionBase> m_weak_parent;
 	const boost::weak_ptr<ClientWebSocketSession> m_weak_ws_session;
 
 public:
 	explicit DeliveryJob(const boost::shared_ptr<ClientWebSocketSession> &ws_session)
-		: m_weak_ws_session(ws_session)
+		: m_weak_parent(ws_session->get_weak_parent()), m_weak_ws_session(ws_session)
 	{ }
 
 protected:
 	boost::weak_ptr<const void> get_category() const FINAL {
-		return m_weak_ws_session;
+		return m_weak_parent;
 	}
 	void perform() FINAL {
 		PROFILE_ME;
@@ -81,16 +82,17 @@ protected:
 
 class ClientWebSocketSession::ClosureJob : public Poseidon::JobBase {
 private:
+	const boost::weak_ptr<Poseidon::TcpSessionBase> m_weak_parent;
 	const boost::shared_ptr<ClientWebSocketSession> m_ws_session;
 
 public:
 	explicit ClosureJob(const boost::shared_ptr<ClientWebSocketSession> &ws_session)
-		: m_ws_session(ws_session)
+		: m_weak_parent(ws_session->get_weak_parent()), m_ws_session(ws_session)
 	{ }
 
 protected:
 	boost::weak_ptr<const void> get_category() const FINAL {
-		return m_ws_session;
+		return m_weak_parent;
 	}
 	void perform() FINAL {
 		PROFILE_ME;
