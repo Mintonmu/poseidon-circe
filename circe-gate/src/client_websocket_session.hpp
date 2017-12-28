@@ -32,6 +32,8 @@ private:
 	boost::shared_ptr<Poseidon::Timer> m_closure_notification_timer;
 	boost::optional<std::pair<Poseidon::WebSocket::StatusCode, std::string> > m_closure_reason;
 
+	volatile bool m_authenticated;
+
 	// These are accessed only by the epoll thread.
 	boost::uint64_t m_request_counter_reset_time;
 	boost::uint64_t m_request_counter;

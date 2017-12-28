@@ -147,6 +147,7 @@ void ClientWebSocketSession::on_closure_notification_low_level_timer(const boost
 ClientWebSocketSession::ClientWebSocketSession(const boost::shared_ptr<ClientHttpSession> &parent)
 	: Poseidon::WebSocket::Session(parent)
 	, m_client_uuid(parent->get_client_uuid())
+	, m_authenticated(false)
 	, m_request_counter_reset_time(0), m_request_counter(0)
 {
 	LOG_CIRCE_DEBUG("ClientWebSocketSession constructor: remote = ", get_remote_info());
@@ -188,6 +189,10 @@ void ClientWebSocketSession::deliver_closure_notification(Poseidon::WebSocket::S
 void ClientWebSocketSession::timer_ping_client() NOEXCEPT
 try {
 	PROFILE_ME;
+
+	if(!Poseidon::atomic_load(m_authenticated, Poseidon::ATOMIC_RELAXED)){
+		return;
+	}
 
 	const boost::uint64_t local_now = Poseidon::get_local_time();
 	char str[256];
@@ -244,6 +249,8 @@ void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, c
 	m_auth_token = STD_MOVE_IDN(auth_resp.auth_token);
 	m_box_uuid   = Poseidon::Uuid(foyer_resp.box_uuid);
 	m_foyer_uuid = foyer_conn->get_connection_uuid();
+
+	Poseidon::atomic_store(m_authenticated, true, Poseidon::ATOMIC_RELAXED);
 }
 
 void ClientWebSocketSession::on_close(int err_code){
