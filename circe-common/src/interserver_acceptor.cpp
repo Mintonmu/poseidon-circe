@@ -193,22 +193,22 @@ void InterserverAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	for(AUTO(it, m_weak_sessions_pending.begin()); it != m_weak_sessions_pending.end(); ++it){
-		const AUTO(session, it->lock());
+	while(!m_weak_sessions_pending.empty()){
+		const AUTO(session, m_weak_sessions_pending.begin()->lock());
 		if(session){
 			LOG_CIRCE_DEBUG("Disconnecting interserver session: remote = ", session->layer5_get_remote_info());
 			session->layer5_shutdown(err_code, err_msg);
 		}
+		m_weak_sessions_pending.erase(m_weak_sessions_pending.begin());
 	}
-	m_weak_sessions_pending.clear();
-	for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); ++it){
-		const AUTO(session, it->second.lock());
+	while(!m_weak_sessions.empty()){
+		const AUTO(session, m_weak_sessions.begin()->second.lock());
 		if(session){
 			LOG_CIRCE_DEBUG("Disconnecting interserver session: remote = ", session->layer5_get_remote_info());
 			session->layer5_shutdown(err_code, err_msg);
 		}
+		m_weak_sessions.erase(m_weak_sessions.begin());
 	}
-	m_weak_sessions.clear();
 }
 
 }

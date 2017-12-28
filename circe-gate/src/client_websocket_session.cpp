@@ -62,14 +62,14 @@ protected:
 				// Send messages that have been enqueued.
 				Protocol::Foyer::WebSocketPackedMessageRequestToBox foyer_req;
 				foyer_req.client_uuid = ws_session->get_client_uuid();
-				for(AUTO(rit, ws_session->m_messages_pending.begin()); rit != ws_session->m_messages_pending.end(); ++rit){
-					AUTO(wit, foyer_req.messages.emplace(foyer_req.messages.end()));
-					wit->opcode  = rit->first;
-					wit->payload = STD_MOVE(rit->second);
+				while(!ws_session->m_messages_pending.empty()){
+					foyer_req.messages.emplace_back();
+					foyer_req.messages.back().opcode  = ws_session->m_messages_pending.front().first;
+					foyer_req.messages.back().payload = STD_MOVE(ws_session->m_messages_pending.front().second);
+					ws_session->m_messages_pending.pop_front();
 				}
 				LOG_CIRCE_TRACE("Sending request: ", foyer_req);
 				ws_session->m_promised_acknowledgement = foyer_conn->send_request(foyer_req);
-				ws_session->m_messages_pending.clear();
 			}
 			ws_session->m_delivery_job_active = false;
 		} catch(std::exception &e){
