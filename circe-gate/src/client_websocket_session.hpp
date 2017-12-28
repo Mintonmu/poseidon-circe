@@ -55,6 +55,8 @@ private:
 	void drop_closure_notification_timer() NOEXCEPT;
 	void deliver_closure_notification(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT;
 
+	void timer_ping_client() NOEXCEPT;
+
 	void sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params);
 
 protected:

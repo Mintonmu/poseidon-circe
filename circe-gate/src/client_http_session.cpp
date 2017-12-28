@@ -20,7 +20,6 @@
 #include <poseidon/websocket/handshake.hpp>
 #include <poseidon/websocket/exception.hpp>
 #include <poseidon/zlib.hpp>
-#include <boost/optional/optional_io.hpp>
 
 namespace Circe {
 namespace Gate {
@@ -60,7 +59,7 @@ private:
 		try {
 			http_session->sync_decode_uri(m_req_headers.uri);
 			DEBUG_THROW_ASSERT(http_session->m_decoded_uri);
-			LOG_CIRCE_TRACE("Decoded URI: ", http_session->m_decoded_uri);
+			LOG_CIRCE_TRACE("Decoded URI: ", http_session->m_decoded_uri.get());
 
 			AUTO(ws_resp, Poseidon::WebSocket::make_handshake_response(m_req_headers));
 			DEBUG_THROW_UNLESS(ws_resp.status_code == Poseidon::Http::ST_SWITCHING_PROTOCOLS, Poseidon::Http::Exception, ws_resp.status_code, STD_MOVE(ws_resp.headers));
@@ -77,7 +76,7 @@ private:
 		try {
 			ws_session->sync_authenticate(http_session->m_decoded_uri.get(), m_req_headers.get_params);
 			DEBUG_THROW_ASSERT(ws_session->m_auth_token);
-			LOG_CIRCE_DEBUG("Auth server has allowed WebSocket client: remote = ", ws_session->get_remote_info(), ", auth_token = ", ws_session->m_auth_token);
+			LOG_CIRCE_DEBUG("Auth server has allowed WebSocket client: remote = ", ws_session->get_remote_info(), ", auth_token = ", ws_session->m_auth_token.get());
 		} catch(Poseidon::WebSocket::Exception &e){
 			LOG_CIRCE_WARNING("Poseidon::WebSocket::Exception thrown: code = ", e.get_status_code(), ", what = ", e.what());
 			ws_session->shutdown(e.get_status_code(), e.what());
@@ -142,7 +141,7 @@ void ClientHttpSession::on_shutdown_timer(boost::uint64_t now){
 
 	const AUTO(ws_session, boost::dynamic_pointer_cast<ClientWebSocketSession>(get_upgraded_session()));
 	if(ws_session){
-		ws_session->send(Poseidon::WebSocket::OP_PING, VAL_INIT);
+		ws_session->timer_ping_client();
 	}
 
 	Poseidon::Http::Session::on_shutdown_timer(now);
@@ -171,11 +170,11 @@ void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders req_header
 
 	sync_decode_uri(req_headers.uri);
 	DEBUG_THROW_ASSERT(m_decoded_uri);
-	LOG_CIRCE_TRACE("Decoded URI: ", m_decoded_uri);
+	LOG_CIRCE_TRACE("Decoded URI: ", m_decoded_uri.get());
 
 	sync_authenticate(req_headers.verb, m_decoded_uri.get(), req_headers.get_params, req_headers.headers);
 	DEBUG_THROW_ASSERT(m_auth_token);
-	LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", m_auth_token);
+	LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", m_auth_token.get());
 
 	return Poseidon::Http::Session::on_sync_expect(STD_MOVE(req_headers));
 }
@@ -186,12 +185,12 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 	if(!m_decoded_uri){
 		sync_decode_uri(req_headers.uri);
 		DEBUG_THROW_ASSERT(m_decoded_uri);
-		LOG_CIRCE_TRACE("Decoded URI: ", m_decoded_uri);
+		LOG_CIRCE_TRACE("Decoded URI: ", m_decoded_uri.get());
 	}
 	if(!m_auth_token){
 		sync_authenticate(req_headers.verb, m_decoded_uri.get(), req_headers.get_params, req_headers.headers);
 		DEBUG_THROW_ASSERT(m_auth_token);
-		LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", m_auth_token);
+		LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", m_auth_token.get());
 	}
 
 	const AUTO(resp_encoding_preferred, Poseidon::Http::pick_content_encoding(req_headers));

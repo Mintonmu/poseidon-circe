@@ -185,6 +185,19 @@ void ClientWebSocketSession::deliver_closure_notification(Poseidon::WebSocket::S
 	}
 }
 
+void ClientWebSocketSession::timer_ping_client() NOEXCEPT
+try {
+	PROFILE_ME;
+
+	const boost::uint64_t local_now = Poseidon::get_local_time();
+	char str[256];
+	std::size_t len = Poseidon::format_time(str, sizeof(str), local_now, true);
+	Poseidon::WebSocket::Session::send(Poseidon::WebSocket::OP_PING, Poseidon::StreamBuffer(str, len));
+} catch(std::exception &e){
+	LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+	shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
+}
+
 void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params){
 	PROFILE_ME;
 
@@ -335,6 +348,10 @@ void ClientWebSocketSession::on_sync_control_message(Poseidon::WebSocket::OpCode
 			reason = data + 2;
 		}
 		deliver_closure_notification(status_code, reason);
+	}
+
+	if(opcode == Poseidon::WebSocket::OP_PONG){
+		LOG_CIRCE_DEBUG("Received PONG from client: remote = ", get_remote_info(), ", payload = ", payload);
 	}
 
 	Poseidon::WebSocket::Session::on_sync_control_message(opcode, STD_MOVE(payload));
