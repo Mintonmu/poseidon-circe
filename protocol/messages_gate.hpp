@@ -22,6 +22,8 @@ namespace Gate {
 #define MESSAGE_NAME   WebSocketKillResponse
 #define MESSAGE_ID     1102
 #define MESSAGE_FIELDS \
+	FIELD_VUINT        (found)	\
+	FIELD_VUINT        (killed)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
@@ -39,6 +41,7 @@ namespace Gate {
 #define MESSAGE_NAME   WebSocketPackedMessageResponse
 #define MESSAGE_ID     1104
 #define MESSAGE_FIELDS \
+	FIELD_VUINT        (delivered)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 

@@ -30,6 +30,7 @@ namespace ErrorCodes {
 		ERR_FOYER_CONNECTION_LOST             = 50003,
 		ERR_BOX_CONNECTION_LOST               = 50004,
 		ERR_CLIENT_CONNECTION_LOST            = 50005,
+		ERR_CLIENT_SHADOW_SESSION_NOT_FOUND   = 50006,
 	};
 }
 using namespace ErrorCodes;

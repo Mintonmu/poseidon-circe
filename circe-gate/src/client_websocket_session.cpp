@@ -43,7 +43,7 @@ protected:
 
 		try {
 			const AUTO(foyer_conn, FoyerConnector::get_client());
-			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_INTERNAL_ERROR, Poseidon::sslit("Connection to foyer server was lost"));
+			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Exception, Poseidon::sslit("Connection to foyer server was lost"));
 
 			DEBUG_THROW_ASSERT(ws_session->m_delivery_job_active);
 			for(;;){
@@ -52,6 +52,7 @@ protected:
 				Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
 				Common::wait_for_response(foyer_resp, ws_session->m_promised_acknowledgement);
 				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+				DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Message delivery failed"));
 				// If there is no error, drop the acknowledgement.
 				ws_session->m_promised_acknowledgement.reset();
 
@@ -272,6 +273,7 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 			Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
 			Common::wait_for_response(foyer_resp, m_promised_acknowledgement);
 			LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+			DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Message delivery failed"));
 			// If there is no error, drop the acknowledgement.
 			m_promised_acknowledgement.reset();
 		}
@@ -286,7 +288,7 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 	} else {
 		// There are messages on the way. Wait for the acknowledgement, but in a new fiber to prevent any further messages from being blocked.
 		if(!m_delivery_job_spare){
-			m_delivery_job_spare  = boost::make_shared<DeliveryJob>(virtual_shared_from_this<ClientWebSocketSession>());
+			m_delivery_job_spare = boost::make_shared<DeliveryJob>(virtual_shared_from_this<ClientWebSocketSession>());
 			m_delivery_job_active = false;
 		}
 		if(!m_delivery_job_active){

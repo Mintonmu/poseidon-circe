@@ -86,6 +86,8 @@ namespace Foyer {
 #define MESSAGE_NAME   WebSocketKillResponseFromGate
 #define MESSAGE_ID     1207
 #define MESSAGE_FIELDS \
+	FIELD_VUINT        (found)	\
+	FIELD_VUINT        (killed)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
@@ -103,6 +105,7 @@ namespace Foyer {
 #define MESSAGE_NAME   WebSocketPackedMessageResponseFromBox
 #define MESSAGE_ID     1209
 #define MESSAGE_FIELDS \
+	FIELD_VUINT        (delivered)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
@@ -121,6 +124,7 @@ namespace Foyer {
 #define MESSAGE_NAME   WebSocketPackedMessageResponseFromGate
 #define MESSAGE_ID     1211
 #define MESSAGE_FIELDS \
+	FIELD_VUINT        (delivered)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
