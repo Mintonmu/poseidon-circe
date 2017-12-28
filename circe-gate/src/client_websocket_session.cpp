@@ -306,6 +306,16 @@ void ClientWebSocketSession::on_sync_control_message(Poseidon::WebSocket::OpCode
 	PROFILE_ME;
 	LOG_CIRCE_DEBUG("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
+	// Check the acknowledgement of messages sent previously if any. This will not block.
+	if(m_promised_acknowledgement && m_promised_acknowledgement->is_satisfied()){
+		Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
+		Common::wait_for_response(foyer_resp, m_promised_acknowledgement);
+		LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+		DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
+		// If there is no error, drop the acknowledgement.
+		m_promised_acknowledgement.reset();
+	}
+
 	if(opcode == Poseidon::WebSocket::OP_CLOSE){
 		Poseidon::WebSocket::StatusCode status_code;
 		const char *reason;
