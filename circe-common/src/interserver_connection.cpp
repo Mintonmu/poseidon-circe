@@ -203,18 +203,6 @@ public:
 
 class InterserverConnection::RequestMessageJob : public Poseidon::JobBase {
 private:
-	static CbppResponse wrapped_dispatch(const boost::shared_ptr<InterserverConnection> &connection, boost::uint16_t message_id, Poseidon::StreamBuffer payload)
-	try {
-		return connection->layer7_on_sync_message(message_id, STD_MOVE(payload));
-	} catch(Poseidon::Cbpp::Exception &e){
-		LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: mesasge_id = ", message_id, ", err_code = ", e.get_status_code(), ", err_msg = ", e.what());
-		return CbppResponse(e.get_status_code(), e.what());
-	} catch(std::exception &e){
-		LOG_CIRCE_ERROR("std::exception thrown: mesasge_id = ", message_id, ", err_msg = ", e.what());
-		return CbppResponse(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
-	}
-
-private:
 	const Poseidon::SocketBase::DelayedShutdownGuard m_guard;
 	const boost::weak_ptr<InterserverConnection> m_weak_connection;
 
@@ -244,7 +232,16 @@ protected:
 
 		try {
 			LOG_CIRCE_TRACE("Dispatching message: message_id = ", m_message_id);
-			CbppResponse resp = wrapped_dispatch(connection, m_message_id, STD_MOVE(m_payload));
+			CbppResponse resp;
+			try {
+				resp = connection->layer7_on_sync_message(m_message_id, STD_MOVE(m_payload));
+			} catch(Poseidon::Cbpp::Exception &e){
+				LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: mesasge_id = ", m_message_id, ", err_code = ", e.get_status_code(), ", err_msg = ", e.what());
+				resp = CbppResponse(e.get_status_code(), e.what());
+			} catch(std::exception &e){
+				LOG_CIRCE_ERROR("std::exception thrown: mesasge_id = ", m_message_id, ", err_msg = ", e.what());
+				resp = CbppResponse(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
+			}
 			if(m_send_response){
 				connection->send_response(m_serial, STD_MOVE(resp));
 			}
