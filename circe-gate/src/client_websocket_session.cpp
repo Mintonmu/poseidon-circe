@@ -81,24 +81,21 @@ protected:
 
 class ClientWebSocketSession::ClosureJob : public Poseidon::JobBase {
 private:
-	const boost::weak_ptr<ClientWebSocketSession> m_weak_ws_session;
-
-	Poseidon::Uuid m_client_uuid;
-	Poseidon::WebSocket::StatusCode m_status_code;
-	std::string m_reason;
+	const boost::shared_ptr<ClientWebSocketSession> m_ws_session;
 
 public:
-	ClosureJob(const boost::shared_ptr<ClientWebSocketSession> &ws_session, Poseidon::WebSocket::StatusCode status_code, std::string reason)
-		: m_weak_ws_session(ws_session)
-		, m_client_uuid(ws_session->get_client_uuid()), m_status_code(status_code), m_reason(STD_MOVE(reason))
+	explicit ClosureJob(const boost::shared_ptr<ClientWebSocketSession> &ws_session)
+		: m_ws_session(ws_session)
 	{ }
 
 protected:
 	boost::weak_ptr<const void> get_category() const FINAL {
-		return m_weak_ws_session;
+		return m_ws_session;
 	}
 	void perform() FINAL {
 		PROFILE_ME;
+
+		const AUTO_REF(ws_session, m_ws_session);
 
 		const AUTO(foyer_conn, FoyerConnector::get_client());
 		if(!foyer_conn){
@@ -106,10 +103,21 @@ protected:
 		}
 
 		try {
+			// If there are messages on the way, wait for the acknowledgement before sending the closure notification.
+			// This ensures that we will not drop any messages sent before the closure. Any exceptions thrown are ignored.
+			if(ws_session->m_promised_acknowledgement){
+				Poseidon::yield(ws_session->m_promised_acknowledgement);
+			}
+		} catch(std::exception &e){
+			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+		}
+
+		try {
+			// `ws_session->m_closure_reason` will not be altered elsewhere once set, hence it is safe to move from it without locking.
 			Protocol::Foyer::WebSocketClosureNotificationToBox foyer_ntfy;
-			foyer_ntfy.client_uuid = m_client_uuid;
-			foyer_ntfy.status_code = m_status_code;
-			foyer_ntfy.reason      = STD_MOVE(m_reason);
+			foyer_ntfy.client_uuid = ws_session->get_client_uuid();
+			foyer_ntfy.status_code = ws_session->m_closure_reason.get().first;
+			foyer_ntfy.reason      = STD_MOVE(ws_session->m_closure_reason.get().second);
 			foyer_conn->send_notification(foyer_ntfy);
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
@@ -122,14 +130,13 @@ void ClientWebSocketSession::on_closure_notification_low_level_timer(const boost
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(ws_session->m_closure_notification_mutex);
-	const AUTO(ptr, ws_session->m_closure_reason.get_ptr());
-	if(!ptr){
+	if(!ws_session->m_closure_reason){
 		return;
 	}
 	LOG_CIRCE_DEBUG("Reaping WebSocket client: ws_session = ", (void *)ws_session.get());
 	// Enqueue a job to notify the foyer server about closure of this connection.
 	// If this operation throws an exception, the timer will be rerun, so there is no cleanup to be done.
-	Poseidon::enqueue(boost::make_shared<ClosureJob>(ws_session, ptr->first, ptr->second));
+	Poseidon::enqueue(boost::make_shared<ClosureJob>(ws_session));
 	// If the job has been enqueued successfully, we can break the circular reference, destroying this timer.
 	ws_session->m_closure_notification_timer.reset();
 }
