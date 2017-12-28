@@ -38,6 +38,8 @@ private:
 
 	// These are accessed only by the primary thread.
 	boost::optional<std::string> m_auth_token;
+	boost::optional<Poseidon::Uuid> m_box_uuid;
+	boost::optional<Poseidon::Uuid> m_foyer_uuid;
 
 	boost::shared_ptr<const Poseidon::PromiseContainer<Common::CbppResponse> > m_promised_acknowledgement;
 	boost::shared_ptr<DeliveryJob> m_delivery_job_spare;
@@ -53,7 +55,7 @@ private:
 	void drop_closure_notification_timer() NOEXCEPT;
 	void deliver_closure_notification(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT;
 
-	std::string sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params);
+	void sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params);
 
 protected:
 	// Callbacks run in the epoll thread.

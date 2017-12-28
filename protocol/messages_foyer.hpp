@@ -33,6 +33,7 @@ namespace Foyer {
 #define MESSAGE_NAME   HttpResponseFromBox
 #define MESSAGE_ID     1202
 #define MESSAGE_FIELDS \
+	FIELD_FIXED        (box_uuid, 16)	\
 	FIELD_VUINT        (status_code)	\
 	FIELD_ARRAY        (headers,	\
 	  FIELD_STRING       (key)	\
@@ -59,6 +60,7 @@ namespace Foyer {
 #define MESSAGE_NAME   WebSocketEstablishmentResponseFromBox
 #define MESSAGE_ID     1204
 #define MESSAGE_FIELDS \
+	FIELD_FIXED        (box_uuid, 16)	\
 	FIELD_VUINT        (status_code)	\
 	FIELD_STRING       (reason)	\
 	//

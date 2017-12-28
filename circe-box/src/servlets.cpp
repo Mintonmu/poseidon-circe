@@ -44,6 +44,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	LOG_CIRCE_FATAL("TODO: CLIENT WEBSOCKET PACKED MESSAGES ", req);
 
 	Protocol::Box::WebSocketPackedMessageResponse resp;
+	resp.delivered = true;
 	return resp;
 }
 

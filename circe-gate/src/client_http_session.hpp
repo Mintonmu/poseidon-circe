@@ -21,13 +21,10 @@ private:
 	class WebSocketHandshakeJob;
 
 private:
-	static std::string safe_decode_uri(const std::string &uri);
-
-private:
 	const Poseidon::Uuid m_client_uuid;
 
 	// These are accessed only by the primary thread.
-	std::string m_decoded_uri;
+	boost::optional<std::string> m_decoded_uri;
 	boost::optional<std::string> m_auth_token;
 
 public:
@@ -35,9 +32,14 @@ public:
 	~ClientHttpSession() OVERRIDE;
 
 private:
-	std::string sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers);
+	void sync_decode_uri(const std::string &uri);
+	void sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers);
 
 protected:
+	// Callbacks run in the timer thread.
+	// XXX: WebSocket clients can't PING the server???
+	void on_shutdown_timer(boost::uint64_t now) OVERRIDE;
+
 	// Callbacks run in the epoll thread.
 	boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers) OVERRIDE;
 

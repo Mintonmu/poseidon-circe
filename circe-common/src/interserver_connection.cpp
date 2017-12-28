@@ -288,9 +288,9 @@ void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection
 
 	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("server_accept_hello() shall be called exactly once by the server and must not be called by the client"));
+	const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, connection_uuid, timestamp));
 	{
 		IS_ServerHello msg;
-		const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, connection_uuid, timestamp));
 		msg.checksum_resp = checksum_resp;
 		LOG_CIRCE_TRACE("Sending server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
@@ -514,12 +514,12 @@ void InterserverConnection::layer7_client_say_hello(){
 
 	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("layer7_client_say_hello() shall be called exactly once by the client and must not be called by the server"));
+	const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, connection_uuid, timestamp));
 	{
 		IS_ClientHello msg;
-		const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, connection_uuid, timestamp));
 		msg.connection_uuid = connection_uuid;
-		msg.timestamp = timestamp;
-		msg.checksum_req = checksum_req;
+		msg.timestamp       = timestamp;
+		msg.checksum_req    = checksum_req;
 		LOG_CIRCE_TRACE("Sending client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
 	}

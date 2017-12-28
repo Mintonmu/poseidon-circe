@@ -185,7 +185,7 @@ void ClientWebSocketSession::deliver_closure_notification(Poseidon::WebSocket::S
 	}
 }
 
-std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params){
+void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params){
 	PROFILE_ME;
 
 	const AUTO(websocket_enabled, get_config<bool>("client_websocket_enabled", false));
@@ -194,36 +194,32 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 	const AUTO(auth_conn, AuthConnector::get_client());
 	DEBUG_THROW_UNLESS(auth_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY);
 
+	Protocol::Auth::WebSocketAuthenticationRequest auth_req;
+	auth_req.client_uuid = get_client_uuid();
+	auth_req.client_ip   = get_remote_info().ip();
+	auth_req.decoded_uri = decoded_uri;
+	Protocol::copy_key_values(auth_req.params, params);
+	LOG_CIRCE_TRACE("Sending request: ", auth_req);
 	Protocol::Auth::WebSocketAuthenticationResponse auth_resp;
-	{
-		Protocol::Auth::WebSocketAuthenticationRequest auth_req;
-		auth_req.client_uuid = get_client_uuid();
-		auth_req.client_ip   = get_remote_info().ip();
-		auth_req.decoded_uri = decoded_uri;
-		Protocol::copy_key_values(auth_req.params, params);
-		LOG_CIRCE_TRACE("Sending request: ", auth_req);
-		Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
-		LOG_CIRCE_TRACE("Received response: ", auth_resp);
-	}
+	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
+	LOG_CIRCE_TRACE("Received response: ", auth_resp);
 	DEBUG_THROW_UNLESS(auth_resp.status_code == 0, Poseidon::WebSocket::Exception, boost::numeric_cast<Poseidon::WebSocket::StatusCode>(auth_resp.status_code), Poseidon::SharedNts(auth_resp.reason));
 
 	const AUTO(foyer_conn, FoyerConnector::get_client());
 	DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY);
 
+	Protocol::Foyer::WebSocketEstablishmentResponseFromBox foyer_resp;
 	reserve_closure_notification_timer();
 	try {
-		Protocol::Foyer::WebSocketEstablishmentResponseFromBox foyer_resp;
-		{
-			Protocol::Foyer::WebSocketEstablishmentRequestToBox foyer_req;
-			foyer_req.client_uuid = get_client_uuid();
-			foyer_req.client_ip   = get_remote_info().ip();
-			foyer_req.auth_token  = auth_resp.auth_token;
-			foyer_req.decoded_uri = decoded_uri;
-			Protocol::copy_key_values(foyer_req.params, params);
-			LOG_CIRCE_TRACE("Sending request: ", foyer_req);
-			Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
-			LOG_CIRCE_TRACE("Received response: ", foyer_resp);
-		}
+		Protocol::Foyer::WebSocketEstablishmentRequestToBox foyer_req;
+		foyer_req.client_uuid = get_client_uuid();
+		foyer_req.client_ip   = get_remote_info().ip();
+		foyer_req.auth_token  = auth_resp.auth_token;
+		foyer_req.decoded_uri = decoded_uri;
+		Protocol::copy_key_values(foyer_req.params, params);
+		LOG_CIRCE_TRACE("Sending request: ", foyer_req);
+		Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
+		LOG_CIRCE_TRACE("Received response: ", foyer_resp);
 		DEBUG_THROW_UNLESS(foyer_resp.status_code == 0, Poseidon::WebSocket::Exception, boost::numeric_cast<Poseidon::WebSocket::StatusCode>(foyer_resp.status_code), Poseidon::SharedNts(foyer_resp.reason));
 	} catch(...){
 		drop_closure_notification_timer();
@@ -232,7 +228,9 @@ std::string ClientWebSocketSession::sync_authenticate(const std::string &decoded
 
 	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("Connection has been shut down"));
 	LOG_CIRCE_DEBUG("Established WebSocketConnection: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
-	return STD_MOVE(auth_resp.auth_token);
+	m_auth_token = STD_MOVE_IDN(auth_resp.auth_token);
+	m_box_uuid   = Poseidon::Uuid(foyer_resp.box_uuid);
+	m_foyer_uuid = foyer_conn->get_connection_uuid();
 }
 
 void ClientWebSocketSession::on_close(int err_code){
