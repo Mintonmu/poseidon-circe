@@ -4,7 +4,6 @@
 #include "precompiled.hpp"
 #include "box_connector.hpp"
 #include "servlet_container.hpp"
-#include "foyer_acceptor.hpp"
 #include "common/interserver_connector.hpp"
 #include "protocol/error_codes.hpp"
 #include "../mmain.hpp"
@@ -22,9 +21,6 @@ namespace {
 	protected:
 		boost::shared_ptr<const Common::InterserverServletCallback> sync_get_servlet(boost::uint16_t message_id) const OVERRIDE {
 			return ServletContainer::get_servlet(message_id);
-		}
-		void sync_pre_connect() OVERRIDE {
-			FoyerAcceptor::clear(Protocol::ERR_BOX_CONNECTION_LOST);
 		}
 	};
 

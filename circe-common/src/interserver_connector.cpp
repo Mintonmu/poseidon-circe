@@ -112,9 +112,6 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 		client = connector->m_weak_client.lock();
 	}
 	if(!client){
-		LOG_CIRCE_DEBUG("Running pre-connect callback for ", connector->m_host, ":", connector->m_port);
-		connector->sync_pre_connect();
-
 		const AUTO(promised_sock_addr, Poseidon::DnsDaemon::enqueue_for_looking_up(connector->m_host, connector->m_port));
 		Poseidon::yield(promised_sock_addr);
 		LOG_CIRCE_INFO("Connecting InterserverClient to ", Poseidon::IpPort(promised_sock_addr->get()));
