@@ -207,8 +207,8 @@ private:
 	try {
 		return connection->layer7_on_sync_message(message_id, STD_MOVE(payload));
 	} catch(Poseidon::Cbpp::Exception &e){
-		LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: mesasge_id = ", message_id, ", err_code = ", e.get_code(), ", err_msg = ", e.what());
-		return CbppResponse(e.get_code(), e.what());
+		LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: mesasge_id = ", message_id, ", err_code = ", e.get_status_code(), ", err_msg = ", e.what());
+		return CbppResponse(e.get_status_code(), e.what());
 	} catch(std::exception &e){
 		LOG_CIRCE_ERROR("std::exception thrown: mesasge_id = ", message_id, ", err_msg = ", e.what());
 		return CbppResponse(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
@@ -409,8 +409,8 @@ try {
 		Poseidon::enqueue(boost::make_shared<RequestMessageJob>(virtual_shared_from_this<InterserverConnection>(), message_id, false, 0xDEADBEEF, STD_MOVE(magic_payload)));
 	}
 } catch(Poseidon::Cbpp::Exception &e){
-	LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: status_code = ", e.get_code(), ", what = ", e.what());
-	shutdown(e.get_code(), e.what());
+	LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
+	shutdown(e.get_status_code(), e.what());
 } catch(std::exception &e){
 	LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 	shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
@@ -453,8 +453,8 @@ try {
 
 	layer5_send_data(magic_number, STD_MOVE(encoded_payload));
 } catch(Poseidon::Cbpp::Exception &e){
-	LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: status_code = ", e.get_code(), ", what = ", e.what());
-	shutdown(e.get_code(), e.what());
+	LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
+	shutdown(e.get_status_code(), e.what());
 } catch(std::exception &e){
 	LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 	shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
