@@ -89,7 +89,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Foyer::WebSocketKillRequestToGate req){
 	const AUTO(gate_conn, FoyerAcceptor::get_session(Poseidon::Uuid(req.gate_uuid)));
-	DEBUG_THROW_UNLESS(gate_conn, Poseidon::Cbpp::Exception, Protocol::ERR_GATE_NOT_FOUND, Poseidon::sslit("The specified gate server was not found"));
+	DEBUG_THROW_UNLESS(gate_conn, Poseidon::Cbpp::Exception, Protocol::ERR_GATE_CONNECTION_LOST, Poseidon::sslit("The specified gate server was not found"));
 
 	Protocol::Gate::WebSocketKillResponse gate_resp;
 	{
@@ -131,7 +131,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Foyer::WebSocketPackedMessageRequestToGate req){
 	const AUTO(gate_conn, FoyerAcceptor::get_session(Poseidon::Uuid(req.gate_uuid)));
-	DEBUG_THROW_UNLESS(gate_conn, Poseidon::Cbpp::Exception, Protocol::ERR_GATE_NOT_FOUND, Poseidon::sslit("The specified gate server was not found"));
+	DEBUG_THROW_UNLESS(gate_conn, Poseidon::Cbpp::Exception, Protocol::ERR_GATE_CONNECTION_LOST, Poseidon::sslit("The specified gate server was not found"));
 
 	Protocol::Gate::WebSocketPackedMessageResponse gate_resp;
 	{
