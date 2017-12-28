@@ -40,7 +40,7 @@ protected:
 	// Poseidon::Cbpp::LowLevelClient
 	void on_low_level_data_message_header(boost::uint16_t message_id, boost::uint64_t payload_size) OVERRIDE {
 		const std::size_t max_message_size = InterserverConnection::get_max_message_size();
-		DEBUG_THROW_UNLESS(payload_size <= max_message_size, Poseidon::Cbpp::Exception, Protocol::ERR_REQUEST_TOO_LARGE, Poseidon::sslit("Message is too large"));
+		DEBUG_THROW_UNLESS(payload_size <= max_message_size, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_REQUEST_TOO_LARGE, Poseidon::sslit("Message is too large"));
 		m_magic_number = message_id;
 		m_deflated_payload.clear();
 	}
@@ -89,11 +89,11 @@ protected:
 		PROFILE_ME;
 
 		const AUTO(connector, m_weak_connector.lock());
-		DEBUG_THROW_UNLESS(connector, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		DEBUG_THROW_UNLESS(connector, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 
 		LOG_CIRCE_DEBUG("Dispatching: typeid(*this).name() = ", typeid(*this).name(), ", message_id = ", message_id);
 		const AUTO(servlet, connector->sync_get_servlet(message_id));
-		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Protocol::ERR_NOT_FOUND, Poseidon::sslit("message_id not handled"));
+		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverClient>(), message_id, STD_MOVE(payload));
 	}
 };
@@ -140,7 +140,7 @@ InterserverConnector::InterserverConnector(std::string host, boost::uint16_t por
 }
 InterserverConnector::~InterserverConnector(){
 	LOG_CIRCE_INFO("InterserverConnector destructor: host:port = ", m_host, ":", m_port);
-	clear(Protocol::ERR_GONE_AWAY);
+	clear(Poseidon::Cbpp::ST_GONE_AWAY);
 }
 
 void InterserverConnector::activate(){
@@ -169,7 +169,7 @@ void InterserverConnector::safe_send_notification(const Poseidon::Cbpp::MessageB
 			client->send_notification(msg);
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			client->layer5_shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+			client->layer5_shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
 		}
 	}
 }

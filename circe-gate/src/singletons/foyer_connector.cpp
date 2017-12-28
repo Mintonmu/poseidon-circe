@@ -6,6 +6,7 @@
 #include "servlet_container.hpp"
 #include "client_http_acceptor.hpp"
 #include "common/interserver_connector.hpp"
+#include "protocol/error_codes.hpp"
 #include "../mmain.hpp"
 
 namespace Circe {

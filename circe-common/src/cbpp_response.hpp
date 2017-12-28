@@ -8,7 +8,6 @@
 #include <poseidon/stream_buffer.hpp>
 #include <boost/cstdint.hpp>
 #include <iosfwd>
-#include "protocol/error_codes.hpp"
 
 namespace Circe {
 namespace Common {
@@ -26,7 +25,7 @@ private:
 	Poseidon::StreamBuffer m_payload;
 
 public:
-	CbppResponse(long err_code = Protocol::ERR_SUCCESS, std::string err_msg = std::string());
+	CbppResponse(long err_code = 0, std::string err_msg = std::string());
 	CbppResponse(const Poseidon::Cbpp::MessageBase &msg);
 	~CbppResponse();
 

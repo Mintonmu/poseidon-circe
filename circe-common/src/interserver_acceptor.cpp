@@ -39,7 +39,7 @@ protected:
 	// Poseidon::Cbpp::LowLevelSession
 	void on_low_level_data_message_header(boost::uint16_t message_id, boost::uint64_t payload_size) OVERRIDE {
 		const std::size_t max_message_size = InterserverConnection::get_max_message_size();
-		DEBUG_THROW_UNLESS(payload_size <= max_message_size, Poseidon::Cbpp::Exception, Protocol::ERR_REQUEST_TOO_LARGE, Poseidon::sslit("Message is too large"));
+		DEBUG_THROW_UNLESS(payload_size <= max_message_size, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_REQUEST_TOO_LARGE, Poseidon::sslit("Message is too large"));
 		m_magic_number = message_id;
 		m_deflated_payload.clear();
 	}
@@ -86,7 +86,7 @@ protected:
 		PROFILE_ME;
 
 		const AUTO(acceptor, m_weak_acceptor.lock());
-		DEBUG_THROW_UNLESS(acceptor, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		DEBUG_THROW_UNLESS(acceptor, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 
 		const Poseidon::Mutex::UniqueLock lock(acceptor->m_mutex);
 		bool erase_it;
@@ -101,11 +101,11 @@ protected:
 		PROFILE_ME;
 
 		const AUTO(acceptor, m_weak_acceptor.lock());
-		DEBUG_THROW_UNLESS(acceptor, Poseidon::Cbpp::Exception, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		DEBUG_THROW_UNLESS(acceptor, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 
 		LOG_CIRCE_DEBUG("Dispatching: typeid(*this).name() = ", typeid(*this).name(), ", message_id = ", message_id);
 		const AUTO(servlet, acceptor->sync_get_servlet(message_id));
-		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Protocol::ERR_NOT_FOUND, Poseidon::sslit("message_id not handled"));
+		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverSession>(), message_id, STD_MOVE(payload));
 	}
 };
@@ -149,7 +149,7 @@ InterserverAcceptor::InterserverAcceptor(std::string bind, unsigned port, std::s
 }
 InterserverAcceptor::~InterserverAcceptor(){
 	LOG_CIRCE_INFO("InterserverAcceptor destructor: bind:port = ", m_bind, ":", m_port);
-	clear(Protocol::ERR_GONE_AWAY);
+	clear(Poseidon::Cbpp::ST_GONE_AWAY);
 }
 
 void InterserverAcceptor::activate(){
@@ -184,7 +184,7 @@ void InterserverAcceptor::safe_broadcast_notification(const Poseidon::Cbpp::Mess
 				session->send_notification(msg);
 			} catch(std::exception &e){
 				LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-				session->layer5_shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+				session->layer5_shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
 			}
 		}
 	}

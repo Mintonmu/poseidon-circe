@@ -211,7 +211,7 @@ private:
 		return CbppResponse(e.get_code(), e.what());
 	} catch(std::exception &e){
 		LOG_CIRCE_ERROR("std::exception thrown: mesasge_id = ", message_id, ", err_msg = ", e.what());
-		return CbppResponse(Protocol::ERR_INTERNAL_ERROR, e.what());
+		return CbppResponse(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
 	}
 
 private:
@@ -251,7 +251,7 @@ protected:
 			LOG_CIRCE_TRACE("Done dispatching message: message_id = ", m_message_id);
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			connection->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+			connection->shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
 		}
 	}
 };
@@ -353,7 +353,7 @@ try {
 		IS_ClientHello msg(STD_MOVE(encoded_payload));
 		LOG_CIRCE_TRACE("Received client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, Poseidon::Uuid(msg.connection_uuid), msg.timestamp));
-		DEBUG_THROW_UNLESS(msg.checksum_req == checksum_req, Poseidon::Cbpp::Exception, Protocol::ERR_AUTHORIZATION_FAILURE, Poseidon::sslit("Request checksum failed verification"));
+		DEBUG_THROW_UNLESS(msg.checksum_req == checksum_req, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE, Poseidon::sslit("Request checksum failed verification"));
 		server_accept_hello(Poseidon::Uuid(msg.connection_uuid), msg.timestamp);
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		const AUTO(checksum_seedx, calculate_checksum(m_application_key, SALT_NORMAL_DATA, m_connection_uuid, m_timestamp));
@@ -365,11 +365,11 @@ try {
 		IS_ServerHello msg(STD_MOVE(encoded_payload));
 		LOG_CIRCE_TRACE("Received server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, m_connection_uuid, m_timestamp));
-		DEBUG_THROW_UNLESS(msg.checksum_resp == checksum_resp, Poseidon::Cbpp::Exception, Protocol::ERR_AUTHORIZATION_FAILURE, Poseidon::sslit("Response checksum failed verification"));
-		DEBUG_THROW_UNLESS(msg.options_resp.empty(), Poseidon::Cbpp::Exception, Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Server option not supported"));
+		DEBUG_THROW_UNLESS(msg.checksum_resp == checksum_resp, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE, Poseidon::sslit("Response checksum failed verification"));
+		DEBUG_THROW_UNLESS(msg.options_resp.empty(), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_INVALID_ARGUMENT, Poseidon::sslit("Server option not supported"));
 		return; }
 	}
-	DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED | MFL_RESERVED), Poseidon::Cbpp::Exception, Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
+	DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED | MFL_RESERVED), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
 
 	const std::size_t size_deflated = encoded_payload.size();
 	Poseidon::StreamBuffer magic_payload = require_message_filter()->decode(STD_MOVE(encoded_payload));
@@ -413,7 +413,7 @@ try {
 	shutdown(e.get_code(), e.what());
 } catch(std::exception &e){
 	LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-	shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+	shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
 }
 void InterserverConnection::launch_deflate_and_send(boost::uint16_t magic_number, Poseidon::StreamBuffer magic_payload){
 	PROFILE_ME;
@@ -444,7 +444,7 @@ try {
 		layer5_send_data(magic_number, STD_MOVE(magic_payload));
 		return; }
 	}
-	DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED | MFL_RESERVED), Poseidon::Cbpp::Exception, Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
+	DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED | MFL_RESERVED), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
 
 	const std::size_t size_original = magic_payload.size();
 	Poseidon::StreamBuffer encoded_payload = require_message_filter()->encode(STD_MOVE(magic_payload));
@@ -457,7 +457,7 @@ try {
 	shutdown(e.get_code(), e.what());
 } catch(std::exception &e){
 	LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-	shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+	shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
 }
 
 void InterserverConnection::layer5_on_receive_data(boost::uint16_t magic_number, Poseidon::StreamBuffer encoded_payload){
@@ -581,7 +581,7 @@ void wait_for_response(Poseidon::Cbpp::MessageBase &msg, const boost::shared_ptr
 
 	Poseidon::yield(promise);
 	AUTO_REF(resp, promise->get());
-	DEBUG_THROW_UNLESS(resp.get_err_code() == Protocol::ERR_SUCCESS, Poseidon::Cbpp::Exception, resp.get_err_code(), Poseidon::SharedNts(resp.get_err_msg()));
+	DEBUG_THROW_UNLESS(resp.get_err_code() == 0, Poseidon::Cbpp::Exception, resp.get_err_code(), Poseidon::SharedNts(resp.get_err_msg()));
 	DEBUG_THROW_UNLESS(resp.get_message_id() != 0, Poseidon::Exception, Poseidon::sslit("No message but status code returned"));
 	DEBUG_THROW_UNLESS(resp.get_message_id() == msg.get_id(), Poseidon::Exception, Poseidon::sslit("Unexpected response message ID"));
 	msg.deserialize(resp.get_payload());

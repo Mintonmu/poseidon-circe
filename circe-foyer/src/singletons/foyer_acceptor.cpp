@@ -5,6 +5,7 @@
 #include "foyer_acceptor.hpp"
 #include "servlet_container.hpp"
 #include "common/interserver_acceptor.hpp"
+#include "protocol/error_codes.hpp"
 #include "../mmain.hpp"
 
 namespace Circe {
