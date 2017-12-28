@@ -5,6 +5,7 @@
 #define CIRCE_GATE_SINGLETONS_CLIENT_HTTP_ACCEPTOR_HPP_
 
 #include "../client_http_session.hpp"
+#include "../client_websocket_session.hpp"
 
 namespace Circe {
 namespace Gate {
@@ -15,6 +16,7 @@ private:
 
 public:
 	static boost::shared_ptr<ClientHttpSession> get_session(const Poseidon::Uuid &client_uuid);
+	static boost::shared_ptr<ClientWebSocketSession> get_websocket_session(const Poseidon::Uuid &client_uuid);
 	static void clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 

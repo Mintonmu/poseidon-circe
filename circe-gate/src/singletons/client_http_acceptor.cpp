@@ -3,7 +3,6 @@
 
 #include "precompiled.hpp"
 #include "client_http_acceptor.hpp"
-#include "../client_websocket_session.hpp"
 #include "../mmain.hpp"
 #include <poseidon/tcp_server_base.hpp>
 #include <poseidon/singletons/epoll_daemon.hpp>
@@ -90,6 +89,15 @@ boost::shared_ptr<ClientHttpSession> ClientHttpAcceptor::get_session(const Posei
 		return VAL_INIT;
 	}
 	return acceptor->get_session(client_uuid);
+}
+boost::shared_ptr<ClientWebSocketSession> ClientHttpAcceptor::get_websocket_session(const Poseidon::Uuid &client_uuid){
+	PROFILE_ME;
+
+	const AUTO(http_session, get_session(client_uuid));
+	if(!http_session){
+		return VAL_INIT;
+	}
+	return boost::dynamic_pointer_cast<ClientWebSocketSession>(http_session->get_upgraded_session());
 }
 void ClientHttpAcceptor::clear(long /*err_code*/, const char */*err_msg*/) NOEXCEPT {
 	PROFILE_ME;
