@@ -22,7 +22,7 @@ template<typename R, typename C, typename M> M guess_message_type(R (*)(const C 
 #define CIRCE_DEFINE_INTERSERVER_SERVLET(insert_servlet_, ...)	\
 	namespace {	\
 		/* Define the servlet wrapper. We need some local definitions inside it. */	\
-		struct TOKEN_CAT2(InterserverServletWrapper, __LINE__) {	\
+		struct TOKEN_CAT2(InterserverServletWrapper_, __LINE__) {	\
 			/* Declare the user-defined callback. */	\
 			static ::Circe::Common::CbppResponse unwrapped_callback_(__VA_ARGS__);	\
 			/* Guess the message type. */	\
@@ -32,19 +32,19 @@ template<typename R, typename C, typename M> M guess_message_type(R (*)(const C 
 				PROFILE_ME;	\
 				DEBUG_THROW_ASSERT(message_id_ == Message_::ID);	\
 				Message_ req_(STD_MOVE(payload_));	\
-				LOG_CIRCE_TRACE("Received request from ", connection_->get_remote_info(), ": ", req_);	\
+				LOG_CIRCE_DEBUG("Received request from ", connection_->get_remote_info(), ": ", req_);	\
 				return unwrapped_callback_(connection_, STD_MOVE(req_));	\
 			}	\
 		};	\
 		/* Register the wrapped callback upon module load. */	\
 		MODULE_RAII_PRIORITY(handles_, INIT_PRIORITY_LOW){	\
-			LOG_CIRCE_INFO("Registering interserver servlet: ", typeid(TOKEN_CAT2(InterserverServletWrapper, __LINE__)::Message_).name());	\
-			const AUTO(servlet_, ::boost::make_shared< ::Circe::Common::InterserverServletCallback>(&TOKEN_CAT2(InterserverServletWrapper, __LINE__)::callback_));	\
+			LOG_CIRCE_INFO("Registering interserver servlet: ", typeid(TOKEN_CAT2(InterserverServletWrapper_, __LINE__)::Message_).name());	\
+			const AUTO(servlet_, ::boost::make_shared< ::Circe::Common::InterserverServletCallback>(&TOKEN_CAT2(InterserverServletWrapper_, __LINE__)::callback_));	\
 			handles_.push(servlet_);	\
-			static_cast<void>(insert_servlet_(TOKEN_CAT2(InterserverServletWrapper, __LINE__)::Message_::ID, servlet_));	\
+			static_cast<void>(insert_servlet_(TOKEN_CAT2(InterserverServletWrapper_, __LINE__)::Message_::ID, servlet_));	\
 		}	\
 	}	\
 	/* The user is responsible for its definition, hence there is no brace after this prototype. */	\
-	::Circe::Common::CbppResponse TOKEN_CAT2(InterserverServletWrapper, __LINE__)::unwrapped_callback_(__VA_ARGS__)
+	::Circe::Common::CbppResponse TOKEN_CAT2(InterserverServletWrapper_, __LINE__)::unwrapped_callback_(__VA_ARGS__)
 
 #endif

@@ -17,6 +17,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	LOG_POSEIDON_FATAL("TODO: CHECK AUTHENTICATION: ", req);
 
 	Protocol::Auth::HttpAuthenticationResponse resp;
+	resp.auth_token = "HTTP auth token";
 	return resp;
 }
 
@@ -24,6 +25,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	LOG_POSEIDON_FATAL("TODO: CHECK AUTHENTICATION: ", req);
 
 	Protocol::Auth::WebSocketAuthenticationResponse resp;
+	resp.auth_token = "WebSocket auth token";
 	return resp;
 }
 
