@@ -19,8 +19,8 @@ class ClientWebSocketSession : public Poseidon::WebSocket::Session {
 	friend ClientHttpSession;
 
 private:
-	class WebSocketDeliveryJob;
-	class WebSocketClosureJob;
+	class DeliveryJob;
+	class ClosureJob;
 
 private:
 	static void on_closure_notification_low_level_timer(const boost::shared_ptr<ClientWebSocketSession> &session);
@@ -40,7 +40,7 @@ private:
 	boost::optional<std::string> m_auth_token;
 
 	boost::shared_ptr<const Poseidon::PromiseContainer<Common::CbppResponse> > m_promised_acknowledgement;
-	boost::shared_ptr<WebSocketDeliveryJob> m_delivery_job_spare;
+	boost::shared_ptr<DeliveryJob> m_delivery_job_spare;
 	bool m_delivery_job_active;
 	boost::container::deque<std::pair<Poseidon::WebSocket::StatusCode, Poseidon::StreamBuffer> > m_messages_pending;
 

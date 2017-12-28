@@ -19,12 +19,12 @@
 namespace Circe {
 namespace Gate {
 
-class ClientWebSocketSession::WebSocketDeliveryJob : public Poseidon::JobBase {
+class ClientWebSocketSession::DeliveryJob : public Poseidon::JobBase {
 private:
 	const boost::weak_ptr<ClientWebSocketSession> m_weak_ws_session;
 
 public:
-	explicit WebSocketDeliveryJob(const boost::shared_ptr<ClientWebSocketSession> &ws_session)
+	explicit DeliveryJob(const boost::shared_ptr<ClientWebSocketSession> &ws_session)
 		: m_weak_ws_session(ws_session)
 	{ }
 
@@ -79,7 +79,7 @@ protected:
 	}
 };
 
-class ClientWebSocketSession::WebSocketClosureJob : public Poseidon::JobBase {
+class ClientWebSocketSession::ClosureJob : public Poseidon::JobBase {
 private:
 	const boost::weak_ptr<ClientWebSocketSession> m_weak_ws_session;
 
@@ -88,7 +88,7 @@ private:
 	std::string m_reason;
 
 public:
-	WebSocketClosureJob(const boost::shared_ptr<ClientWebSocketSession> &ws_session, Poseidon::WebSocket::StatusCode status_code, std::string reason)
+	ClosureJob(const boost::shared_ptr<ClientWebSocketSession> &ws_session, Poseidon::WebSocket::StatusCode status_code, std::string reason)
 		: m_weak_ws_session(ws_session)
 		, m_client_uuid(ws_session->get_client_uuid()), m_status_code(status_code), m_reason(STD_MOVE(reason))
 	{ }
@@ -129,7 +129,7 @@ void ClientWebSocketSession::on_closure_notification_low_level_timer(const boost
 	LOG_CIRCE_DEBUG("Reaping WebSocket client: ws_session = ", (void *)ws_session.get());
 	// Enqueue a job to notify the foyer server about closure of this connection.
 	// If this operation throws an exception, the timer will be rerun, so there is no cleanup to be done.
-	Poseidon::enqueue(boost::make_shared<WebSocketClosureJob>(ws_session, ptr->first, ptr->second));
+	Poseidon::enqueue(boost::make_shared<ClosureJob>(ws_session, ptr->first, ptr->second));
 	// If the job has been enqueued successfully, we can break the circular reference, destroying this timer.
 	ws_session->m_closure_notification_timer.reset();
 }
@@ -277,7 +277,7 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 	} else {
 		// There are messages on the way. Wait for the acknowledgement, but in a new fiber to prevent any further messages from being blocked.
 		if(!m_delivery_job_spare){
-			m_delivery_job_spare  = boost::make_shared<WebSocketDeliveryJob>(virtual_shared_from_this<ClientWebSocketSession>());
+			m_delivery_job_spare  = boost::make_shared<DeliveryJob>(virtual_shared_from_this<ClientWebSocketSession>());
 			m_delivery_job_active = false;
 		}
 		if(!m_delivery_job_active){
