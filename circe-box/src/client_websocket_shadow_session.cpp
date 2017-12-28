@@ -103,7 +103,7 @@ protected:
 				Protocol::Foyer::WebSocketPackedMessageResponseFromGate foyer_resp;
 				Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
 				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
-				DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::Exception, Poseidon::sslit("Message delivery failed"));
+				DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::Exception, Poseidon::sslit("Downlink message delivery failed"));
 				lock.lock();
 			}
 			session->m_delivery_job_active = false;

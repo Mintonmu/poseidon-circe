@@ -52,7 +52,7 @@ protected:
 				Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
 				Common::wait_for_response(foyer_resp, ws_session->m_promised_acknowledgement);
 				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
-				DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Message delivery failed"));
+				DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
 				// If there is no error, drop the acknowledgement.
 				ws_session->m_promised_acknowledgement.reset();
 
@@ -273,7 +273,7 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 			Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
 			Common::wait_for_response(foyer_resp, m_promised_acknowledgement);
 			LOG_CIRCE_TRACE("Received response: ", foyer_resp);
-			DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Message delivery failed"));
+			DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
 			// If there is no error, drop the acknowledgement.
 			m_promised_acknowledgement.reset();
 		}
