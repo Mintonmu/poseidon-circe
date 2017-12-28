@@ -9,7 +9,7 @@
 namespace Circe {
 namespace Auth {
 
-DECLARE_MODULE_CONFIG(get_config, get_config_v)
+DECLARE_MODULE_CONFIG(get_config)
 
 }
 }
