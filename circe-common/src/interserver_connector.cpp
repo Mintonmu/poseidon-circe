@@ -163,14 +163,13 @@ boost::shared_ptr<InterserverConnection> InterserverConnector::get_client(const 
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	boost::shared_ptr<InterserverConnection> client;
 	for(AUTO(it, m_weak_clients.begin()); it != m_weak_clients.end(); ++it){
-		client = it->second.lock();
+		AUTO(client, it->second.lock());
 		if(client && (client->get_connection_uuid() == connection_uuid)){
-			break;
+			return client;
 		}
 	}
-	return client;
+	return VAL_INIT;
 }
 std::size_t InterserverConnector::get_all_clients(boost::container::vector<boost::shared_ptr<InterserverConnection> > &clients_ret) const {
 	PROFILE_ME;

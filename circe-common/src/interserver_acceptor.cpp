@@ -166,12 +166,15 @@ boost::shared_ptr<InterserverConnection> InterserverAcceptor::get_session(const 
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	boost::shared_ptr<InterserverConnection> session;
 	const AUTO(it, m_weak_sessions.find(connection_uuid));
 	if(it != m_weak_sessions.end()){
-		session = it->second.lock();
+		AUTO(session, it->second.lock());
+		if(session){
+			DEBUG_THROW_ASSERT(session->get_connection_uuid() == connection_uuid);
+			return session;
+		}
 	}
-	return session;
+	return VAL_INIT;
 }
 std::size_t InterserverAcceptor::get_all_sessions(boost::container::vector<boost::shared_ptr<InterserverConnection> > &sessions_ret) const {
 	PROFILE_ME;
