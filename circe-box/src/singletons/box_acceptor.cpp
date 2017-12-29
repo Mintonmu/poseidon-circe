@@ -14,7 +14,7 @@ namespace Box {
 namespace {
 	class SpecializedAcceptor : public Common::InterserverAcceptor {
 	public:
-		SpecializedAcceptor(std::string bind, unsigned port, std::string application_key)
+		SpecializedAcceptor(std::string bind, boost::uint16_t port, std::string application_key)
 			: Common::InterserverAcceptor(STD_MOVE(bind), port, STD_MOVE(application_key))
 		{ }
 
@@ -49,21 +49,30 @@ boost::shared_ptr<Common::InterserverConnection> BoxAcceptor::get_session(const 
 	}
 	return acceptor->get_session(connection_uuid);
 }
-void BoxAcceptor::safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT {
+std::size_t BoxAcceptor::get_all_sessions(boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > &sessions_ret){
 	PROFILE_ME;
 
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
-		return;
+		return 0;
+	}
+	return acceptor->get_all_sessions(sessions_ret);
+}
+std::size_t BoxAcceptor::safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT {
+	PROFILE_ME;
+
+	const AUTO(acceptor, g_weak_acceptor.lock());
+	if(!acceptor){
+		return 0;
 	}
 	return acceptor->safe_broadcast_notification(msg);
 }
-void BoxAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
+std::size_t BoxAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
 	PROFILE_ME;
 
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
-		return;
+		return 0;
 	}
 	return acceptor->clear(err_code, err_msg);
 }

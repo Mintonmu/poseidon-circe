@@ -8,6 +8,7 @@
 #include <poseidon/cbpp/fwd.hpp>
 #include <poseidon/virtual_shared_from_this.hpp>
 #include <poseidon/mutex.hpp>
+#include <boost/container/vector.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/container/flat_map.hpp>
 #include "interserver_servlet_callback.hpp"
@@ -44,8 +45,9 @@ public:
 	void activate();
 
 	boost::shared_ptr<InterserverConnection> get_session(const Poseidon::Uuid &connection_uuid) const;
-	void safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) const NOEXCEPT;
-	void clear(long err_code, const char *err_msg = "") NOEXCEPT;
+	std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<InterserverConnection> > &sessions_ret) const;
+	std::size_t safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) const NOEXCEPT;
+	std::size_t clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 
 }

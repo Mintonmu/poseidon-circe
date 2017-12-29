@@ -15,8 +15,9 @@ private:
 
 public:
 	static boost::shared_ptr<Common::InterserverConnection> get_session(const Poseidon::Uuid &connection_uuid);
-	static void safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT;
-	static void clear(long err_code, const char *err_msg = "") NOEXCEPT;
+	static std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > &sessions_ret);
+	static std::size_t safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT;
+	static std::size_t clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 
 }

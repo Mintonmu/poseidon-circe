@@ -50,19 +50,75 @@ namespace {
 			if(it == m_weak_sessions.end()){
 				return VAL_INIT;
 			}
-			return it->second.lock();
+			AUTO(http_session, it->second.lock());
+			return STD_MOVE_IDN(http_session);
 		}
-		void clear() NOEXCEPT {
+		std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<ClientHttpSession> > &http_sessions_ret){
 			PROFILE_ME;
 
 			const Poseidon::Mutex::UniqueLock lock(m_mutex);
+			std::size_t count_added = 0;
+			http_sessions_ret.reserve(http_sessions_ret.size() + m_weak_sessions.size());
 			for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); ++it){
-				const AUTO(http_session, it->second.lock());
-				if(http_session){
-					LOG_CIRCE_DEBUG("Disconnecting client session: remote = ", http_session->get_remote_info());
-					http_session->shutdown();
+				AUTO(http_session, it->second.lock());
+				if(!http_session){
+					continue;
 				}
+				http_sessions_ret.emplace_back(STD_MOVE(http_session));
+				++count_added;
 			}
+			return count_added;
+		}
+		boost::shared_ptr<ClientWebSocketSession> get_websocket_session(const Poseidon::Uuid &client_uuid) const {
+			PROFILE_ME;
+
+			const Poseidon::Mutex::UniqueLock lock(m_mutex);
+			const AUTO(it, m_weak_sessions.find(client_uuid));
+			if(it == m_weak_sessions.end()){
+				return VAL_INIT;
+			}
+			AUTO(http_session, it->second.lock());
+			if(!http_session){
+				return VAL_INIT;
+			}
+			AUTO(ws_session, boost::dynamic_pointer_cast<ClientWebSocketSession>(http_session->get_upgraded_session()));
+			return STD_MOVE_IDN(ws_session);
+		}
+		std::size_t get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<ClientWebSocketSession> > &ws_sessions_ret){
+			PROFILE_ME;
+
+			const Poseidon::Mutex::UniqueLock lock(m_mutex);
+			std::size_t count_added = 0;
+			ws_sessions_ret.reserve(ws_sessions_ret.size() + m_weak_sessions.size());
+			for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); ++it){
+				AUTO(http_session, it->second.lock());
+				if(!http_session){
+					continue;
+				}
+				AUTO(ws_session, boost::dynamic_pointer_cast<ClientWebSocketSession>(http_session->get_upgraded_session()));
+				if(!ws_session){
+					continue;
+				}
+				ws_sessions_ret.emplace_back(STD_MOVE(ws_session));
+				++count_added;
+			}
+			return count_added;
+		}
+		std::size_t clear() NOEXCEPT {
+			PROFILE_ME;
+
+			const Poseidon::Mutex::UniqueLock lock(m_mutex);
+			std::size_t count_shutdown = 0;
+			for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); ++it){
+				AUTO(http_session, it->second.lock());
+				if(!http_session){
+					continue;
+				}
+				LOG_CIRCE_DEBUG("Disconnecting client session: remote = ", http_session->get_remote_info());
+				http_session->shutdown();
+				++count_shutdown;
+			}
+			return count_shutdown;
 		}
 	};
 
@@ -90,24 +146,45 @@ boost::shared_ptr<ClientHttpSession> ClientHttpAcceptor::get_session(const Posei
 	}
 	return acceptor->get_session(client_uuid);
 }
-boost::shared_ptr<ClientWebSocketSession> ClientHttpAcceptor::get_websocket_session(const Poseidon::Uuid &client_uuid){
-	PROFILE_ME;
-
-	const AUTO(http_session, get_session(client_uuid));
-	if(!http_session){
-		return VAL_INIT;
-	}
-	return boost::dynamic_pointer_cast<ClientWebSocketSession>(http_session->get_upgraded_session());
-}
-void ClientHttpAcceptor::clear(long /*err_code*/, const char */*err_msg*/) NOEXCEPT {
+std::size_t ClientHttpAcceptor::get_all_sessions(boost::container::vector<boost::shared_ptr<ClientHttpSession> > &sessions_ret){
 	PROFILE_ME;
 
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
 		LOG_CIRCE_WARNING("ClientHttpAcceptor has not been initialized.");
-		return;
+		return 0;
 	}
-	acceptor->clear();
+	return acceptor->get_all_sessions(sessions_ret);
+}
+boost::shared_ptr<ClientWebSocketSession> ClientHttpAcceptor::get_websocket_session(const Poseidon::Uuid &client_uuid){
+	PROFILE_ME;
+
+	const AUTO(acceptor, g_weak_acceptor.lock());
+	if(!acceptor){
+		LOG_CIRCE_WARNING("ClientHttpAcceptor has not been initialized.");
+		return VAL_INIT;
+	}
+	return acceptor->get_websocket_session(client_uuid);
+}
+std::size_t ClientHttpAcceptor::get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<ClientWebSocketSession> > &sessions_ret){
+	PROFILE_ME;
+
+	const AUTO(acceptor, g_weak_acceptor.lock());
+	if(!acceptor){
+		LOG_CIRCE_WARNING("ClientHttpAcceptor has not been initialized.");
+		return 0;
+	}
+	return acceptor->get_all_websocket_sessions(sessions_ret);
+}
+std::size_t ClientHttpAcceptor::clear(long /*err_code*/, const char */*err_msg*/) NOEXCEPT {
+	PROFILE_ME;
+
+	const AUTO(acceptor, g_weak_acceptor.lock());
+	if(!acceptor){
+		LOG_CIRCE_WARNING("ClientHttpAcceptor has not been initialized.");
+		return 0;
+	}
+	return acceptor->clear();
 }
 
 }

@@ -172,43 +172,67 @@ boost::shared_ptr<InterserverConnection> InterserverAcceptor::get_session(const 
 	}
 	return it->second.lock();
 }
-void InterserverAcceptor::safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) const NOEXCEPT {
+std::size_t InterserverAcceptor::get_all_sessions(boost::container::vector<boost::shared_ptr<InterserverConnection> > &sessions_ret) const {
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	std::size_t count_added = 0;
+	sessions_ret.reserve(sessions_ret.size() + m_weak_sessions.size());
 	for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); ++it){
-		const AUTO(session, it->second.lock());
-		if(session){
-			try {
-				LOG_CIRCE_DEBUG("Sending notification to interserver session: remote = ", session->layer5_get_remote_info(), ": ", msg);
-				session->send_notification(msg);
-			} catch(std::exception &e){
-				LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-				session->layer5_shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
-			}
+		AUTO(session, it->second.lock());
+		if(!session){
+			continue;
 		}
+		sessions_ret.emplace_back(STD_MOVE(session));
+		++count_added;
 	}
+	return count_added;
 }
-void InterserverAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
+std::size_t InterserverAcceptor::safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) const NOEXCEPT {
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	while(!m_weak_sessions_pending.empty()){
-		const AUTO(session, m_weak_sessions_pending.begin()->lock());
-		if(session){
-			LOG_CIRCE_DEBUG("Disconnecting interserver session: remote = ", session->layer5_get_remote_info());
-			session->layer5_shutdown(err_code, err_msg);
+	std::size_t count_notified = 0;
+	for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); ++it){
+		AUTO(session, it->second.lock());
+		if(!session){
+			continue;
 		}
-		m_weak_sessions_pending.erase(m_weak_sessions_pending.begin());
-	}
-	while(!m_weak_sessions.empty()){
-		const AUTO(session, m_weak_sessions.begin()->second.lock());
-		if(session){
-			LOG_CIRCE_DEBUG("Disconnecting interserver session: remote = ", session->layer5_get_remote_info());
-			session->layer5_shutdown(err_code, err_msg);
+		try {
+			LOG_CIRCE_DEBUG("Sending notification to interserver session: remote = ", session->layer5_get_remote_info(), ": ", msg);
+			session->send_notification(msg);
+		} catch(std::exception &e){
+			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			session->layer5_shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
 		}
-		m_weak_sessions.erase(m_weak_sessions.begin());
+		++count_notified;
 	}
+	return count_notified;
+}
+std::size_t InterserverAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
+	PROFILE_ME;
+
+	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	std::size_t count_shutdown = 0;
+	for(AUTO(it, m_weak_sessions_pending.begin()); it != m_weak_sessions_pending.end(); it = m_weak_sessions_pending.erase(it)){
+		AUTO(session, it->lock());
+		if(!session){
+			continue;
+		}
+		LOG_CIRCE_DEBUG("Disconnecting interserver session: remote = ", session->layer5_get_remote_info());
+		session->layer5_shutdown(err_code, err_msg);
+		++count_shutdown;
+	}
+	for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); it = m_weak_sessions.erase(it)){
+		AUTO(session, it->second.lock());
+		if(!session){
+			continue;
+		}
+		LOG_CIRCE_DEBUG("Disconnecting interserver session: remote = ", session->layer5_get_remote_info());
+		session->layer5_shutdown(err_code, err_msg);
+		++count_shutdown;
+	}
+	return count_shutdown;
 }
 
 }
