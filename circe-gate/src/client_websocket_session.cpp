@@ -147,7 +147,6 @@ void ClientWebSocketSession::on_closure_notification_low_level_timer(const boost
 ClientWebSocketSession::ClientWebSocketSession(const boost::shared_ptr<ClientHttpSession> &parent)
 	: Poseidon::WebSocket::Session(parent)
 	, m_client_uuid(parent->get_client_uuid())
-	, m_authenticated(false)
 	, m_request_counter_reset_time(0), m_request_counter(0)
 {
 	LOG_CIRCE_DEBUG("ClientWebSocketSession constructor: remote = ", get_remote_info());
@@ -163,7 +162,7 @@ void ClientWebSocketSession::reserve_closure_notification_timer(){
 	const Poseidon::Mutex::UniqueLock lock(m_closure_notification_mutex);
 	DEBUG_THROW_ASSERT(!m_closure_notification_timer);
 	// Create a circular reference. We do this deliberately to prevent the session from being deleted after it is detached from epoll.
-	const AUTO(timer, Poseidon::TimerDaemon::register_low_level_timer(0, 60000, boost::bind(&on_closure_notification_low_level_timer, virtual_shared_from_this<ClientWebSocketSession>())));
+	const AUTO(timer, Poseidon::TimerDaemon::register_low_level_timer(60000, 60000, boost::bind(&on_closure_notification_low_level_timer, virtual_shared_from_this<ClientWebSocketSession>())));
 	m_closure_notification_timer = timer;
 }
 void ClientWebSocketSession::drop_closure_notification_timer() NOEXCEPT {
@@ -184,23 +183,6 @@ void ClientWebSocketSession::deliver_closure_notification(Poseidon::WebSocket::S
 	if(m_closure_notification_timer){
 		Poseidon::TimerDaemon::set_time(m_closure_notification_timer, 0);
 	}
-}
-
-void ClientWebSocketSession::timer_ping_client() NOEXCEPT
-try {
-	PROFILE_ME;
-
-	if(!Poseidon::atomic_load(m_authenticated, Poseidon::ATOMIC_RELAXED)){
-		return;
-	}
-
-	const boost::uint64_t local_now = Poseidon::get_local_time();
-	char str[256];
-	std::size_t len = Poseidon::format_time(str, sizeof(str), local_now, true);
-	Poseidon::WebSocket::Session::send(Poseidon::WebSocket::OP_PING, Poseidon::StreamBuffer(str, len));
-} catch(std::exception &e){
-	LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-	shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
 }
 
 void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params){
@@ -249,8 +231,6 @@ void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, c
 	m_auth_token = STD_MOVE_IDN(auth_resp.auth_token);
 	m_box_uuid   = Poseidon::Uuid(foyer_resp.box_uuid);
 	m_foyer_uuid = foyer_conn->get_connection_uuid();
-
-	Poseidon::atomic_store(m_authenticated, true, Poseidon::ATOMIC_RELAXED);
 }
 
 void ClientWebSocketSession::on_close(int err_code){

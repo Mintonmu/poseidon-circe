@@ -32,8 +32,6 @@ private:
 	boost::shared_ptr<Poseidon::Timer> m_closure_notification_timer;
 	boost::optional<std::pair<Poseidon::WebSocket::StatusCode, std::string> > m_closure_reason;
 
-	volatile bool m_authenticated;
-
 	// These are accessed only by the epoll thread.
 	boost::uint64_t m_request_counter_reset_time;
 	boost::uint64_t m_request_counter;
@@ -56,8 +54,6 @@ private:
 	void reserve_closure_notification_timer();
 	void drop_closure_notification_timer() NOEXCEPT;
 	void deliver_closure_notification(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT;
-
-	void timer_ping_client() NOEXCEPT;
 
 	void sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params);
 

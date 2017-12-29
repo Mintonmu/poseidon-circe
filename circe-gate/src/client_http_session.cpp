@@ -136,17 +136,6 @@ void ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::
 	m_auth_token = STD_MOVE_IDN(auth_resp.auth_token);
 }
 
-void ClientHttpSession::on_shutdown_timer(boost::uint64_t now){
-	PROFILE_ME;
-
-	const AUTO(ws_session, boost::dynamic_pointer_cast<ClientWebSocketSession>(get_upgraded_session()));
-	if(ws_session){
-		ws_session->timer_ping_client();
-	}
-
-	Poseidon::Http::Session::on_shutdown_timer(now);
-}
-
 boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers){
 	PROFILE_ME;
 
