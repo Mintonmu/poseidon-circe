@@ -42,7 +42,7 @@ protected:
 		}
 
 		try {
-			const AUTO(foyer_conn, FoyerConnector::get_client());
+			const AUTO(foyer_conn, FoyerConnector::get_client(ws_session->m_foyer_uuid.get()));
 			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Exception, Poseidon::sslit("Connection to foyer server was lost"));
 
 			DEBUG_THROW_ASSERT(ws_session->m_delivery_job_active);
@@ -63,7 +63,8 @@ protected:
 				}
 				// Send messages that have been enqueued.
 				Protocol::Foyer::WebSocketPackedMessageRequestToBox foyer_req;
-				foyer_req.client_uuid = ws_session->get_client_uuid();
+				foyer_req.box_uuid    = ws_session->m_box_uuid.get();
+				foyer_req.client_uuid = ws_session->m_client_uuid;
 				while(!ws_session->m_messages_pending.empty()){
 					foyer_req.messages.emplace_back();
 					foyer_req.messages.back().opcode  = ws_session->m_messages_pending.front().first;
@@ -100,7 +101,7 @@ protected:
 
 		const AUTO_REF(ws_session, m_ws_session);
 
-		const AUTO(foyer_conn, FoyerConnector::get_client());
+		const AUTO(foyer_conn, FoyerConnector::get_client(ws_session->m_foyer_uuid.get()));
 		if(!foyer_conn){
 			return;
 		}
@@ -118,7 +119,8 @@ protected:
 		try {
 			// `ws_session->m_closure_reason` will not be altered elsewhere once set, hence it is safe to move from it without locking.
 			Protocol::Foyer::WebSocketClosureNotificationToBox foyer_ntfy;
-			foyer_ntfy.client_uuid = ws_session->get_client_uuid();
+			foyer_ntfy.box_uuid    = ws_session->m_box_uuid.get();
+			foyer_ntfy.client_uuid = ws_session->m_client_uuid;
 			foyer_ntfy.status_code = ws_session->m_closure_reason.get().first;
 			foyer_ntfy.reason      = STD_MOVE(ws_session->m_closure_reason.get().second);
 			foyer_conn->send_notification(foyer_ntfy);
@@ -146,7 +148,7 @@ void ClientWebSocketSession::on_closure_notification_low_level_timer(const boost
 
 ClientWebSocketSession::ClientWebSocketSession(const boost::shared_ptr<ClientHttpSession> &parent)
 	: Poseidon::WebSocket::Session(parent)
-	, m_client_uuid(parent->get_client_uuid())
+	, m_client_uuid(parent->m_client_uuid)
 	, m_request_counter_reset_time(0), m_request_counter(0)
 {
 	LOG_CIRCE_DEBUG("ClientWebSocketSession constructor: remote = ", get_remote_info());
@@ -189,13 +191,16 @@ void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, c
 	PROFILE_ME;
 
 	const AUTO(websocket_enabled, get_config<bool>("client_websocket_enabled", false));
-	DEBUG_THROW_UNLESS(websocket_enabled, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY);
+	DEBUG_THROW_UNLESS(websocket_enabled, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("WebSocket is not enabled"));
 
-	const AUTO(auth_conn, AuthConnector::get_client());
-	DEBUG_THROW_UNLESS(auth_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY);
+	boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > servers_avail;
+	AuthConnector::get_all_clients(servers_avail);
+	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("No auth server is available"));
+	const AUTO(auth_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
+	DEBUG_THROW_ASSERT(auth_conn);
 
 	Protocol::Auth::WebSocketAuthenticationRequest auth_req;
-	auth_req.client_uuid = get_client_uuid();
+	auth_req.client_uuid = m_client_uuid;
 	auth_req.client_ip   = get_remote_info().ip();
 	auth_req.decoded_uri = decoded_uri;
 	Protocol::copy_key_values(auth_req.params, params);
@@ -205,14 +210,17 @@ void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, c
 	LOG_CIRCE_TRACE("Received response: ", auth_resp);
 	DEBUG_THROW_UNLESS(auth_resp.status_code == 0, Poseidon::WebSocket::Exception, boost::numeric_cast<Poseidon::WebSocket::StatusCode>(auth_resp.status_code), Poseidon::SharedNts(auth_resp.reason));
 
-	const AUTO(foyer_conn, FoyerConnector::get_client());
-	DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY);
+	servers_avail.clear();
+	FoyerConnector::get_all_clients(servers_avail);
+	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("No foyer server is available"));
+	const AUTO(foyer_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
+	DEBUG_THROW_ASSERT(foyer_conn);
 
 	Protocol::Foyer::WebSocketEstablishmentResponseFromBox foyer_resp;
 	reserve_closure_notification_timer();
 	try {
 		Protocol::Foyer::WebSocketEstablishmentRequestToBox foyer_req;
-		foyer_req.client_uuid = get_client_uuid();
+		foyer_req.client_uuid = m_client_uuid;
 		foyer_req.client_ip   = get_remote_info().ip();
 		foyer_req.auth_token  = auth_resp.auth_token;
 		foyer_req.decoded_uri = decoded_uri;
@@ -262,7 +270,7 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 	PROFILE_ME;
 	LOG_CIRCE_DEBUG("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
-	const AUTO(foyer_conn, FoyerConnector::get_client());
+	const AUTO(foyer_conn, FoyerConnector::get_client(m_foyer_uuid.get()));
 	DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Connection to foyer server was lost"));
 
 	if(!m_promised_acknowledgement || m_promised_acknowledgement->is_satisfied()){
@@ -277,7 +285,8 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 		}
 		// There is no message unacknowledged by the box server. Send this message immediately. Any messages after this will have to wait.
 		Protocol::Foyer::WebSocketPackedMessageRequestToBox foyer_req;
-		foyer_req.client_uuid = get_client_uuid();
+		foyer_req.box_uuid    = m_box_uuid.get();
+		foyer_req.client_uuid = m_client_uuid;
 		AUTO(wit, foyer_req.messages.emplace(foyer_req.messages.end()));
 		wit->opcode  = static_cast<unsigned>(opcode);
 		wit->payload = STD_MOVE(payload);

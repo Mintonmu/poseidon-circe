@@ -357,7 +357,6 @@ try {
 		require_message_filter()->reseed_decoder_prng(checksum_seedx);
 		Poseidon::atomic_store(m_authenticated, true, Poseidon::ATOMIC_RELEASE);
 		return; }
-
 	case IS_ServerHello::ID: {
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		IS_ServerHello msg(STD_MOVE(encoded_payload));
@@ -432,7 +431,6 @@ try {
 		const AUTO(checksum_seedx, calculate_checksum(m_application_key, SALT_NORMAL_DATA, m_connection_uuid, m_timestamp));
 		require_message_filter()->reseed_encoder_prng(checksum_seedx);
 		return; }
-
 	case IS_ServerHello::ID: {
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		layer5_send_data(magic_number, STD_MOVE(magic_payload));

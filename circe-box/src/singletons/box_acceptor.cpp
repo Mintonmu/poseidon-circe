@@ -30,9 +30,9 @@ namespace {
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 	PROFILE_ME;
 
-	const AUTO(bind, get_config<std::string>("box_acceptor_bind", "0.0.0.0"));
-	const AUTO(port, get_config<boost::uint16_t>("box_acceptor_port", 10819));
-	const AUTO(appkey, get_config<std::string>("box_acceptor_appkey", "testkey"));
+	const AUTO(bind, get_config<std::string>("box_acceptor_bind"));
+	const AUTO(port, get_config<boost::uint16_t>("box_acceptor_port"));
+	const AUTO(appkey, get_config<std::string>("box_acceptor_appkey"));
 	LOG_CIRCE_INFO("Initializing BoxAcceptor...");
 	const AUTO(acceptor, boost::make_shared<SpecializedAcceptor>(bind, port, appkey));
 	acceptor->activate();

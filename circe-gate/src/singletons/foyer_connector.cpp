@@ -14,8 +14,8 @@ namespace Gate {
 namespace {
 	class SpecializedConnector : public Common::InterserverConnector {
 	public:
-		SpecializedConnector(std::string host, boost::uint16_t port, std::string application_key)
-			: Common::InterserverConnector(STD_MOVE(host), port, STD_MOVE(application_key))
+		SpecializedConnector(boost::container::vector<std::string> hosts, boost::uint16_t port, std::string application_key)
+			: Common::InterserverConnector(STD_MOVE(hosts), port, STD_MOVE(application_key))
 		{ }
 
 	protected:
@@ -30,16 +30,16 @@ namespace {
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 	PROFILE_ME;
 
-	const AUTO(host, get_config<std::string>("foyer_connector_host", "localhost"));
-	const AUTO(port, get_config<boost::uint16_t>("foyer_connector_port", 10812));
-	const AUTO(appkey, get_config<std::string>("foyer_connector_appkey", "testkey"));
-	const AUTO(connector, boost::make_shared<SpecializedConnector>(host, port, appkey));
+	const AUTO(hosts, get_config_all<std::string>("foyer_connector_host"));
+	const AUTO(port, get_config<boost::uint16_t>("foyer_connector_port"));
+	const AUTO(appkey, get_config<std::string>("foyer_connector_appkey"));
+	const AUTO(connector, boost::make_shared<SpecializedConnector>(hosts, port, appkey));
 	connector->activate();
 	handles.push(connector);
 	g_weak_connector = connector;
 }
 
-boost::shared_ptr<Common::InterserverConnection> FoyerConnector::get_client(){
+boost::shared_ptr<Common::InterserverConnection> FoyerConnector::get_client(const Poseidon::Uuid &connection_uuid){
 	PROFILE_ME;
 
 	const AUTO(connector, g_weak_connector.lock());
@@ -47,27 +47,37 @@ boost::shared_ptr<Common::InterserverConnection> FoyerConnector::get_client(){
 		LOG_CIRCE_WARNING("FoyerConnector has not been initialized.");
 		return VAL_INIT;
 	}
-	return connector->get_client();
+	return connector->get_client(connection_uuid);
 }
-void FoyerConnector::safe_send_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT {
+std::size_t FoyerConnector::get_all_clients(boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > &clients_ret){
 	PROFILE_ME;
 
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
 		LOG_CIRCE_WARNING("FoyerConnector has not been initialized.");
-		return;
+		return 0;
 	}
-	return connector->safe_send_notification(msg);
+	return connector->get_all_clients(clients_ret);
 }
-void FoyerConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
+std::size_t FoyerConnector::safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT {
 	PROFILE_ME;
 
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
 		LOG_CIRCE_WARNING("FoyerConnector has not been initialized.");
-		return;
+		return 0;
 	}
-	connector->clear(err_code, err_msg);
+	return connector->safe_broadcast_notification(msg);
+}
+std::size_t FoyerConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
+	PROFILE_ME;
+
+	const AUTO(connector, g_weak_connector.lock());
+	if(!connector){
+		LOG_CIRCE_WARNING("FoyerConnector has not been initialized.");
+		return 0;
+	}
+	return connector->clear(err_code, err_msg);
 }
 
 }

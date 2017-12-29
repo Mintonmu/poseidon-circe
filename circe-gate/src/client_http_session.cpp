@@ -115,11 +115,14 @@ void ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::
 	const AUTO(http_enabled, get_config<bool>("client_http_enabled", false));
 	DEBUG_THROW_UNLESS(http_enabled, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
 
-	const AUTO(auth_conn, AuthConnector::get_client());
-	DEBUG_THROW_UNLESS(auth_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
+	boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > servers_avail;
+	AuthConnector::get_all_clients(servers_avail);
+	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
+	const AUTO(auth_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
+	DEBUG_THROW_ASSERT(auth_conn);
 
 	Protocol::Auth::HttpAuthenticationRequest auth_req;
-	auth_req.client_uuid = get_client_uuid();
+	auth_req.client_uuid = m_client_uuid;
 	auth_req.client_ip   = get_remote_info().ip();
 	auth_req.verb        = verb;
 	auth_req.decoded_uri = decoded_uri;
@@ -194,11 +197,14 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 	case Poseidon::Http::V_HEAD:
 	case Poseidon::Http::V_GET:
 	case Poseidon::Http::V_POST: {
-		const AUTO(foyer_conn, FoyerConnector::get_client());
-		DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
+		boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > servers_avail;
+		FoyerConnector::get_all_clients(servers_avail);
+		DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
+		const AUTO(foyer_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
+		DEBUG_THROW_ASSERT(foyer_conn);
 
 		Protocol::Foyer::HttpRequestToBox foyer_req;
-		foyer_req.client_uuid = get_client_uuid();
+		foyer_req.client_uuid = m_client_uuid;
 		foyer_req.client_ip   = get_remote_info().ip();
 		foyer_req.auth_token  = m_auth_token.get();
 		foyer_req.verb        = req_headers.verb;

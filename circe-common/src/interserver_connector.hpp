@@ -8,6 +8,8 @@
 #include <poseidon/cbpp/fwd.hpp>
 #include <poseidon/virtual_shared_from_this.hpp>
 #include <poseidon/mutex.hpp>
+#include <boost/container/vector.hpp>
+#include <boost/container/flat_map.hpp>
 #include "interserver_servlet_callback.hpp"
 
 namespace Circe {
@@ -24,16 +26,16 @@ private:
 	static void timer_proc(const boost::weak_ptr<InterserverConnector> &weak_connector);
 
 private:
-	const std::string m_host;
+	const boost::container::vector<std::string> m_hosts;
 	const boost::uint16_t m_port;
 	const std::string m_application_key;
 
 	mutable Poseidon::Mutex m_mutex;
 	boost::shared_ptr<Poseidon::Timer> m_timer;
-	boost::weak_ptr<InterserverClient> m_weak_client;
+	boost::container::flat_map<std::string, boost::weak_ptr<InterserverClient> > m_weak_clients;
 
 public:
-	InterserverConnector(std::string host, boost::uint16_t port, std::string application_key);
+	InterserverConnector(boost::container::vector<std::string> hosts, boost::uint16_t port, std::string application_key);
 	~InterserverConnector() OVERRIDE;
 
 protected:
@@ -42,9 +44,10 @@ protected:
 public:
 	void activate();
 
-	boost::shared_ptr<InterserverConnection> get_client() const;
-	void safe_send_notification(const Poseidon::Cbpp::MessageBase &msg) const NOEXCEPT;
-	void clear(long err_code, const char *err_msg = "") NOEXCEPT;
+	boost::shared_ptr<InterserverConnection> get_client(const Poseidon::Uuid &connection_uuid) const;
+	std::size_t get_all_clients(boost::container::vector<boost::shared_ptr<InterserverConnection> > &clients_ret) const;
+	std::size_t safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) const NOEXCEPT;
+	std::size_t clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 
 }

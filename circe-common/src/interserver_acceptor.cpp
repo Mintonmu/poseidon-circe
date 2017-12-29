@@ -37,52 +37,52 @@ public:
 
 protected:
 	// Poseidon::Cbpp::LowLevelSession
-	void on_low_level_data_message_header(boost::uint16_t message_id, boost::uint64_t payload_size) OVERRIDE {
+	void on_low_level_data_message_header(boost::uint16_t message_id, boost::uint64_t payload_size) FINAL {
 		const std::size_t max_message_size = InterserverConnection::get_max_message_size();
 		DEBUG_THROW_UNLESS(payload_size <= max_message_size, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_REQUEST_TOO_LARGE, Poseidon::sslit("Message is too large"));
 		m_magic_number = message_id;
 		m_deflated_payload.clear();
 	}
-	void on_low_level_data_message_payload(boost::uint64_t /*payload_offset*/, Poseidon::StreamBuffer payload) OVERRIDE {
+	void on_low_level_data_message_payload(boost::uint64_t /*payload_offset*/, Poseidon::StreamBuffer payload) FINAL {
 		m_deflated_payload.splice(payload);
 	}
-	bool on_low_level_data_message_end(boost::uint64_t /*payload_size*/) OVERRIDE {
+	bool on_low_level_data_message_end(boost::uint64_t /*payload_size*/) FINAL {
 		InterserverConnection::layer5_on_receive_data(m_magic_number, STD_MOVE(m_deflated_payload));
 		return true;
 	}
-	bool on_low_level_control_message(Poseidon::Cbpp::StatusCode status_code, Poseidon::StreamBuffer param) OVERRIDE {
+	bool on_low_level_control_message(Poseidon::Cbpp::StatusCode status_code, Poseidon::StreamBuffer param) FINAL {
 		InterserverConnection::layer5_on_receive_control(status_code, STD_MOVE(param));
 		return true;
 	}
-	void on_close(int err_code) OVERRIDE {
+	void on_close(int err_code) FINAL {
 		Poseidon::Cbpp::LowLevelSession::on_close(err_code);
 		InterserverConnection::layer4_on_close();
 	}
 
 	// InterserverConnection
-	const Poseidon::IpPort &layer5_get_remote_info() const NOEXCEPT OVERRIDE {
+	const Poseidon::IpPort &layer5_get_remote_info() const NOEXCEPT FINAL {
 		return Poseidon::Cbpp::LowLevelSession::get_remote_info();
 	}
-	const Poseidon::IpPort &layer5_get_local_info() const NOEXCEPT OVERRIDE {
+	const Poseidon::IpPort &layer5_get_local_info() const NOEXCEPT FINAL {
 		return Poseidon::Cbpp::LowLevelSession::get_local_info();
 	}
-	bool layer5_has_been_shutdown() const NOEXCEPT OVERRIDE {
+	bool layer5_has_been_shutdown() const NOEXCEPT FINAL {
 		return Poseidon::Cbpp::LowLevelSession::has_been_shutdown_write();
 	}
-	bool layer5_shutdown(long err_code, const char *err_msg) NOEXCEPT OVERRIDE {
+	bool layer5_shutdown(long err_code, const char *err_msg) NOEXCEPT FINAL {
 		return Poseidon::Cbpp::LowLevelSession::shutdown(err_code, err_msg);
 	}
-	void layer4_force_shutdown() NOEXCEPT OVERRIDE {
+	void layer4_force_shutdown() NOEXCEPT FINAL {
 		return Poseidon::TcpSessionBase::force_shutdown();
 	}
-	void layer5_send_data(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload) OVERRIDE {
+	void layer5_send_data(boost::uint16_t magic_number, Poseidon::StreamBuffer deflated_payload) FINAL {
 		Poseidon::Cbpp::LowLevelSession::send(magic_number, STD_MOVE(deflated_payload));
 	}
-	void layer5_send_control(long status_code, Poseidon::StreamBuffer param) OVERRIDE {
+	void layer5_send_control(long status_code, Poseidon::StreamBuffer param) FINAL {
 		Poseidon::Cbpp::LowLevelSession::send_status(status_code, STD_MOVE(param));
 		set_timeout(Poseidon::MainConfig::get<boost::uint64_t>("cbpp_keep_alive_timeout", 30000));
 	}
-	void layer7_post_set_connection_uuid() OVERRIDE {
+	void layer7_post_set_connection_uuid() FINAL {
 		PROFILE_ME;
 
 		const AUTO(acceptor, m_weak_acceptor.lock());
@@ -95,9 +95,8 @@ protected:
 		}
 		const AUTO(pair, acceptor->m_weak_sessions.emplace(get_connection_uuid(), virtual_shared_from_this<InterserverSession>()));
 		DEBUG_THROW_UNLESS(pair.second, Poseidon::Exception, Poseidon::sslit("Duplicate InterserverSession UUID"));
-		acceptor->m_weak_sessions_pending.erase(virtual_weak_from_this<InterserverSession>());
 	}
-	CbppResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) OVERRIDE {
+	CbppResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) FINAL {
 		PROFILE_ME;
 
 		const AUTO(acceptor, m_weak_acceptor.lock());
@@ -123,12 +122,12 @@ public:
 	{
 		LOG_CIRCE_INFO("InterserverServer constructor: local = ", Poseidon::TcpServerBase::get_local_info());
 	}
-	~InterserverServer() OVERRIDE {
+	~InterserverServer() FINAL {
 		LOG_CIRCE_INFO("InterserverServer destructor: local = ", Poseidon::TcpServerBase::get_local_info());
 	}
 
 protected:
-	boost::shared_ptr<Poseidon::TcpSessionBase> on_client_connect(Poseidon::Move<Poseidon::UniqueFile> socket) OVERRIDE {
+	boost::shared_ptr<Poseidon::TcpSessionBase> on_client_connect(Poseidon::Move<Poseidon::UniqueFile> socket) FINAL {
 		PROFILE_ME;
 
 		const AUTO(acceptor, m_weak_acceptor.lock());
@@ -137,7 +136,6 @@ protected:
 		const Poseidon::Mutex::UniqueLock lock(acceptor->m_mutex);
 		AUTO(session, boost::make_shared<InterserverSession>(STD_MOVE(socket), acceptor));
 		session->set_no_delay();
-		acceptor->m_weak_sessions_pending.emplace(session);
 		return STD_MOVE_IDN(session);
 	}
 };
@@ -145,10 +143,12 @@ protected:
 InterserverAcceptor::InterserverAcceptor(std::string bind, boost::uint16_t port, std::string application_key)
 	: m_bind(STD_MOVE(bind)), m_port(port), m_application_key(STD_MOVE(application_key))
 {
-	LOG_CIRCE_INFO("InterserverAcceptor constructor: bind:port = ", m_bind, ":", m_port);
+	DEBUG_THROW_UNLESS(!m_bind.empty(), Poseidon::Exception, Poseidon::sslit("No bind address specified"));
+	DEBUG_THROW_UNLESS(m_port != 0, Poseidon::Exception, Poseidon::sslit("Port number is zero"));
+	LOG_CIRCE_INFO("InterserverAcceptor constructor: bind:port = ", m_bind, ':', m_port);
 }
 InterserverAcceptor::~InterserverAcceptor(){
-	LOG_CIRCE_INFO("InterserverAcceptor destructor: bind:port = ", m_bind, ":", m_port);
+	LOG_CIRCE_INFO("InterserverAcceptor destructor: bind:port = ", m_bind, ':', m_port);
 	clear(Poseidon::Cbpp::ST_GONE_AWAY);
 }
 
@@ -166,11 +166,12 @@ boost::shared_ptr<InterserverConnection> InterserverAcceptor::get_session(const 
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
+	boost::shared_ptr<InterserverConnection> session;
 	const AUTO(it, m_weak_sessions.find(connection_uuid));
-	if(it == m_weak_sessions.end()){
-		return VAL_INIT;
+	if(it != m_weak_sessions.end()){
+		session = it->second.lock();
 	}
-	return it->second.lock();
+	return session;
 }
 std::size_t InterserverAcceptor::get_all_sessions(boost::container::vector<boost::shared_ptr<InterserverConnection> > &sessions_ret) const {
 	PROFILE_ME;
@@ -214,15 +215,6 @@ std::size_t InterserverAcceptor::clear(long err_code, const char *err_msg) NOEXC
 
 	const Poseidon::Mutex::UniqueLock lock(m_mutex);
 	std::size_t count_shutdown = 0;
-	for(AUTO(it, m_weak_sessions_pending.begin()); it != m_weak_sessions_pending.end(); it = m_weak_sessions_pending.erase(it)){
-		AUTO(session, it->lock());
-		if(!session){
-			continue;
-		}
-		LOG_CIRCE_DEBUG("Disconnecting interserver session: remote = ", session->layer5_get_remote_info());
-		session->layer5_shutdown(err_code, err_msg);
-		++count_shutdown;
-	}
 	for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); it = m_weak_sessions.erase(it)){
 		AUTO(session, it->second.lock());
 		if(!session){

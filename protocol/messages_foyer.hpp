@@ -69,6 +69,7 @@ namespace Foyer {
 #define MESSAGE_NAME   WebSocketClosureNotificationToBox
 #define MESSAGE_ID     1205
 #define MESSAGE_FIELDS \
+	FIELD_FIXED        (box_uuid, 16)	\
 	FIELD_FIXED        (client_uuid, 16)	\
 	FIELD_VUINT        (status_code)	\
 	FIELD_STRING       (reason)	\
@@ -96,6 +97,7 @@ namespace Foyer {
 #define MESSAGE_NAME   WebSocketPackedMessageRequestToBox
 #define MESSAGE_ID     1208
 #define MESSAGE_FIELDS \
+	FIELD_FIXED        (box_uuid, 16)	\
 	FIELD_FIXED        (client_uuid, 16)	\
 	FIELD_LIST         (messages,	\
 	  FIELD_VUINT        (opcode)\

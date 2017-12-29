@@ -126,8 +126,8 @@ namespace {
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
-	const AUTO(bind, get_config<std::string>("client_http_acceptor_bind", "127.0.0.1"));
-	const AUTO(port, get_config<boost::uint16_t>("client_http_acceptor_port", 10810));
+	const AUTO(bind, get_config<std::string>("client_http_acceptor_bind"));
+	const AUTO(port, get_config<boost::uint16_t>("client_http_acceptor_port"));
 	const AUTO(cert, get_config<std::string>("client_http_acceptor_certificate"));
 	const AUTO(pkey, get_config<std::string>("client_http_acceptor_private_key"));
 	const AUTO(acceptor, boost::make_shared<SpecializedAcceptor>(bind, port, cert, pkey));
