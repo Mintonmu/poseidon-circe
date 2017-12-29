@@ -47,17 +47,6 @@ protected:
 
 			DEBUG_THROW_ASSERT(ws_session->m_delivery_job_active);
 			for(;;){
-				// Wait for the acknowledgement of messages sent previously.
-				if(ws_session->m_promised_acknowledgement){
-					Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
-					Common::wait_for_response(foyer_resp, ws_session->m_promised_acknowledgement);
-					DEBUG_THROW_ASSERT(ws_session->m_promised_acknowledgement);
-					LOG_CIRCE_TRACE("Received response: ", foyer_resp);
-					DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
-					// If there is no error, drop the acknowledgement.
-					ws_session->m_promised_acknowledgement.reset();
-				}
-				// Another fiber might have sneaked in and enqueued more messages, so we have to check again.
 				LOG_CIRCE_DEBUG("Collecting messages pending: ws_session = ", (void *)ws_session.get(), ", count = ", ws_session->m_messages_pending.size());
 				if(ws_session->m_messages_pending.empty()){
 					break;
@@ -73,7 +62,10 @@ protected:
 					ws_session->m_messages_pending.pop_front();
 				}
 				LOG_CIRCE_TRACE("Sending request: ", foyer_req);
-				ws_session->m_promised_acknowledgement = foyer_conn->send_request(foyer_req);
+				Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
+				Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
+				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+				DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
 			}
 			ws_session->m_delivery_job_active = false;
 		} catch(std::exception &e){
@@ -100,35 +92,18 @@ protected:
 	void perform() FINAL {
 		PROFILE_ME;
 
-		const AUTO_REF(ws_session, m_ws_session);
-
-		const AUTO(foyer_conn, FoyerConnector::get_client(ws_session->m_foyer_uuid.get()));
+		const AUTO(foyer_conn, FoyerConnector::get_client(m_ws_session->m_foyer_uuid.get()));
 		if(!foyer_conn){
 			return;
 		}
 
-		if(ws_session->m_promised_acknowledgement){
-			// If there are messages on the way, wait for the acknowledgement before sending the closure notification.
-			// This ensures that we will not drop any messages sent before the closure. Any exceptions thrown are ignored.
-			try {
-				Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
-				Common::wait_for_response(foyer_resp, ws_session->m_promised_acknowledgement);
-				DEBUG_THROW_ASSERT(ws_session->m_promised_acknowledgement);
-				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
-				DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
-				// If there is no error, drop the acknowledgement.
-				ws_session->m_promised_acknowledgement.reset();
-			} catch(std::exception &e){
-				LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			}
-		}
 		try {
 			// `ws_session->m_closure_reason` will not be altered elsewhere once set, hence it is safe to move from it without locking.
 			Protocol::Foyer::WebSocketClosureNotificationToBox foyer_ntfy;
-			foyer_ntfy.box_uuid    = ws_session->m_box_uuid.get();
-			foyer_ntfy.client_uuid = ws_session->m_client_uuid;
-			foyer_ntfy.status_code = ws_session->m_closure_reason.get().first;
-			foyer_ntfy.reason      = STD_MOVE(ws_session->m_closure_reason.get().second);
+			foyer_ntfy.box_uuid    = m_ws_session->m_box_uuid.get();
+			foyer_ntfy.client_uuid = m_ws_session->m_client_uuid;
+			foyer_ntfy.status_code = m_ws_session->m_closure_reason.get().first;
+			foyer_ntfy.reason      = STD_MOVE(m_ws_session->m_closure_reason.get().second);
 			foyer_conn->send_notification(foyer_ntfy);
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
@@ -276,60 +251,23 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 	PROFILE_ME;
 	LOG_CIRCE_DEBUG("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
-	const AUTO(foyer_conn, FoyerConnector::get_client(m_foyer_uuid.get()));
-	DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Connection to foyer server was lost"));
-
-	if(!m_promised_acknowledgement || m_promised_acknowledgement->is_satisfied()){
-		// Check the acknowledgement of messages sent previously if any. This will not block.
-		if(m_promised_acknowledgement){
-			Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
-			Common::wait_for_response(foyer_resp, m_promised_acknowledgement);
-			DEBUG_THROW_ASSERT(m_promised_acknowledgement);
-			LOG_CIRCE_TRACE("Received response: ", foyer_resp);
-			DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
-			// If there is no error, drop the acknowledgement.
-			m_promised_acknowledgement.reset();
-		}
-		// There is no message unacknowledged by the box server. Send this message immediately. Any messages after this will have to wait.
-		Protocol::Foyer::WebSocketPackedMessageRequestToBox foyer_req;
-		foyer_req.box_uuid    = m_box_uuid.get();
-		foyer_req.client_uuid = m_client_uuid;
-		AUTO(wit, foyer_req.messages.emplace(foyer_req.messages.end()));
-		wit->opcode  = static_cast<unsigned>(opcode);
-		wit->payload = STD_MOVE(payload);
-		LOG_CIRCE_TRACE("Sending request: ", foyer_req);
-		m_promised_acknowledgement = foyer_conn->send_request(foyer_req);
-	} else {
-		// There are messages on the way. Wait for the acknowledgement, but in a new fiber to prevent any further messages from being blocked.
-		if(!m_delivery_job_spare){
-			m_delivery_job_spare = boost::make_shared<DeliveryJob>(virtual_shared_from_this<ClientWebSocketSession>());
-			m_delivery_job_active = false;
-		}
-		if(!m_delivery_job_active){
-			Poseidon::enqueue(m_delivery_job_spare);
-			m_delivery_job_active = true;
-		}
-		// Enqueue the message if the new fiber has been created successfully.
-		const AUTO(max_requests_pending, get_config<boost::uint64_t>("client_websocket_max_requests_pending", 100));
-		DEBUG_THROW_UNLESS(m_messages_pending.size() < max_requests_pending, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Max number of requests pending exceeded"));
-		LOG_CIRCE_TRACE("Enqueueing message: opcode = ", opcode, ", payload.size() = ", payload.size());
-		m_messages_pending.emplace_back(opcode, STD_MOVE(payload));
+	if(!m_delivery_job_spare){
+		m_delivery_job_spare = boost::make_shared<DeliveryJob>(virtual_shared_from_this<ClientWebSocketSession>());
+		m_delivery_job_active = false;
 	}
+	if(!m_delivery_job_active){
+		Poseidon::enqueue(m_delivery_job_spare);
+		m_delivery_job_active = true;
+	}
+	// Enqueue the message if the new fiber has been created successfully.
+	const AUTO(max_requests_pending, get_config<boost::uint64_t>("client_websocket_max_requests_pending", 100));
+	DEBUG_THROW_UNLESS(m_messages_pending.size() < max_requests_pending, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Max number of requests pending exceeded"));
+	LOG_CIRCE_TRACE("Enqueueing message: opcode = ", opcode, ", payload.size() = ", payload.size());
+	m_messages_pending.emplace_back(opcode, STD_MOVE(payload));
 }
 void ClientWebSocketSession::on_sync_control_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
 	PROFILE_ME;
 	LOG_CIRCE_TRACE("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
-
-	// Check the acknowledgement of messages sent previously if any. This will not block.
-	if(m_promised_acknowledgement && m_promised_acknowledgement->is_satisfied()){
-		Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
-		Common::wait_for_response(foyer_resp, m_promised_acknowledgement);
-		DEBUG_THROW_ASSERT(m_promised_acknowledgement);
-		LOG_CIRCE_TRACE("Received response: ", foyer_resp);
-		DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
-		// If there is no error, drop the acknowledgement.
-		m_promised_acknowledgement.reset();
-	}
 
 	if(opcode == Poseidon::WebSocket::OP_CLOSE){
 		Poseidon::WebSocket::StatusCode status_code;
