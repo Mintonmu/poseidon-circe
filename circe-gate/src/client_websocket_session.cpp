@@ -302,7 +302,7 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 }
 void ClientWebSocketSession::on_sync_control_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
 	PROFILE_ME;
-	LOG_CIRCE_DEBUG("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
+	LOG_CIRCE_TRACE("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
 	// Check the acknowledgement of messages sent previously if any. This will not block.
 	if(m_promised_acknowledgement && m_promised_acknowledgement->is_satisfied()){
