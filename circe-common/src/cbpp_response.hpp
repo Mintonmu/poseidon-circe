@@ -34,15 +34,24 @@ public:
 	long get_err_code() const NOEXCEPT {
 		return m_err_code;
 	}
+	void set_err_code(long err_code){
+		m_err_code = err_code;
+	}
 	const std::string &get_err_msg() const NOEXCEPT {
 		return m_err_msg;
 	}
 	std::string &get_err_msg() NOEXCEPT {
 		return m_err_msg;
 	}
+	void set_err_msg(std::string err_msg){
+		m_err_msg = STD_MOVE(err_msg);
+	}
 
 	boost::uint64_t get_message_id() const NOEXCEPT {
 		return m_message_id;
+	}
+	void set_message_id(boost::uint64_t message_id){
+		m_message_id = message_id;
 	}
 	const Poseidon::StreamBuffer &get_payload() const NOEXCEPT {
 		return m_payload;
@@ -50,7 +59,22 @@ public:
 	Poseidon::StreamBuffer &get_payload() NOEXCEPT {
 		return m_payload;
 	}
+	void set_payload(Poseidon::StreamBuffer payload){
+		m_payload = STD_MOVE(payload);
+	}
+
+	void swap(CbppResponse &rhs) NOEXCEPT {
+		using std::swap;
+		swap(m_err_code,   rhs.m_err_code);
+		swap(m_err_msg,    rhs.m_err_msg);
+		swap(m_message_id, rhs.m_message_id);
+		swap(m_payload,    rhs.m_payload);
+	}
 };
+
+inline void swap(CbppResponse &lhs, CbppResponse &rhs) NOEXCEPT {
+	lhs.swap(rhs);
+}
 
 extern std::ostream &operator<<(std::ostream &os, const CbppResponse &rhs);
 
