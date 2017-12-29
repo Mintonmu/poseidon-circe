@@ -48,14 +48,15 @@ protected:
 			DEBUG_THROW_ASSERT(ws_session->m_delivery_job_active);
 			for(;;){
 				// Wait for the acknowledgement of messages sent previously.
-				DEBUG_THROW_ASSERT(ws_session->m_promised_acknowledgement);
-				Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
-				Common::wait_for_response(foyer_resp, ws_session->m_promised_acknowledgement);
-				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
-				DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
-				// If there is no error, drop the acknowledgement.
-				ws_session->m_promised_acknowledgement.reset();
-
+				if(ws_session->m_promised_acknowledgement){
+					Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
+					Common::wait_for_response(foyer_resp, ws_session->m_promised_acknowledgement);
+					DEBUG_THROW_ASSERT(ws_session->m_promised_acknowledgement);
+					LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+					DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
+					// If there is no error, drop the acknowledgement.
+					ws_session->m_promised_acknowledgement.reset();
+				}
 				// Another fiber might have sneaked in and enqueued more messages, so we have to check again.
 				LOG_CIRCE_DEBUG("Collecting messages pending: ws_session = ", (void *)ws_session.get(), ", count = ", ws_session->m_messages_pending.size());
 				if(ws_session->m_messages_pending.empty()){
@@ -106,16 +107,21 @@ protected:
 			return;
 		}
 
-		try {
+		if(ws_session->m_promised_acknowledgement){
 			// If there are messages on the way, wait for the acknowledgement before sending the closure notification.
 			// This ensures that we will not drop any messages sent before the closure. Any exceptions thrown are ignored.
-			if(ws_session->m_promised_acknowledgement){
-				Poseidon::yield(ws_session->m_promised_acknowledgement);
+			try {
+				Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
+				Common::wait_for_response(foyer_resp, ws_session->m_promised_acknowledgement);
+				DEBUG_THROW_ASSERT(ws_session->m_promised_acknowledgement);
+				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+				DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
+				// If there is no error, drop the acknowledgement.
+				ws_session->m_promised_acknowledgement.reset();
+			} catch(std::exception &e){
+				LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 			}
-		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 		}
-
 		try {
 			// `ws_session->m_closure_reason` will not be altered elsewhere once set, hence it is safe to move from it without locking.
 			Protocol::Foyer::WebSocketClosureNotificationToBox foyer_ntfy;
@@ -278,6 +284,7 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 		if(m_promised_acknowledgement){
 			Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
 			Common::wait_for_response(foyer_resp, m_promised_acknowledgement);
+			DEBUG_THROW_ASSERT(m_promised_acknowledgement);
 			LOG_CIRCE_TRACE("Received response: ", foyer_resp);
 			DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
 			// If there is no error, drop the acknowledgement.
@@ -317,6 +324,7 @@ void ClientWebSocketSession::on_sync_control_message(Poseidon::WebSocket::OpCode
 	if(m_promised_acknowledgement && m_promised_acknowledgement->is_satisfied()){
 		Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
 		Common::wait_for_response(foyer_resp, m_promised_acknowledgement);
+		DEBUG_THROW_ASSERT(m_promised_acknowledgement);
 		LOG_CIRCE_TRACE("Received response: ", foyer_resp);
 		DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
 		// If there is no error, drop the acknowledgement.
