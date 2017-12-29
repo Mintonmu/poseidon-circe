@@ -232,7 +232,7 @@ protected:
 
 		try {
 			LOG_CIRCE_TRACE("Dispatching message: message_id = ", m_message_id);
-			CbppResponse resp;
+			CbppResponse resp(0, std::string(), 0, Poseidon::StreamBuffer());
 			try {
 				resp = connection->layer7_on_sync_message(m_message_id, STD_MOVE(m_payload));
 			} catch(Poseidon::Cbpp::Exception &e){
@@ -389,12 +389,7 @@ try {
 			}
 		}
 		if(promise){
-			CbppResponse resp;
-			resp.m_err_code   = hdr.err_code;
-			resp.m_err_msg    = hdr.err_msg;
-			resp.m_message_id = message_id;
-			resp.m_payload    = STD_MOVE(magic_payload);
-			promise->set_success(STD_MOVE(resp));
+			promise->set_success(CbppResponse(hdr.err_code, STD_MOVE(hdr.err_msg), message_id, STD_MOVE(magic_payload)));
 		}
 	} else if(Poseidon::has_any_flags_of(magic_number, MFL_WANTS_RESPONSE)){
 		IS_UserRequestHeader hdr;
