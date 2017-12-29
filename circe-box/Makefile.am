@@ -17,6 +17,8 @@ pkginclude_boxdir = $(pkgincludedir)/box
 pkginclude_box_HEADERS = \
 	circe-box/src/singletons/servlet_container.hpp	\
 	circe-box/src/singletons/box_acceptor.hpp	\
+	circe-box/src/websocket_shadow_session.hpp	\
+	circe-box/src/singletons/websocket_shadow_session_supervisor.hpp	\
 	circe-box/src/mmain.hpp
 
 lib_LTLIBRARIES = \
@@ -25,6 +27,8 @@ lib_LTLIBRARIES = \
 lib_libcirce_box_la_SOURCES = \
 	circe-box/src/singletons/servlet_container.cpp	\
 	circe-box/src/singletons/box_acceptor.cpp	\
+	circe-box/src/websocket_shadow_session.cpp	\
+	circe-box/src/singletons/websocket_shadow_session_supervisor.cpp	\
 	circe-box/src/mmain.cpp	\
 	circe-box/src/servlets.cpp
 
