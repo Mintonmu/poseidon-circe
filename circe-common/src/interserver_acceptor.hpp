@@ -25,7 +25,7 @@ private:
 
 private:
 	const std::string m_bind;
-	const unsigned m_port;
+	const boost::uint16_t m_port;
 	const std::string m_application_key;
 
 	mutable Poseidon::Mutex m_mutex;
@@ -34,7 +34,7 @@ private:
 	boost::container::flat_map<Poseidon::Uuid, boost::weak_ptr<InterserverSession> > m_weak_sessions;
 
 public:
-	InterserverAcceptor(std::string bind, unsigned port, std::string application_key);
+	InterserverAcceptor(std::string bind, boost::uint16_t port, std::string application_key);
 	~InterserverAcceptor() OVERRIDE;
 
 protected:

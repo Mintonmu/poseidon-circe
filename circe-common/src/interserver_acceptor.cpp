@@ -142,7 +142,7 @@ protected:
 	}
 };
 
-InterserverAcceptor::InterserverAcceptor(std::string bind, unsigned port, std::string application_key)
+InterserverAcceptor::InterserverAcceptor(std::string bind, boost::uint16_t port, std::string application_key)
 	: m_bind(STD_MOVE(bind)), m_port(port), m_application_key(STD_MOVE(application_key))
 {
 	LOG_CIRCE_INFO("InterserverAcceptor constructor: bind:port = ", m_bind, ":", m_port);
