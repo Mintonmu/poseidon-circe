@@ -265,7 +265,7 @@ boost::uint64_t InterserverConnection::get_hello_timeout(){
 
 InterserverConnection::InterserverConnection(const std::string &application_key)
 	: m_application_key(application_key)
-	, m_connection_uuid(), m_next_serial(0)
+	, m_authenticated(false), m_connection_uuid(), m_next_serial(0)
 {
 	LOG_CIRCE_INFO("InterserverConnection constructor: this = ", (void *)this);
 }
@@ -293,7 +293,7 @@ void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection
 		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
 	}
 	m_connection_uuid = connection_uuid;
-	m_timestamp = timestamp;
+	m_timestamp       = timestamp;
 	layer7_post_set_connection_uuid();
 }
 void InterserverConnection::send_response(boost::uint64_t serial, CbppResponse resp){
@@ -355,6 +355,7 @@ try {
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		const AUTO(checksum_seedx, calculate_checksum(m_application_key, SALT_NORMAL_DATA, m_connection_uuid, m_timestamp));
 		require_message_filter()->reseed_decoder_prng(checksum_seedx);
+		Poseidon::atomic_store(m_authenticated, true, Poseidon::ATOMIC_RELEASE);
 		return; }
 
 	case IS_ServerHello::ID: {
@@ -364,6 +365,7 @@ try {
 		const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, m_connection_uuid, m_timestamp));
 		DEBUG_THROW_UNLESS(msg.checksum_resp == checksum_resp, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE, Poseidon::sslit("Response checksum failed verification"));
 		DEBUG_THROW_UNLESS(msg.options_resp.empty(), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_INVALID_ARGUMENT, Poseidon::sslit("Server option not supported"));
+		Poseidon::atomic_store(m_authenticated, true, Poseidon::ATOMIC_RELEASE);
 		return; }
 	}
 	DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED | MFL_RESERVED), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
@@ -459,7 +461,7 @@ void InterserverConnection::layer5_on_receive_data(boost::uint16_t magic_number,
 }
 void InterserverConnection::layer5_on_receive_control(long status_code, Poseidon::StreamBuffer param){
 	PROFILE_ME;
-	DEBUG_THROW_ASSERT(is_connection_uuid_set());
+	DEBUG_THROW_ASSERT(has_authenticated());
 
 	switch(status_code){
 	case Poseidon::Cbpp::ST_SHUTDOWN:
@@ -516,10 +518,13 @@ void InterserverConnection::layer7_client_say_hello(){
 		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
 	}
 	m_connection_uuid = connection_uuid;
-	m_timestamp = timestamp;
+	m_timestamp       = timestamp;
 	layer7_post_set_connection_uuid();
 }
 
+bool InterserverConnection::has_authenticated() const {
+	return Poseidon::atomic_load(m_authenticated, Poseidon::ATOMIC_CONSUME);
+}
 const Poseidon::Uuid &InterserverConnection::get_connection_uuid() const {
 	DEBUG_THROW_UNLESS(is_connection_uuid_set(), Poseidon::Exception, Poseidon::sslit("InterserverConnection UUID has not been set"));
 	return m_connection_uuid;

@@ -49,6 +49,8 @@ private:
 	// This is only used by the workhorse thread.
 	boost::scoped_ptr<MessageFilter> m_message_filter;
 
+	volatile bool m_authenticated;
+
 	// These are protected by a mutex and can be accessed by any thread.
 	mutable Poseidon::RecursiveMutex m_mutex;
 	Poseidon::Uuid m_connection_uuid;
@@ -92,6 +94,7 @@ protected:
 	virtual CbppResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) = 0;
 
 public:
+	bool has_authenticated() const;
 	// This function throws an exception if the connection UUID has not been set.
 	const Poseidon::Uuid &get_connection_uuid() const;
 

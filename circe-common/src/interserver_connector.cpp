@@ -128,6 +128,13 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 		Poseidon::EpollDaemon::add_socket(client, true);
 		connector->m_weak_client = client;
 	}
+
+	if(client->has_authenticated()){
+		const boost::uint64_t local_now = Poseidon::get_local_time();
+		char str[256];
+		std::size_t len = Poseidon::format_time(str, sizeof(str), local_now, true);
+		client->Poseidon::Cbpp::LowLevelClient::send_control(Poseidon::Cbpp::ST_PING, Poseidon::StreamBuffer(str, len));
+	}
 }
 
 InterserverConnector::InterserverConnector(std::string host, boost::uint16_t port, std::string application_key)
