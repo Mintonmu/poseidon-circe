@@ -232,7 +232,7 @@ protected:
 
 		try {
 			LOG_CIRCE_TRACE("Dispatching message: message_id = ", m_message_id);
-			CbppResponse resp(0, std::string(), 0, Poseidon::StreamBuffer());
+			CbppResponse resp;
 			try {
 				resp = connection->layer7_on_sync_message(m_message_id, STD_MOVE(m_payload));
 			} catch(Poseidon::Cbpp::Exception &e){
@@ -390,7 +390,12 @@ try {
 			}
 		}
 		if(promise){
-			promise->set_success(CbppResponse(hdr.err_code, STD_MOVE(hdr.err_msg), message_id, STD_MOVE(magic_payload)));
+			CbppResponse resp;
+			resp.m_err_code   = hdr.err_code;
+			resp.m_err_msg    = STD_MOVE(hdr.err_msg);
+			resp.m_message_id = message_id;
+			resp.m_payload    = STD_MOVE(magic_payload);
+			promise->set_success(STD_MOVE(resp));
 		}
 	} else if(Poseidon::has_any_flags_of(magic_number, MFL_WANTS_RESPONSE)){
 		IS_UserRequestHeader hdr;
@@ -575,11 +580,16 @@ void wait_for_response(Poseidon::Cbpp::MessageBase &msg, const boost::shared_ptr
 	PROFILE_ME;
 
 	Poseidon::yield(promise);
-	AUTO_REF(resp, promise->get());
+	AUTO(resp, STD_MOVE_IDN(promise->get()));
+	promise->get() = VAL_INIT;
+
 	DEBUG_THROW_UNLESS(resp.get_err_code() == 0, Poseidon::Cbpp::Exception, resp.get_err_code(), Poseidon::SharedNts(resp.get_err_msg()));
 	DEBUG_THROW_UNLESS(resp.get_message_id() != 0, Poseidon::Exception, Poseidon::sslit("No message but status code returned"));
 	DEBUG_THROW_UNLESS(resp.get_message_id() == msg.get_id(), Poseidon::Exception, Poseidon::sslit("Unexpected response message ID"));
 	msg.deserialize(resp.get_payload());
+	if(!resp.get_payload().empty()){
+		LOG_CIRCE_WARNING("Ignoring ", resp.get_payload().size(), " redundant byte(s) after message ", msg);
+	}
 }
 
 }

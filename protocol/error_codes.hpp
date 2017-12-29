@@ -31,6 +31,7 @@ namespace ErrorCodes {
 		ERR_BOX_CONNECTION_LOST               = 50004,
 		ERR_CLIENT_CONNECTION_LOST            = 50005,
 		ERR_CLIENT_SHADOW_SESSION_NOT_FOUND   = 50006,
+		ERR_RESERVED_RESPONSE_UNINITIALIZED   = 50007,
 	};
 }
 using namespace ErrorCodes;
