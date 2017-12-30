@@ -132,6 +132,19 @@ namespace Foyer {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
+#define MESSAGE_NAME   CheckGateRequest
+#define MESSAGE_ID     1212
+#define MESSAGE_FIELDS \
+	FIELD_FIXED        (gate_uuid, 16)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
+#define MESSAGE_NAME   CheckGateResponse
+#define MESSAGE_ID     1213
+#define MESSAGE_FIELDS \
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
 }
 }
 }
