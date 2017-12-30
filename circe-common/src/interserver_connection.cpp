@@ -14,6 +14,8 @@
 #include <poseidon/job_base.hpp>
 #include <boost/random/mersenne_twister.hpp>
 
+template class Poseidon::PromiseContainer<Circe::Common::CbppResponse>;
+
 namespace Circe {
 namespace Common {
 

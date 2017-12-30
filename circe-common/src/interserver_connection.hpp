@@ -14,11 +14,12 @@
 #include <poseidon/promise.hpp>
 #include <boost/container/flat_map.hpp>
 #include <boost/array.hpp>
+#include "cbpp_response.hpp"
+
+extern template class Poseidon::PromiseContainer<Circe::Common::CbppResponse>;
 
 namespace Circe {
 namespace Common {
-
-class CbppResponse;
 
 typedef Poseidon::PromiseContainer<CbppResponse> PromisedResponse;
 
