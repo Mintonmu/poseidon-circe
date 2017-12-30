@@ -27,7 +27,7 @@ void copy_key_values(boost::container::vector<DestinationT> &dst, Poseidon::Move
 	for(AUTO(it, src.begin()); it != src.end(); ++it){
 		dst.emplace_back();
 		dst.back().key = it->first.get();
-		dst.back().value = it->second;
+		dst.back().value = STD_MOVE(it->second);
 	}
 }
 
@@ -41,7 +41,7 @@ template<typename SourceT>
 void copy_key_values(Poseidon::OptionalMap &dst, Poseidon::Move<boost::container::vector<SourceT> > src_rv){
 	AUTO(src, STD_MOVE_IDN(src_rv));
 	for(AUTO(it, src.begin()); it != src.end(); ++it){
-		dst.append(Poseidon::SharedNts(it->key), it->value);
+		dst.append(Poseidon::SharedNts(it->key), STD_MOVE(it->value));
 	}
 }
 
@@ -60,8 +60,8 @@ void copy_key_values(boost::container::vector<DestinationT> &dst, Poseidon::Move
 	dst.reserve(dst.size() + src.size());
 	for(AUTO(it, src.begin()); it != src.end(); ++it){
 		dst.emplace_back();
-		dst.back().key = it->key;
-		dst.back().value = it->value;
+		dst.back().key = STD_MOVE(it->key);
+		dst.back().value = STD_MOVE(it->value);
 	}
 }
 
