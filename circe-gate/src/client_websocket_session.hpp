@@ -8,6 +8,8 @@
 #include <poseidon/websocket/session.hpp>
 #include <poseidon/uuid.hpp>
 #include <boost/optional.hpp>
+#include <boost/container/deque.hpp>
+#include <utility>
 #include "common/fwd.hpp"
 
 namespace Circe {
@@ -21,9 +23,6 @@ class ClientWebSocketSession : public Poseidon::WebSocket::Session {
 private:
 	class DeliveryJob;
 	class ClosureJob;
-
-private:
-	static void on_closure_notification_low_level_timer(const boost::shared_ptr<ClientWebSocketSession> &session);
 
 private:
 	const Poseidon::Uuid m_client_uuid;
@@ -50,6 +49,8 @@ public:
 	~ClientWebSocketSession() OVERRIDE;
 
 private:
+	void on_closure_notification_low_level_timer();
+
 	void reserve_closure_notification_timer();
 	void drop_closure_notification_timer() NOEXCEPT;
 	void deliver_closure_notification(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT;

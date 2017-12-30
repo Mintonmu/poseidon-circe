@@ -35,9 +35,14 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 	bool delivered = false;
 	const AUTO(ws_session, ClientHttpAcceptor::get_websocket_session(Poseidon::Uuid(req.client_uuid)));
 	if(ws_session){
-		delivered = true;
-		for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
-			ws_session->send(boost::numeric_cast<Poseidon::WebSocket::OpCode>(it->opcode), Poseidon::StreamBuffer(it->payload));
+		try {
+			for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
+				ws_session->send(boost::numeric_cast<Poseidon::WebSocket::OpCode>(it->opcode), STD_MOVE(it->payload));
+			}
+			delivered = true;
+		} catch(std::exception &e){
+			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			ws_session->shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
 		}
 	}
 

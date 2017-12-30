@@ -12,8 +12,8 @@
 #include "protocol/messages_auth.hpp"
 #include "protocol/messages_foyer.hpp"
 #include "protocol/utilities.hpp"
-#include <poseidon/websocket/exception.hpp>
 #include <poseidon/singletons/timer_daemon.hpp>
+#include <poseidon/websocket/exception.hpp>
 #include <poseidon/job_base.hpp>
 
 namespace Circe {
@@ -43,7 +43,7 @@ protected:
 
 		try {
 			const AUTO(foyer_conn, FoyerConnector::get_client(ws_session->m_foyer_uuid.get()));
-			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Exception, Poseidon::sslit("Connection to foyer server was lost"));
+			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Connection to foyer server was lost"));
 
 			DEBUG_THROW_ASSERT(ws_session->m_delivery_job_active);
 			for(;;){
@@ -68,6 +68,9 @@ protected:
 				DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
 			}
 			ws_session->m_delivery_job_active = false;
+		} catch(Poseidon::WebSocket::Exception &e){
+			LOG_CIRCE_ERROR("Poseidon::WebSocket::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
+			ws_session->shutdown(e.get_status_code(), e.what());
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 			ws_session->shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
@@ -78,11 +81,18 @@ protected:
 class ClientWebSocketSession::ClosureJob : public Poseidon::JobBase {
 private:
 	const boost::weak_ptr<Poseidon::TcpSessionBase> m_weak_parent;
-	const boost::shared_ptr<ClientWebSocketSession> m_ws_session;
+	const boost::weak_ptr<Common::InterserverConnection> m_weak_foyer_conn;
+
+	Poseidon::Uuid m_box_uuid;
+	Poseidon::Uuid m_client_uuid;
+	Poseidon::WebSocket::StatusCode m_status_code;
+	std::string m_reason;
 
 public:
-	explicit ClosureJob(const boost::shared_ptr<ClientWebSocketSession> &ws_session)
-		: m_weak_parent(ws_session->get_weak_parent()), m_ws_session(ws_session)
+	ClosureJob(const boost::shared_ptr<ClientWebSocketSession> &ws_session, const boost::shared_ptr<Common::InterserverConnection> &foyer_conn,
+		const Poseidon::Uuid &box_uuid, const Poseidon::Uuid &client_uuid, Poseidon::WebSocket::StatusCode status_code, std::string reason)
+		: m_weak_parent(ws_session->get_weak_parent()), m_weak_foyer_conn(foyer_conn)
+		, m_box_uuid(box_uuid), m_client_uuid(client_uuid), m_status_code(status_code), m_reason(STD_MOVE(reason))
 	{ }
 
 protected:
@@ -92,18 +102,17 @@ protected:
 	void perform() FINAL {
 		PROFILE_ME;
 
-		const AUTO(foyer_conn, FoyerConnector::get_client(m_ws_session->m_foyer_uuid.get()));
+		const AUTO(foyer_conn, m_weak_foyer_conn.lock());
 		if(!foyer_conn){
 			return;
 		}
 
 		try {
-			// `ws_session->m_closure_reason` will not be altered elsewhere once set, hence it is safe to move from it without locking.
 			Protocol::Foyer::WebSocketClosureNotificationToBox foyer_ntfy;
-			foyer_ntfy.box_uuid    = m_ws_session->m_box_uuid.get();
-			foyer_ntfy.client_uuid = m_ws_session->m_client_uuid;
-			foyer_ntfy.status_code = m_ws_session->m_closure_reason.get().first;
-			foyer_ntfy.reason      = STD_MOVE(m_ws_session->m_closure_reason.get().second);
+			foyer_ntfy.box_uuid    = m_box_uuid;
+			foyer_ntfy.client_uuid = m_client_uuid;
+			foyer_ntfy.status_code = m_status_code;
+			foyer_ntfy.reason      = STD_MOVE(m_reason);
 			foyer_conn->send_notification(foyer_ntfy);
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
@@ -111,21 +120,6 @@ protected:
 		}
 	}
 };
-
-void ClientWebSocketSession::on_closure_notification_low_level_timer(const boost::shared_ptr<ClientWebSocketSession> &ws_session){
-	PROFILE_ME;
-
-	const Poseidon::Mutex::UniqueLock lock(ws_session->m_closure_notification_mutex);
-	if(!ws_session->m_closure_reason){
-		return;
-	}
-	LOG_CIRCE_DEBUG("Reaping WebSocket client: ws_session = ", (void *)ws_session.get());
-	// Enqueue a job to notify the foyer server about closure of this connection.
-	// If this operation throws an exception, the timer will be rerun, so there is no cleanup to be done.
-	Poseidon::enqueue(boost::make_shared<ClosureJob>(ws_session));
-	// If the job has been enqueued successfully, we can break the circular reference, destroying this timer.
-	ws_session->m_closure_notification_timer.reset();
-}
 
 ClientWebSocketSession::ClientWebSocketSession(const boost::shared_ptr<ClientHttpSession> &parent)
 	: Poseidon::WebSocket::Session(parent)
@@ -138,26 +132,48 @@ ClientWebSocketSession::~ClientWebSocketSession(){
 	LOG_CIRCE_DEBUG("ClientWebSocketSession destructor: remote = ", get_remote_info());
 }
 
+void ClientWebSocketSession::on_closure_notification_low_level_timer(){
+	PROFILE_ME;
+
+	const Poseidon::Mutex::UniqueLock lock(m_closure_notification_mutex);
+	if(!m_closure_reason){
+		return;
+	}
+	LOG_CIRCE_DEBUG("Reaping WebSocket client: this = ", (void *)this);
+	if(m_foyer_uuid){
+		const AUTO(foyer_conn, FoyerConnector::get_client(m_foyer_uuid.get()));
+		if(foyer_conn){
+			// Enqueue a job to notify the foyer server about closure of this connection.
+			// If this operation throws an exception, the timer will be rerun, so there is no cleanup to be done.
+			Poseidon::enqueue(boost::make_shared<ClosureJob>(virtual_shared_from_this<ClientWebSocketSession>(), foyer_conn,
+				m_box_uuid.get(), m_client_uuid, m_closure_reason.get().first, m_closure_reason.get().second));
+		}
+	}
+	// If the job has been enqueued successfully, we can break the circular reference, destroying this timer.
+	m_closure_notification_timer.reset();
+}
+
 void ClientWebSocketSession::reserve_closure_notification_timer(){
 	PROFILE_ME;
-	LOG_CIRCE_DEBUG("Reserving WebSocket closure notification timer: ws_session = ", (void *)this);
+	LOG_CIRCE_DEBUG("Reserving WebSocket closure notification timer: this = ", (void *)this);
 
 	const Poseidon::Mutex::UniqueLock lock(m_closure_notification_mutex);
 	DEBUG_THROW_ASSERT(!m_closure_notification_timer);
 	// Create a circular reference. We do this deliberately to prevent the session from being deleted after it is detached from epoll.
-	const AUTO(timer, Poseidon::TimerDaemon::register_low_level_timer(60000, 60000, boost::bind(&on_closure_notification_low_level_timer, virtual_shared_from_this<ClientWebSocketSession>())));
+	const AUTO(timer, Poseidon::TimerDaemon::register_low_level_timer(60000, 60000,
+		boost::bind(&ClientWebSocketSession::on_closure_notification_low_level_timer, virtual_shared_from_this<ClientWebSocketSession>())));
 	m_closure_notification_timer = timer;
 }
 void ClientWebSocketSession::drop_closure_notification_timer() NOEXCEPT {
 	PROFILE_ME;
-	LOG_CIRCE_DEBUG("Dropping WebSocket closure notification timer: ws_session = ", (void *)this);
+	LOG_CIRCE_DEBUG("Dropping WebSocket closure notification timer: this = ", (void *)this);
 
 	const Poseidon::Mutex::UniqueLock lock(m_closure_notification_mutex);
 	m_closure_notification_timer.reset();
 }
 void ClientWebSocketSession::deliver_closure_notification(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT {
 	PROFILE_ME;
-	LOG_CIRCE_DEBUG("Delivering closure notification: ws_session = ", (void *)this);
+	LOG_CIRCE_DEBUG("Delivering closure notification: this = ", (void *)this);
 
 	const Poseidon::Mutex::UniqueLock lock(m_closure_notification_mutex);
 	if(!m_closure_reason){
