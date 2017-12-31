@@ -32,6 +32,7 @@ pkginclude_protocol_HEADERS = \
 	../protocol/messages_auth.hpp	\
 	../protocol/messages_box.hpp	\
 	../protocol/error_codes.hpp	\
+	../protocol/exception.hpp	\
 	../protocol/utilities.hpp
 
 pkginclude_commondir = $(pkgincludedir)/common
