@@ -5,7 +5,7 @@
 #include "singletons/servlet_container.hpp"
 #include "common/interserver_connection.hpp"
 #include "common/define_interserver_servlet.hpp"
-#include "protocol/error_codes.hpp"
+#include "protocol/exception.hpp"
 #include "protocol/utilities.hpp"
 #include "protocol/messages_gate.hpp"
 #include "singletons/client_http_acceptor.hpp"

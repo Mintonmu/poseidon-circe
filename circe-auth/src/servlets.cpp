@@ -5,7 +5,7 @@
 #include "singletons/servlet_container.hpp"
 #include "common/interserver_connection.hpp"
 #include "common/define_interserver_servlet.hpp"
-#include "protocol/error_codes.hpp"
+#include "protocol/exception.hpp"
 #include "protocol/messages_auth.hpp"
 
 #define DEFINE_SERVLET(...)   CIRCE_DEFINE_INTERSERVER_SERVLET(::Circe::Auth::ServletContainer::insert_servlet, __VA_ARGS__)

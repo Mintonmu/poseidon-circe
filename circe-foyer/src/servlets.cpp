@@ -5,7 +5,7 @@
 #include "singletons/servlet_container.hpp"
 #include "common/interserver_connection.hpp"
 #include "common/define_interserver_servlet.hpp"
-#include "protocol/error_codes.hpp"
+#include "protocol/exception.hpp"
 #include "protocol/utilities.hpp"
 #include "protocol/messages_foyer.hpp"
 #include "protocol/messages_box.hpp"
@@ -21,7 +21,7 @@ namespace Foyer {
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Foyer::HttpRequestToBox req){
 	boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > servers_avail;
 	BoxConnector::get_all_clients(servers_avail);
-	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
+	CIRCE_PROTOCOL_THROW_UNLESS(servers_avail.size() != 0, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 	const AUTO(box_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
 	DEBUG_THROW_ASSERT(box_conn);
 
@@ -51,7 +51,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Foyer::WebSocketEstablishmentRequestToBox req){
 	boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > servers_avail;
 	BoxConnector::get_all_clients(servers_avail);
-	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
+	CIRCE_PROTOCOL_THROW_UNLESS(servers_avail.size() != 0, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 	const AUTO(box_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
 	DEBUG_THROW_ASSERT(box_conn);
 
@@ -76,7 +76,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Foyer::WebSocketClosureNotificationToBox ntfy){
 	const AUTO(box_conn, BoxConnector::get_client(Poseidon::Uuid(ntfy.box_uuid)));
-	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
+	CIRCE_PROTOCOL_THROW_UNLESS(box_conn, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 
 	{
 		Protocol::Box::WebSocketClosureNotification box_ntfy;
@@ -93,7 +93,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Foyer::WebSocketKillRequestToGate req){
 	const AUTO(gate_conn, FoyerAcceptor::get_session(Poseidon::Uuid(req.gate_uuid)));
-	DEBUG_THROW_UNLESS(gate_conn, Poseidon::Cbpp::Exception, Protocol::ERR_GATE_CONNECTION_LOST, Poseidon::sslit("The specified gate server was not found"));
+	CIRCE_PROTOCOL_THROW_UNLESS(gate_conn, Protocol::ERR_GATE_CONNECTION_LOST, Poseidon::sslit("The gate server specified was not found"));
 
 	Protocol::Gate::WebSocketKillRequest gate_req;
 	gate_req.client_uuid = req.client_uuid;
@@ -112,7 +112,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Foyer::WebSocketPackedMessageRequestToBox req){
 	const AUTO(box_conn, BoxConnector::get_client(Poseidon::Uuid(req.box_uuid)));
-	DEBUG_THROW_UNLESS(box_conn, Poseidon::Cbpp::Exception, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
+	CIRCE_PROTOCOL_THROW_UNLESS(box_conn, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 
 	Protocol::Box::WebSocketPackedMessageRequest box_req;
 	box_req.gate_uuid   = conn->get_connection_uuid();
@@ -134,7 +134,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Foyer::WebSocketPackedMessageRequestToGate req){
 	const AUTO(gate_conn, FoyerAcceptor::get_session(Poseidon::Uuid(req.gate_uuid)));
-	DEBUG_THROW_UNLESS(gate_conn, Poseidon::Cbpp::Exception, Protocol::ERR_GATE_CONNECTION_LOST, Poseidon::sslit("The specified gate server was not found"));
+	CIRCE_PROTOCOL_THROW_UNLESS(gate_conn, Protocol::ERR_GATE_CONNECTION_LOST, Poseidon::sslit("The gate server specified was not found"));
 
 	Protocol::Gate::WebSocketPackedMessageRequest gate_req;
 	gate_req.client_uuid = req.client_uuid;
@@ -155,7 +155,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Foyer::CheckGateRequest req){
 	const AUTO(gate_conn, FoyerAcceptor::get_session(Poseidon::Uuid(req.gate_uuid)));
-	DEBUG_THROW_UNLESS(gate_conn, Poseidon::Cbpp::Exception, Protocol::ERR_GATE_CONNECTION_LOST, Poseidon::sslit("The specified gate server was not found"));
+	CIRCE_PROTOCOL_THROW_UNLESS(gate_conn, Protocol::ERR_GATE_CONNECTION_LOST, Poseidon::sslit("The gate server specified was not found"));
 
 	Protocol::Foyer::CheckGateResponse resp;
 	return resp;
