@@ -21,7 +21,7 @@ namespace {
 			: Poseidon::TcpServerBase(Poseidon::IpPort(bind.c_str(), port), cert.c_str(), pkey.c_str())
 		{ }
 		~SpecializedAcceptor() OVERRIDE {
-			clear();
+			clear(Poseidon::WebSocket::ST_GOING_AWAY);
 		}
 
 	protected:
@@ -104,7 +104,7 @@ namespace {
 			}
 			return count_added;
 		}
-		std::size_t clear() NOEXCEPT {
+		std::size_t clear(Poseidon::WebSocket::StatusCode status_code, const char *reason = "") NOEXCEPT {
 			PROFILE_ME;
 
 			const Poseidon::Mutex::UniqueLock lock(m_mutex);
@@ -115,7 +115,7 @@ namespace {
 					continue;
 				}
 				LOG_CIRCE_DEBUG("Disconnecting client session: remote = ", http_session->get_remote_info());
-				http_session->shutdown();
+				http_session->shutdown(status_code, reason);
 				++count_shutdown;
 			}
 			return count_shutdown;
@@ -176,7 +176,7 @@ std::size_t ClientHttpAcceptor::get_all_websocket_sessions(boost::container::vec
 	}
 	return acceptor->get_all_websocket_sessions(sessions_ret);
 }
-std::size_t ClientHttpAcceptor::clear(long /*err_code*/, const char */*err_msg*/) NOEXCEPT {
+std::size_t ClientHttpAcceptor::clear(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT {
 	PROFILE_ME;
 
 	const AUTO(acceptor, g_weak_acceptor.lock());
@@ -184,7 +184,7 @@ std::size_t ClientHttpAcceptor::clear(long /*err_code*/, const char */*err_msg*/
 		LOG_CIRCE_WARNING("ClientHttpAcceptor has not been initialized.");
 		return 0;
 	}
-	return acceptor->clear();
+	return acceptor->clear(status_code, reason);
 }
 
 }

@@ -7,6 +7,7 @@
 #include <poseidon/fwd.hpp>
 #include <poseidon/http/session.hpp>
 #include <poseidon/uuid.hpp>
+#include <poseidon/websocket/status_codes.hpp>
 #include <boost/optional.hpp>
 
 namespace Circe {
@@ -49,7 +50,7 @@ public:
 	}
 
 	bool has_been_shutdown() const NOEXCEPT;
-	bool shutdown() NOEXCEPT;
+	bool shutdown(Poseidon::WebSocket::StatusCode status_code = Poseidon::WebSocket::ST_INTERNAL_ERROR, const char *reason = "") NOEXCEPT;
 
 	bool send(Poseidon::Http::ResponseHeaders response_headers, Poseidon::StreamBuffer entity);
 	bool send_default_and_shutdown(Poseidon::Http::StatusCode status_code, const Poseidon::OptionalMap &headers = Poseidon::OptionalMap()) NOEXCEPT;

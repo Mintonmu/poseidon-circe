@@ -297,12 +297,12 @@ bool ClientHttpSession::has_been_shutdown() const NOEXCEPT {
 
 	return Poseidon::Http::Session::has_been_shutdown_write();
 }
-bool ClientHttpSession::shutdown() NOEXCEPT {
+bool ClientHttpSession::shutdown(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT {
 	PROFILE_ME;
 
 	const AUTO(ws_session, boost::dynamic_pointer_cast<ClientWebSocketSession>(get_upgraded_session()));
 	if(ws_session){
-		return ws_session->shutdown(Poseidon::WebSocket::ST_GOING_AWAY, "");
+		return ws_session->shutdown(status_code, reason);
 	}
 	LOG_CIRCE_DEBUG("Shutting down HTTP connection: remote = ", get_remote_info());
 	shutdown_read();

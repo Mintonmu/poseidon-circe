@@ -45,6 +45,7 @@ boost::shared_ptr<Common::InterserverConnection> FoyerAcceptor::get_session(cons
 
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
+		LOG_CIRCE_WARNING("FoyerAcceptor has not been initialized.");
 		return VAL_INIT;
 	}
 	return acceptor->get_session(connection_uuid);
@@ -54,6 +55,7 @@ std::size_t FoyerAcceptor::get_all_sessions(boost::container::vector<boost::shar
 
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
+		LOG_CIRCE_WARNING("FoyerAcceptor has not been initialized.");
 		return 0;
 	}
 	return acceptor->get_all_sessions(sessions_ret);
@@ -63,6 +65,7 @@ std::size_t FoyerAcceptor::safe_broadcast_notification(const Poseidon::Cbpp::Mes
 
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
+		LOG_CIRCE_WARNING("FoyerAcceptor has not been initialized.");
 		return 0;
 	}
 	return acceptor->safe_broadcast_notification(msg);
@@ -72,6 +75,7 @@ std::size_t FoyerAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
 
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
+		LOG_CIRCE_WARNING("FoyerAcceptor has not been initialized.");
 		return 0;
 	}
 	return acceptor->clear(err_code, err_msg);
