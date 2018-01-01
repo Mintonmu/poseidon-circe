@@ -115,8 +115,8 @@ protected:
 	}
 };
 
-WebSocketShadowSession::WebSocketShadowSession(const Poseidon::Uuid &foyer_uuid, const Poseidon::Uuid &gate_uuid, const Poseidon::Uuid &client_uuid, std::string client_ip)
-	: m_foyer_uuid(foyer_uuid), m_gate_uuid(gate_uuid), m_client_uuid(client_uuid), m_client_ip(STD_MOVE(client_ip))
+WebSocketShadowSession::WebSocketShadowSession(const Poseidon::Uuid &foyer_uuid, const Poseidon::Uuid &gate_uuid, const Poseidon::Uuid &client_uuid, std::string client_ip, std::string auth_token)
+	: m_foyer_uuid(foyer_uuid), m_gate_uuid(gate_uuid), m_client_uuid(client_uuid), m_client_ip(STD_MOVE(client_ip)), m_auth_token(STD_MOVE(auth_token))
 	, m_shutdown(false)
 {
 	LOG_CIRCE_INFO("WebSocketShadowSession constructor: client_uuid = ", m_client_uuid, ", client_ip = ", m_client_ip);
@@ -125,33 +125,11 @@ WebSocketShadowSession::~WebSocketShadowSession(){
 	LOG_CIRCE_INFO("WebSocketShadowSession destructor: client_uuid = ", m_client_uuid, ", client_ip = ", m_client_ip);
 }
 
-void WebSocketShadowSession::on_sync_connect(){
-	PROFILE_ME;
-
-	LOG_CIRCE_FATAL("TODO: WebSocketShadowSession::on_sync_connect(): client_ip = ", get_client_ip());
-}
-void WebSocketShadowSession::on_sync_receive(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
-	PROFILE_ME;
-
-	LOG_CIRCE_FATAL("TODO: WebSocketShadowSession::on_sync_receive(): opcode = ", opcode, ", payload = ", payload);
-
-	for(unsigned i = 0; i < 3; ++i){
-		char str[100];
-		std::size_t len = (unsigned)::snprintf(str, sizeof(str), "hello world! %u", i);
-		send(Poseidon::WebSocket::OP_DATA_TEXT, Poseidon::StreamBuffer(str, len));
-	}
-	//shutdown(Poseidon::WebSocket::ST_NORMAL_CLOSURE, "meow");
-}
-void WebSocketShadowSession::on_sync_close(Poseidon::WebSocket::StatusCode status_code, const char *reason){
-	PROFILE_ME;
-
-	Poseidon::atomic_exchange(m_shutdown, true, Poseidon::ATOMIC_RELEASE);
-
-	LOG_CIRCE_FATAL("TODO: WebSocketShadowSession::on_sync_close(): status_code = ", status_code, ", reason = ", reason);
-}
-
 bool WebSocketShadowSession::has_been_shutdown() const {
 	return Poseidon::atomic_load(m_shutdown, Poseidon::ATOMIC_ACQUIRE);
+}
+void WebSocketShadowSession::mark_shutdown() NOEXCEPT {
+	Poseidon::atomic_store(m_shutdown, true, Poseidon::ATOMIC_RELEASE);
 }
 bool WebSocketShadowSession::shutdown(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT {
 	PROFILE_ME;

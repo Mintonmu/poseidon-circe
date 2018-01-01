@@ -7,25 +7,45 @@
 #include "common/define_interserver_servlet.hpp"
 #include "protocol/exception.hpp"
 #include "protocol/messages_auth.hpp"
+#include "protocol/utilities.hpp"
+#include "user_defined_functions.hpp"
 
 #define DEFINE_SERVLET(...)   CIRCE_DEFINE_INTERSERVER_SERVLET(::Circe::Auth::ServletContainer::insert_servlet, __VA_ARGS__)
 
 namespace Circe {
 namespace Auth {
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Auth::HttpAuthenticationRequest req){
-	LOG_POSEIDON_FATAL("TODO: CHECK AUTHENTICATION: ", req);
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Auth::HttpAuthenticationRequest req){
+	Poseidon::Http::StatusCode resp_status_code = Poseidon::Http::ST_SERVICE_UNAVAILABLE;
+	Poseidon::OptionalMap resp_headers;
+	std::string auth_token = UserDefinedFunctions::check_http_authentication(resp_status_code, resp_headers,
+		Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), boost::numeric_cast<Poseidon::Http::Verb>(req.verb), STD_MOVE(req.decoded_uri),
+		Protocol::copy_key_values(STD_MOVE(req.params)), Protocol::copy_key_values(STD_MOVE(req.headers)));
 
 	Protocol::Auth::HttpAuthenticationResponse resp;
-	resp.auth_token = "HTTP auth token";
+	resp.auth_token  = STD_MOVE(auth_token);
+	resp.status_code = resp_status_code;
+	Protocol::copy_key_values(resp.headers, STD_MOVE(resp_headers));
 	return resp;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Auth::WebSocketAuthenticationRequest req){
-	LOG_POSEIDON_FATAL("TODO: CHECK AUTHENTICATION: ", req);
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Auth::WebSocketAuthenticationRequest req){
+	boost::container::deque<std::pair<Poseidon::WebSocket::OpCode, Poseidon::StreamBuffer> > resp_messages;
+	Poseidon::WebSocket::StatusCode resp_status_code = Poseidon::WebSocket::ST_INTERNAL_ERROR;
+	std::string resp_reason;
+	std::string auth_token = UserDefinedFunctions::check_websocket_authentication(resp_messages, resp_status_code, resp_reason,
+		Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.decoded_uri), Protocol::copy_key_values(STD_MOVE(req.params)));
 
 	Protocol::Auth::WebSocketAuthenticationResponse resp;
-	resp.auth_token = "WebSocket auth token";
+	while(!resp_messages.empty()){
+		resp.messages.emplace_back();
+		resp.messages.back().opcode  = boost::numeric_cast<unsigned>(resp_messages.front().first);
+		resp.messages.back().payload = STD_MOVE(resp_messages.front().second);
+		resp_messages.pop_front();
+	}
+	resp.auth_token  = STD_MOVE(auth_token);
+	resp.status_code = resp_status_code;
+	resp.reason      = STD_MOVE(resp_reason);
 	return resp;
 }
 

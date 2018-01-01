@@ -68,9 +68,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	LOG_CIRCE_TRACE("Received response: ", box_resp);
 
 	Protocol::Foyer::WebSocketEstablishmentResponseFromBox resp;
-	resp.box_uuid    = box_conn->get_connection_uuid();
-	resp.status_code = box_resp.status_code;
-	resp.reason      = STD_MOVE(box_resp.reason);
+	resp.box_uuid = box_conn->get_connection_uuid();
 	return resp;
 }
 

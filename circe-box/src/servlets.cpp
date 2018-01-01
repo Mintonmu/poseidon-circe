@@ -7,7 +7,9 @@
 #include "common/define_interserver_servlet.hpp"
 #include "protocol/exception.hpp"
 #include "protocol/messages_box.hpp"
+#include "protocol/utilities.hpp"
 #include "singletons/websocket_shadow_session_supervisor.hpp"
+#include "user_defined_functions.hpp"
 
 #define DEFINE_SERVLET(...)   CIRCE_DEFINE_INTERSERVER_SERVLET(::Circe::Box::ServletContainer::insert_servlet, __VA_ARGS__)
 
@@ -15,21 +17,23 @@ namespace Circe {
 namespace Box {
 
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Box::HttpRequest req){
-	LOG_CIRCE_FATAL("TODO: CLIENT HTTP REQUEST: ", req);
+	Poseidon::Http::StatusCode resp_status_code = Poseidon::Http::ST_SERVICE_UNAVAILABLE;
+	Poseidon::OptionalMap resp_headers;
+	Poseidon::StreamBuffer resp_entity;
+	UserDefinedFunctions::handle_http_request(resp_status_code, resp_headers, resp_entity,
+		Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.auth_token), boost::numeric_cast<Poseidon::Http::Verb>(req.verb), STD_MOVE(req.decoded_uri),
+		Protocol::copy_key_values(STD_MOVE(req.params)), Protocol::copy_key_values(STD_MOVE(req.headers)), STD_MOVE(req.entity));
 
 	Protocol::Box::HttpResponse resp;
-	resp.status_code = 200;
-	resp.headers.resize(2);
-	resp.headers.at(0).key   = "Content-Type";
-	resp.headers.at(0).value = "text/plain";
-	resp.headers.at(1).key   = "X-FANCY";
-	resp.headers.at(1).value = "TRUE";
-	resp.entity.put("<h1>hello world!</h1>");
+	resp.status_code = resp_status_code;
+	Protocol::copy_key_values(resp.headers, STD_MOVE(resp_headers));
+	resp.entity      = STD_MOVE(resp_entity);
 	return resp;
 }
 
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Box::WebSocketEstablishmentRequest req){
-	const AUTO(shadow_session, boost::make_shared<WebSocketShadowSession>(conn->get_connection_uuid(), Poseidon::Uuid(req.gate_uuid), Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip)));
+	const AUTO(shadow_session, boost::make_shared<WebSocketShadowSession>(conn->get_connection_uuid(), Poseidon::Uuid(req.gate_uuid), Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.auth_token)));
+	UserDefinedFunctions::handle_websocket_establishment(shadow_session, STD_MOVE(req.decoded_uri), Protocol::copy_key_values(STD_MOVE(req.params)));
 	WebSocketShadowSessionSupervisor::insert_session(shadow_session);
 
 	Protocol::Box::WebSocketEstablishmentResponse resp;
@@ -39,8 +43,9 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Box::WebSocketClosureNotification ntfy){
 	const AUTO(shadow_session, WebSocketShadowSessionSupervisor::detach_session(Poseidon::Uuid(ntfy.client_uuid)));
 	if(shadow_session){
+		shadow_session->mark_shutdown();
 		try {
-			shadow_session->on_sync_close(boost::numeric_cast<Poseidon::WebSocket::StatusCode>(ntfy.status_code), ntfy.reason.c_str());
+			UserDefinedFunctions::handle_websocket_closure(shadow_session, boost::numeric_cast<Poseidon::WebSocket::StatusCode>(ntfy.status_code), ntfy.reason.c_str());
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 		}
@@ -53,8 +58,9 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	const AUTO(shadow_session, WebSocketShadowSessionSupervisor::get_session(Poseidon::Uuid(req.client_uuid)));
 	if(shadow_session){
 		try {
-			for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
-				shadow_session->on_sync_receive(boost::numeric_cast<Poseidon::WebSocket::OpCode>(it->opcode), STD_MOVE(it->payload));
+			while(!req.messages.empty()){
+				UserDefinedFunctions::handle_websocket_message(shadow_session, boost::numeric_cast<Poseidon::WebSocket::OpCode>(req.messages.front().opcode), STD_MOVE(req.messages.front().payload));
+				req.messages.pop_front();
 			}
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());

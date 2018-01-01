@@ -27,6 +27,7 @@ private:
 	const Poseidon::Uuid m_gate_uuid;
 	const Poseidon::Uuid m_client_uuid;
 	const std::string m_client_ip;
+	const std::string m_auth_token;
 
 	volatile bool m_shutdown;
 
@@ -36,7 +37,7 @@ private:
 	boost::container::deque<std::pair<Poseidon::WebSocket::StatusCode, Poseidon::StreamBuffer> > m_messages_pending;
 
 public:
-	WebSocketShadowSession(const Poseidon::Uuid &foyer_uuid, const Poseidon::Uuid &gate_uuid, const Poseidon::Uuid &client_uuid, std::string client_ip);
+	WebSocketShadowSession(const Poseidon::Uuid &foyer_uuid, const Poseidon::Uuid &gate_uuid, const Poseidon::Uuid &client_uuid, std::string client_ip, std::string auth_token);
 	~WebSocketShadowSession() OVERRIDE;
 
 public:
@@ -52,12 +53,12 @@ public:
 	const std::string &get_client_ip() const {
 		return m_client_ip;
 	}
-
-	void on_sync_connect();
-	void on_sync_receive(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload);
-	void on_sync_close(Poseidon::WebSocket::StatusCode status_code, const char *reason);
+	const std::string &get_auth_token() const {
+		return m_auth_token;
+	}
 
 	bool has_been_shutdown() const;
+	void mark_shutdown() NOEXCEPT;
 	bool shutdown(Poseidon::WebSocket::StatusCode status_code, const char *reason = "") NOEXCEPT;
 	bool send(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload);
 };

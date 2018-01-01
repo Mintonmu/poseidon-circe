@@ -5,6 +5,7 @@
 #include "websocket_shadow_session_supervisor.hpp"
 #include "box_acceptor.hpp"
 #include "protocol/messages_foyer.hpp"
+#include "../user_defined_functions.hpp"
 #include "../mmain.hpp"
 #include <poseidon/mutex.hpp>
 #include <poseidon/multi_index_map.hpp>
@@ -146,7 +147,12 @@ namespace {
 				for(AUTO(it, range.first); it != range.second; it = m_sessions.erase<1>(it)){
 					AUTO(session, it->session);
 					LOG_CIRCE_DEBUG("Disconnecting WebSocketShadowSession: client_ip = ", session->get_client_ip());
-					session->on_sync_close(Poseidon::WebSocket::ST_GOING_AWAY, "Connection to gate server was lost");
+					session->mark_shutdown();
+					try {
+						UserDefinedFunctions::handle_websocket_closure(session, Poseidon::WebSocket::ST_GOING_AWAY, "Connection to gate server was lost");
+					} catch(std::exception &e){
+						LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+					}
 				}
 				foyer_gate_uuids.erase(foyer_gate_uuids.begin());
 			}

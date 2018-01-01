@@ -61,8 +61,6 @@ namespace Box {
 #define MESSAGE_NAME   WebSocketEstablishmentResponse
 #define MESSAGE_ID     1904
 #define MESSAGE_FIELDS \
-	FIELD_VUINT        (status_code)	\
-	FIELD_STRING       (reason)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 

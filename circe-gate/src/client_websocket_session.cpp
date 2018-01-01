@@ -228,7 +228,6 @@ void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, c
 		LOG_CIRCE_TRACE("Sending request: ", foyer_req);
 		Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
 		LOG_CIRCE_TRACE("Received response: ", foyer_resp);
-		DEBUG_THROW_UNLESS(foyer_resp.status_code == 0, Poseidon::WebSocket::Exception, boost::numeric_cast<Poseidon::WebSocket::StatusCode>(foyer_resp.status_code), Poseidon::SharedNts(foyer_resp.reason));
 	} catch(...){
 		drop_closure_notification_timer();
 		throw;
