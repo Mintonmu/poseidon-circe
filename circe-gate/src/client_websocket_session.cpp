@@ -209,6 +209,7 @@ void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, c
 		auth_resp.messages.pop_front();
 	}
 	DEBUG_THROW_UNLESS(!auth_resp.auth_token.empty(), Poseidon::WebSocket::Exception, boost::numeric_cast<Poseidon::WebSocket::StatusCode>(auth_resp.status_code), Poseidon::SharedNts(auth_resp.reason));
+	LOG_CIRCE_DEBUG("Auth server has allowed WebSocket client: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 
 	servers_avail.clear();
 	FoyerConnector::get_all_clients(servers_avail);

@@ -59,7 +59,6 @@ private:
 		try {
 			http_session->sync_decode_uri(m_req_headers.uri);
 			DEBUG_THROW_ASSERT(http_session->m_decoded_uri);
-			LOG_CIRCE_TRACE("Decoded URI: ", http_session->m_decoded_uri.get());
 
 			AUTO(ws_resp, Poseidon::WebSocket::make_handshake_response(m_req_headers));
 			DEBUG_THROW_UNLESS(ws_resp.status_code == Poseidon::Http::ST_SWITCHING_PROTOCOLS, Poseidon::Http::Exception, ws_resp.status_code, STD_MOVE(ws_resp.headers));
@@ -76,7 +75,6 @@ private:
 		try {
 			ws_session->sync_authenticate(http_session->m_decoded_uri.get(), m_req_headers.get_params);
 			DEBUG_THROW_ASSERT(ws_session->m_auth_token);
-			LOG_CIRCE_DEBUG("Auth server has allowed WebSocket client: remote = ", ws_session->get_remote_info(), ", auth_token = ", ws_session->m_auth_token.get());
 		} catch(Poseidon::WebSocket::Exception &e){
 			LOG_CIRCE_WARNING("Poseidon::WebSocket::Exception thrown: code = ", e.get_status_code(), ", what = ", e.what());
 			ws_session->shutdown(e.get_status_code(), e.what());
@@ -106,7 +104,7 @@ void ClientHttpSession::sync_decode_uri(const std::string &uri){
 	std::istringstream iss(uri);
 	Poseidon::Http::url_decode(iss, decoded_uri);
 	DEBUG_THROW_UNLESS(iss && !decoded_uri.empty(), Poseidon::Http::Exception, Poseidon::Http::ST_BAD_REQUEST);
-	LOG_CIRCE_TRACE("Decoded URI: ", decoded_uri);
+	LOG_CIRCE_DEBUG("Decoded URI: ", decoded_uri);
 	m_decoded_uri = STD_MOVE_IDN(decoded_uri);
 }
 void ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers){
@@ -133,6 +131,7 @@ void ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::
 	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 	LOG_CIRCE_TRACE("Received response: ", auth_resp);
 	DEBUG_THROW_UNLESS(!auth_resp.auth_token.empty(), Poseidon::Http::Exception, boost::numeric_cast<Poseidon::Http::StatusCode>(auth_resp.status_code), Protocol::copy_key_values(STD_MOVE(auth_resp.headers)));
+	LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 
 	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("Connection has been shut down"));
 	LOG_CIRCE_TRACE("Got authentication token: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
@@ -162,11 +161,9 @@ void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders req_header
 
 	sync_decode_uri(req_headers.uri);
 	DEBUG_THROW_ASSERT(m_decoded_uri);
-	LOG_CIRCE_TRACE("Decoded URI: ", m_decoded_uri.get());
 
 	sync_authenticate(req_headers.verb, m_decoded_uri.get(), req_headers.get_params, req_headers.headers);
 	DEBUG_THROW_ASSERT(m_auth_token);
-	LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", m_auth_token.get());
 
 	return Poseidon::Http::Session::on_sync_expect(STD_MOVE(req_headers));
 }
@@ -177,12 +174,10 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 	if(!m_decoded_uri){
 		sync_decode_uri(req_headers.uri);
 		DEBUG_THROW_ASSERT(m_decoded_uri);
-		LOG_CIRCE_TRACE("Decoded URI: ", m_decoded_uri.get());
 	}
 	if(!m_auth_token){
 		sync_authenticate(req_headers.verb, m_decoded_uri.get(), req_headers.get_params, req_headers.headers);
 		DEBUG_THROW_ASSERT(m_auth_token);
-		LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", m_auth_token.get());
 	}
 
 	const AUTO(resp_encoding_preferred, Poseidon::Http::pick_content_encoding(req_headers));
