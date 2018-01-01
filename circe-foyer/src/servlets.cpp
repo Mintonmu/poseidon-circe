@@ -115,10 +115,11 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	Protocol::Box::WebSocketPackedMessageRequest box_req;
 	box_req.gate_uuid   = conn->get_connection_uuid();
 	box_req.client_uuid = req.client_uuid;
-	for(AUTO(rit, req.messages.begin()); rit != req.messages.end(); ++rit){
-		AUTO(wit, box_req.messages.emplace(box_req.messages.end()));
-		wit->opcode  = rit->opcode;
-		wit->payload = STD_MOVE(rit->payload);
+	while(!req.messages.empty()){
+		box_req.messages.emplace_back();
+		box_req.messages.back().opcode  = STD_MOVE(req.messages.front().opcode);
+		box_req.messages.back().payload = STD_MOVE(req.messages.front().payload);
+		req.messages.pop_front();
 	}
 	LOG_CIRCE_TRACE("Sending request: ", box_req);
 	Protocol::Box::WebSocketPackedMessageResponse box_resp;
@@ -135,10 +136,11 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 
 	Protocol::Gate::WebSocketPackedMessageRequest gate_req;
 	gate_req.client_uuid = req.client_uuid;
-	for(AUTO(rit, req.messages.begin()); rit != req.messages.end(); ++rit){
-		AUTO(wit, gate_req.messages.emplace(gate_req.messages.end()));
-		wit->opcode  = rit->opcode;
-		wit->payload = STD_MOVE(rit->payload);
+	while(!req.messages.empty()){
+		gate_req.messages.emplace_back();
+		gate_req.messages.back().opcode  = STD_MOVE(req.messages.front().opcode);
+		gate_req.messages.back().payload = STD_MOVE(req.messages.front().payload);
+		req.messages.pop_front();
 	}
 	LOG_CIRCE_TRACE("Sending request: ", gate_req);
 	Protocol::Gate::WebSocketPackedMessageResponse gate_resp;

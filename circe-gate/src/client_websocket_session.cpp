@@ -204,6 +204,10 @@ void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, c
 	Protocol::Auth::WebSocketAuthenticationResponse auth_resp;
 	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 	LOG_CIRCE_TRACE("Received response: ", auth_resp);
+	while(!auth_resp.messages.empty()){
+		send(boost::numeric_cast<Poseidon::WebSocket::OpCode>(auth_resp.messages.front().opcode), STD_MOVE(auth_resp.messages.front().payload));
+		auth_resp.messages.pop_front();
+	}
 	DEBUG_THROW_UNLESS(auth_resp.status_code == 0, Poseidon::WebSocket::Exception, boost::numeric_cast<Poseidon::WebSocket::StatusCode>(auth_resp.status_code), Poseidon::SharedNts(auth_resp.reason));
 
 	servers_avail.clear();

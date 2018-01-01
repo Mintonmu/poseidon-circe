@@ -82,7 +82,7 @@ namespace Box {
 	FIELD_FIXED        (gate_uuid, 16)	\
 	FIELD_FIXED        (client_uuid, 16)	\
 	FIELD_LIST         (messages,	\
-	  FIELD_VUINT        (opcode)\
+	  FIELD_VUINT        (opcode)	\
 	  FIELD_FLEXIBLE     (payload)	\
 	)	\
 	//

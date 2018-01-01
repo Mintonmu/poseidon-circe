@@ -56,6 +56,10 @@ namespace Auth {
 #define MESSAGE_NAME   WebSocketAuthenticationResponse
 #define MESSAGE_ID     1804
 #define MESSAGE_FIELDS \
+	FIELD_LIST         (messages,	\
+		FIELD_VUINT        (opcode)	\
+		FIELD_FLEXIBLE     (payload)	\
+	)	\
 	FIELD_VUINT        (status_code)	\
 	FIELD_STRING       (reason)	\
 	FIELD_STRING       (auth_token)	\

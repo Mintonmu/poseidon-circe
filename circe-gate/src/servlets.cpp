@@ -30,8 +30,9 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 	const AUTO(ws_session, ClientHttpAcceptor::get_websocket_session(Poseidon::Uuid(req.client_uuid)));
 	if(ws_session){
 		try {
-			for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
-				ws_session->send(boost::numeric_cast<Poseidon::WebSocket::OpCode>(it->opcode), STD_MOVE(it->payload));
+			while(!req.messages.empty()){
+				ws_session->send(boost::numeric_cast<Poseidon::WebSocket::OpCode>(req.messages.front().opcode), STD_MOVE(req.messages.front().payload));
+				req.messages.pop_front();
 			}
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
