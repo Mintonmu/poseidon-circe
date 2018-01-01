@@ -104,16 +104,16 @@ namespace {
 			PROFILE_ME;
 
 			// Collect gate servers.
-			boost::container::flat_set<std::pair<Poseidon::Uuid, Poseidon::Uuid> > foyer_gate_uuids;
+			boost::container::vector<std::pair<Poseidon::Uuid, Poseidon::Uuid> > foyer_gate_uuids_expired;
 			{
 				const Poseidon::Mutex::UniqueLock lock(m_mutex);
 				for(AUTO(it, m_sessions.begin<1>()); it != m_sessions.end<1>(); it = m_sessions.upper_bound<1>(it->foyer_gate_uuid_pair)){
-					foyer_gate_uuids.insert(it->foyer_gate_uuid_pair);
+					foyer_gate_uuids_expired.emplace_back(it->foyer_gate_uuid_pair);
 				}
 			}
 			// Check them, keeping servers whose connections are lost.
 			bool erase_it;
-			for(AUTO(it, foyer_gate_uuids.begin()); it != foyer_gate_uuids.end(); erase_it ? (it = foyer_gate_uuids.erase(it)) : ++it){
+			for(AUTO(it, foyer_gate_uuids_expired.begin()); it != foyer_gate_uuids_expired.end(); erase_it ? (it = foyer_gate_uuids_expired.erase(it)) : ++it){
 				const AUTO(foyer_uuid, it->first);
 				const AUTO(gate_uuid, it->second);
 				LOG_CIRCE_DEBUG("Checking gate: foyer_uuid = ", foyer_uuid, ", gate_uuid = ", gate_uuid);
@@ -136,16 +136,21 @@ namespace {
 					erase_it = false;
 				}
 			}
-			if(foyer_gate_uuids.empty()){
-				return;
-			}
-
-			// Remove sessions whose gate servers no longer exist.
-			const Poseidon::Mutex::UniqueLock lock(m_mutex);
-			while(!foyer_gate_uuids.empty()){
-				const AUTO(range, m_sessions.equal_range<1>(*foyer_gate_uuids.begin()));
-				for(AUTO(it, range.first); it != range.second; it = m_sessions.erase<1>(it)){
-					AUTO(session, it->session);
+			// Remove sessions whose corresponding gate servers no longer exist.
+			boost::container::vector<boost::shared_ptr<WebSocketShadowSession> > sessions_to_erase;
+			while(!foyer_gate_uuids_expired.empty()){
+				sessions_to_erase.clear();
+				{
+					const Poseidon::Mutex::UniqueLock lock(m_mutex);
+					const AUTO(range, m_sessions.equal_range<1>(foyer_gate_uuids_expired.back()));
+					sessions_to_erase.reserve(static_cast<std::size_t>(std::distance(range.first, range.second)));
+					for(AUTO(it, range.first); it != range.second; it = m_sessions.erase<1>(it)){
+						AUTO(session, it->session);
+						sessions_to_erase.emplace_back(STD_MOVE(session));
+					}
+				}
+				while(!sessions_to_erase.empty()){
+					const AUTO(session, STD_MOVE_IDN(sessions_to_erase.back()));
 					LOG_CIRCE_DEBUG("Disconnecting WebSocketShadowSession: client_ip = ", session->get_client_ip());
 					session->mark_shutdown();
 					try {
@@ -153,8 +158,9 @@ namespace {
 					} catch(std::exception &e){
 						LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 					}
+					sessions_to_erase.pop_back();
 				}
-				foyer_gate_uuids.erase(foyer_gate_uuids.begin());
+				foyer_gate_uuids_expired.pop_back();
 			}
 		}
 	};
