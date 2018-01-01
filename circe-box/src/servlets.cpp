@@ -50,14 +50,12 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 }
 
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Box::WebSocketPackedMessageRequest req){
-	bool delivered = false;
 	const AUTO(shadow_session, WebSocketShadowSessionSupervisor::get_session(Poseidon::Uuid(req.client_uuid)));
 	if(shadow_session){
 		try {
 			for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
 				shadow_session->on_sync_receive(boost::numeric_cast<Poseidon::WebSocket::OpCode>(it->opcode), STD_MOVE(it->payload));
 			}
-			delivered = true;
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 			shadow_session->shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
@@ -65,7 +63,6 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	}
 
 	Protocol::Box::WebSocketPackedMessageResponse resp;
-	resp.delivered = delivered;
 	return resp;
 }
 

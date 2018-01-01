@@ -91,7 +91,6 @@ namespace Box {
 #define MESSAGE_NAME   WebSocketPackedMessageResponse
 #define MESSAGE_ID     1907
 #define MESSAGE_FIELDS \
-	FIELD_VUINT        (delivered)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 

@@ -105,8 +105,6 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 	LOG_CIRCE_TRACE("Received response: ", gate_resp);
 
 	Protocol::Foyer::WebSocketKillResponseFromGate resp;
-	resp.found  = gate_resp.found;
-	resp.killed = gate_resp.killed;
 	return resp;
 }
 
@@ -128,7 +126,6 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	LOG_CIRCE_TRACE("Received response: ", box_resp);
 
 	Protocol::Foyer::WebSocketPackedMessageResponseFromBox resp;
-	resp.delivered = box_resp.delivered;
 	return resp;
 }
 
@@ -149,7 +146,6 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 	LOG_CIRCE_TRACE("Received response: ", gate_resp);
 
 	Protocol::Foyer::WebSocketPackedMessageResponseFromGate resp;
-	resp.delivered = gate_resp.delivered;
 	return resp;
 }
 

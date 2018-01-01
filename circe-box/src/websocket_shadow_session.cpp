@@ -103,7 +103,6 @@ protected:
 				Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
 				lock.lock();
 				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
-				DEBUG_THROW_UNLESS(foyer_resp.delivered, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Uplink message delivery failed"));
 			}
 			session->m_delivery_job_active = false;
 		} catch(Poseidon::WebSocket::Exception &e){
