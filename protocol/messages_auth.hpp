@@ -31,12 +31,12 @@ namespace Auth {
 #define MESSAGE_NAME   HttpAuthenticationResponse
 #define MESSAGE_ID     1802
 #define MESSAGE_FIELDS \
+	FIELD_STRING       (auth_token)	\
 	FIELD_VUINT        (status_code)	\
 	FIELD_ARRAY        (headers,	\
 	  FIELD_STRING       (key)	\
 	  FIELD_STRING       (value)	\
 	)	\
-	FIELD_STRING       (auth_token)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
@@ -60,9 +60,9 @@ namespace Auth {
 		FIELD_VUINT        (opcode)	\
 		FIELD_FLEXIBLE     (payload)	\
 	)	\
+	FIELD_STRING       (auth_token)	\
 	FIELD_VUINT        (status_code)	\
 	FIELD_STRING       (reason)	\
-	FIELD_STRING       (auth_token)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
