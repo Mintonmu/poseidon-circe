@@ -74,19 +74,13 @@ namespace Foyer {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketKillRequestToGate
+#define MESSAGE_NAME   WebSocketKillNotificationToGate
 #define MESSAGE_ID     1206
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
 	FIELD_FIXED        (client_uuid, 16)	\
 	FIELD_VUINT        (status_code)	\
 	FIELD_STRING       (reason)	\
-	//
-#include <poseidon/cbpp/message_generator.hpp>
-
-#define MESSAGE_NAME   WebSocketKillResponseFromGate
-#define MESSAGE_ID     1207
-#define MESSAGE_FIELDS \
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 

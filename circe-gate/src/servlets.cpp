@@ -15,15 +15,14 @@
 namespace Circe {
 namespace Gate {
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Gate::WebSocketKillRequest req){
-	const AUTO(ws_session, ClientHttpAcceptor::get_websocket_session(Poseidon::Uuid(req.client_uuid)));
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Gate::WebSocketKillNotification ntfy){
+	const AUTO(ws_session, ClientHttpAcceptor::get_websocket_session(Poseidon::Uuid(ntfy.client_uuid)));
 	if(ws_session){
-		LOG_CIRCE_INFO("Killing client WebSocket session: remote = ", ws_session->get_remote_info(), ", req = ", req);
-		ws_session->shutdown(boost::numeric_cast<Poseidon::WebSocket::StatusCode>(req.status_code), req.reason.c_str());
+		LOG_CIRCE_INFO("Killing client WebSocket session: remote = ", ws_session->get_remote_info(), ", ntfy = ", ntfy);
+		ws_session->shutdown(boost::numeric_cast<Poseidon::WebSocket::StatusCode>(ntfy.status_code), ntfy.reason.c_str());
 	}
 
-	Protocol::Gate::WebSocketKillResponse resp;
-	return resp;
+	return 0;
 }
 
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Gate::WebSocketPackedMessageRequest req){

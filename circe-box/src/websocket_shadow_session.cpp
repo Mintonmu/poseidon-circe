@@ -42,7 +42,7 @@ protected:
 		}
 
 		try {
-			Protocol::Foyer::WebSocketKillRequestToGate foyer_ntfy;
+			Protocol::Foyer::WebSocketKillNotificationToGate foyer_ntfy;
 			foyer_ntfy.gate_uuid   = m_gate_uuid;
 			foyer_ntfy.client_uuid = m_client_uuid;
 			foyer_ntfy.status_code = m_status_code;

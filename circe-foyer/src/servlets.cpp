@@ -76,34 +76,29 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	const AUTO(box_conn, BoxConnector::get_client(Poseidon::Uuid(ntfy.box_uuid)));
 	CIRCE_PROTOCOL_THROW_UNLESS(box_conn, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 
-	{
-		Protocol::Box::WebSocketClosureNotification box_ntfy;
-		box_ntfy.gate_uuid   = conn->get_connection_uuid();
-		box_ntfy.client_uuid = ntfy.client_uuid;
-		box_ntfy.status_code = ntfy.status_code;
-		box_ntfy.reason      = STD_MOVE(ntfy.reason);
-		LOG_CIRCE_TRACE("Sending notification: ", box_ntfy);
-		box_conn->send_notification(box_ntfy);
-	}
+	Protocol::Box::WebSocketClosureNotification box_ntfy;
+	box_ntfy.gate_uuid   = conn->get_connection_uuid();
+	box_ntfy.client_uuid = ntfy.client_uuid;
+	box_ntfy.status_code = ntfy.status_code;
+	box_ntfy.reason      = STD_MOVE(ntfy.reason);
+	LOG_CIRCE_TRACE("Sending notification: ", box_ntfy);
+	box_conn->send_notification(box_ntfy);
 
 	return 0;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Foyer::WebSocketKillRequestToGate req){
-	const AUTO(gate_conn, FoyerAcceptor::get_session(Poseidon::Uuid(req.gate_uuid)));
+DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Foyer::WebSocketKillNotificationToGate ntfy){
+	const AUTO(gate_conn, FoyerAcceptor::get_session(Poseidon::Uuid(ntfy.gate_uuid)));
 	CIRCE_PROTOCOL_THROW_UNLESS(gate_conn, Protocol::ERR_GATE_CONNECTION_LOST, Poseidon::sslit("The gate server specified was not found"));
 
-	Protocol::Gate::WebSocketKillRequest gate_req;
-	gate_req.client_uuid = req.client_uuid;
-	gate_req.status_code = req.status_code;
-	gate_req.reason      = STD_MOVE(req.reason);
-	LOG_CIRCE_TRACE("Sending request: ", gate_req);
-	Protocol::Gate::WebSocketKillResponse gate_resp;
-	Common::wait_for_response(gate_resp, gate_conn->send_request(gate_req));
-	LOG_CIRCE_TRACE("Received response: ", gate_resp);
+	Protocol::Gate::WebSocketKillNotification gate_ntfy;
+	gate_ntfy.client_uuid = ntfy.client_uuid;
+	gate_ntfy.status_code = ntfy.status_code;
+	gate_ntfy.reason      = STD_MOVE(ntfy.reason);
+	LOG_CIRCE_TRACE("Sending notification: ", gate_ntfy);
+	gate_conn->send_notification(gate_ntfy);
 
-	Protocol::Foyer::WebSocketKillResponseFromGate resp;
-	return resp;
+	return 0;
 }
 
 DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Foyer::WebSocketPackedMessageRequestToBox req){

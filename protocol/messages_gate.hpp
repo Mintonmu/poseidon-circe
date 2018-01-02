@@ -10,18 +10,12 @@ namespace Circe {
 namespace Protocol {
 namespace Gate {
 
-#define MESSAGE_NAME   WebSocketKillRequest
+#define MESSAGE_NAME   WebSocketKillNotification
 #define MESSAGE_ID     1101
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
 	FIELD_VUINT        (status_code)	\
 	FIELD_STRING       (reason)	\
-	//
-#include <poseidon/cbpp/message_generator.hpp>
-
-#define MESSAGE_NAME   WebSocketKillResponse
-#define MESSAGE_ID     1102
-#define MESSAGE_FIELDS \
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
