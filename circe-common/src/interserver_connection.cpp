@@ -286,7 +286,7 @@ bool InterserverConnection::is_connection_uuid_set() const NOEXCEPT {
 }
 void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp, Poseidon::OptionalMap options_resp){
 	PROFILE_ME;
-	LOG_CIRCE_INFO("Accepted client HELLO from ", get_remote_info());
+	LOG_CIRCE_INFO("Accepted client HELLO from ", get_remote_info(), " with options ", options_resp);
 
 	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("server_accept_hello() shall be called exactly once by the server and must not be called by the client"));
@@ -294,6 +294,7 @@ void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection
 	{
 		ServerHello msg;
 		msg.checksum_resp = checksum_resp;
+		Protocol::copy_key_values(msg.options_resp, options_resp);
 		LOG_CIRCE_TRACE("Sending server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
 	}
@@ -304,7 +305,7 @@ void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection
 }
 void InterserverConnection::client_accept_hello(Poseidon::OptionalMap options_resp){
 	PROFILE_ME;
-	LOG_CIRCE_INFO("Accepted server HELLO from ", get_remote_info());
+	LOG_CIRCE_INFO("Accepted server HELLO from ", get_remote_info(), " with options ", options_resp);
 
 	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(m_connection_uuid, Poseidon::Exception, Poseidon::sslit("client_accept_hello() shall be called exactly once by the client and must not be called by the server"));
@@ -522,7 +523,7 @@ void InterserverConnection::layer7_client_say_hello(Poseidon::OptionalMap option
 
 	const AUTO(connection_uuid, Poseidon::Uuid::random());
 	const AUTO(timestamp, Poseidon::get_utc_time());
-	LOG_CIRCE_INFO("Sending client HELLO to ", get_remote_info());
+	LOG_CIRCE_INFO("Sending client HELLO to ", get_remote_info(), " with options ", options_req);
 
 	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("layer7_client_say_hello() shall be called exactly once by the client and must not be called by the server"));
