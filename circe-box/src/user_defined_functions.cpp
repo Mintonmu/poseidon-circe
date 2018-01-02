@@ -58,6 +58,12 @@ void UserDefinedFunctions::handle_websocket_message(
 	PROFILE_ME;
 
 	LOG_CIRCE_FATAL("TODO: Handle WebSocket message: ", opcode, ": ", payload);
+
+	for(unsigned i = 0; i < 3; ++i){
+		char str[100];
+		std::sprintf(str, "hello %d", i);
+		client_session->send(Poseidon::WebSocket::OP_DATA_TEXT, Poseidon::StreamBuffer(str));
+	}
 }
 
 void UserDefinedFunctions::handle_websocket_closure(
