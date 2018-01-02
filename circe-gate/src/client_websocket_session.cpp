@@ -144,8 +144,7 @@ void ClientWebSocketSession::on_closure_notification_low_level_timer(){
 		if(foyer_conn){
 			// Enqueue a job to notify the foyer server about closure of this connection.
 			// If this operation throws an exception, the timer will be rerun, so there is no cleanup to be done.
-			Poseidon::enqueue(boost::make_shared<ClosureJob>(virtual_shared_from_this<ClientWebSocketSession>(), foyer_conn,
-				m_box_uuid.get(), m_client_uuid, m_closure_reason.get().first, m_closure_reason.get().second));
+			Poseidon::enqueue(boost::make_shared<ClosureJob>(virtual_shared_from_this<ClientWebSocketSession>(), foyer_conn, m_box_uuid.get(), m_client_uuid, m_closure_reason.get().first, m_closure_reason.get().second));
 		}
 	}
 	// If the job has been enqueued successfully, we can break the circular reference, destroying this timer.
@@ -159,8 +158,7 @@ void ClientWebSocketSession::reserve_closure_notification_timer(){
 	const Poseidon::Mutex::UniqueLock lock(m_closure_notification_mutex);
 	DEBUG_THROW_ASSERT(!m_closure_notification_timer);
 	// Create a circular reference. We do this deliberately to prevent the session from being deleted after it is detached from epoll.
-	const AUTO(timer, Poseidon::TimerDaemon::register_low_level_timer(60000, 60000,
-		boost::bind(&ClientWebSocketSession::on_closure_notification_low_level_timer, virtual_shared_from_this<ClientWebSocketSession>())));
+	const AUTO(timer, Poseidon::TimerDaemon::register_low_level_timer(60000, 60000, boost::bind(&ClientWebSocketSession::on_closure_notification_low_level_timer, virtual_shared_from_this<ClientWebSocketSession>())));
 	m_closure_notification_timer = timer;
 }
 void ClientWebSocketSession::drop_closure_notification_timer() NOEXCEPT {
