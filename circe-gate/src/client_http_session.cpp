@@ -307,13 +307,13 @@ bool ClientHttpSession::shutdown(Poseidon::WebSocket::StatusCode status_code, co
 bool ClientHttpSession::send(Poseidon::Http::ResponseHeaders resp_headers, Poseidon::StreamBuffer entity){
 	PROFILE_ME;
 
-	LOG_CIRCE_DEBUG("Sending HTTP message: remote = ", get_remote_info(), ", status_code = ", resp_headers.status_code, ", headers = ", resp_headers.headers, ", entity.size() = ", entity.size());
+	LOG_CIRCE_TRACE("Sending HTTP message: remote = ", get_remote_info(), ", status_code = ", resp_headers.status_code, ", headers = ", resp_headers.headers, ", entity.size() = ", entity.size());
 	return Poseidon::Http::Session::send(STD_MOVE(resp_headers), STD_MOVE(entity));
 }
 bool ClientHttpSession::send_default_and_shutdown(Poseidon::Http::StatusCode status_code, const Poseidon::OptionalMap &headers) NOEXCEPT {
 	PROFILE_ME;
 
-	LOG_CIRCE_DEBUG("Sending HTTP message: remote = ", get_remote_info(), ", status_code = ", status_code, ", headers = ", headers);
+	LOG_CIRCE_TRACE("Sending HTTP message: remote = ", get_remote_info(), ", status_code = ", status_code, ", headers = ", headers);
 	return Poseidon::Http::Session::send_default_and_shutdown(status_code, headers);
 }
 

@@ -4,18 +4,18 @@
 #include "precompiled.hpp"
 #include "singletons/servlet_container.hpp"
 #include "common/interserver_connection.hpp"
-#include "common/define_interserver_servlet.hpp"
+#include "common/define_interserver_servlet_for.hpp"
 #include "protocol/exception.hpp"
 #include "protocol/utilities.hpp"
 #include "protocol/messages_gate.hpp"
 #include "singletons/client_http_acceptor.hpp"
 
-#define DEFINE_SERVLET(...)   CIRCE_DEFINE_INTERSERVER_SERVLET(::Circe::Gate::ServletContainer::insert_servlet, __VA_ARGS__)
+#define DEFINE_SERVLET_FOR(...)   CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(::Circe::Gate::ServletContainer::insert_servlet, __VA_ARGS__)
 
 namespace Circe {
 namespace Gate {
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Gate::WebSocketKillNotification ntfy){
+DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketKillNotification, /*conn*/, ntfy){
 	const AUTO(ws_session, ClientHttpAcceptor::get_websocket_session(Poseidon::Uuid(ntfy.client_uuid)));
 	if(ws_session){
 		LOG_CIRCE_INFO("Killing client WebSocket session: remote = ", ws_session->get_remote_info(), ", ntfy = ", ntfy);
@@ -25,7 +25,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 	return 0;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Gate::WebSocketPackedMessageRequest req){
+DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedMessageRequest, /*conn*/, req){
 	const AUTO(ws_session, ClientHttpAcceptor::get_websocket_session(Poseidon::Uuid(req.client_uuid)));
 	if(ws_session){
 		try {

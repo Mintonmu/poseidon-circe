@@ -47,7 +47,7 @@ protected:
 
 			DEBUG_THROW_ASSERT(ws_session->m_delivery_job_active);
 			for(;;){
-				LOG_CIRCE_DEBUG("Collecting messages pending: ws_session = ", (void *)ws_session.get(), ", count = ", ws_session->m_messages_pending.size());
+				LOG_CIRCE_TRACE("Collecting messages pending: ws_session = ", (void *)ws_session.get(), ", count = ", ws_session->m_messages_pending.size());
 				if(ws_session->m_messages_pending.empty()){
 					break;
 				}
@@ -334,7 +334,7 @@ bool ClientWebSocketSession::shutdown(Poseidon::WebSocket::StatusCode status_cod
 
 bool ClientWebSocketSession::send(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
 	PROFILE_ME;
-	LOG_CIRCE_DEBUG("Sending WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
+	LOG_CIRCE_TRACE("Sending WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
 	return Poseidon::WebSocket::Session::send(opcode, STD_MOVE(payload), false);
 }

@@ -4,19 +4,19 @@
 #include "precompiled.hpp"
 #include "singletons/servlet_container.hpp"
 #include "common/interserver_connection.hpp"
-#include "common/define_interserver_servlet.hpp"
+#include "common/define_interserver_servlet_for.hpp"
 #include "protocol/exception.hpp"
 #include "protocol/messages_box.hpp"
 #include "protocol/utilities.hpp"
 #include "singletons/websocket_shadow_session_supervisor.hpp"
 #include "user_defined_functions.hpp"
 
-#define DEFINE_SERVLET(...)   CIRCE_DEFINE_INTERSERVER_SERVLET(::Circe::Box::ServletContainer::insert_servlet, __VA_ARGS__)
+#define DEFINE_SERVLET_FOR(...)   CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(::Circe::Box::ServletContainer::insert_servlet, __VA_ARGS__)
 
 namespace Circe {
 namespace Box {
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Box::HttpRequest req){
+DEFINE_SERVLET_FOR(Protocol::Box::HttpRequest, /*conn*/, req){
 	Poseidon::Http::StatusCode resp_status_code = Poseidon::Http::ST_SERVICE_UNAVAILABLE;
 	Poseidon::OptionalMap resp_headers;
 	Poseidon::StreamBuffer resp_entity;
@@ -31,7 +31,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 	return resp;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Protocol::Box::WebSocketEstablishmentRequest req){
+DEFINE_SERVLET_FOR(Protocol::Box::WebSocketEstablishmentRequest, conn, req){
 	const AUTO(shadow_session, boost::make_shared<WebSocketShadowSession>(conn->get_connection_uuid(), Poseidon::Uuid(req.gate_uuid), Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.auth_token)));
 	UserDefinedFunctions::handle_websocket_establishment(shadow_session, STD_MOVE(req.decoded_uri), Protocol::copy_key_values(STD_MOVE(req.params)));
 	WebSocketShadowSessionSupervisor::insert_session(shadow_session);
@@ -40,7 +40,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &conn, Pro
 	return resp;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Box::WebSocketClosureNotification ntfy){
+DEFINE_SERVLET_FOR(Protocol::Box::WebSocketClosureNotification, /*conn*/, ntfy){
 	const AUTO(shadow_session, WebSocketShadowSessionSupervisor::detach_session(Poseidon::Uuid(ntfy.client_uuid)));
 	if(shadow_session){
 		shadow_session->mark_shutdown();
@@ -54,7 +54,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 	return 0;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Box::WebSocketPackedMessageRequest req){
+DEFINE_SERVLET_FOR(Protocol::Box::WebSocketPackedMessageRequest, /*conn*/, req){
 	const AUTO(shadow_session, WebSocketShadowSessionSupervisor::get_session(Poseidon::Uuid(req.client_uuid)));
 	if(shadow_session){
 		try {

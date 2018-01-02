@@ -44,7 +44,7 @@ pkginclude_common_HEADERS = \
 	circe-common/src/interserver_servlet_container.hpp	\
 	circe-common/src/interserver_connector.hpp	\
 	circe-common/src/interserver_acceptor.hpp	\
-	circe-common/src/define_interserver_servlet.hpp	\
+	circe-common/src/define_interserver_servlet_for.hpp	\
 	circe-common/src/mmain.hpp
 
 lib_LTLIBRARIES = \

@@ -4,18 +4,18 @@
 #include "precompiled.hpp"
 #include "singletons/servlet_container.hpp"
 #include "common/interserver_connection.hpp"
-#include "common/define_interserver_servlet.hpp"
+#include "common/define_interserver_servlet_for.hpp"
 #include "protocol/exception.hpp"
 #include "protocol/messages_auth.hpp"
 #include "protocol/utilities.hpp"
 #include "user_defined_functions.hpp"
 
-#define DEFINE_SERVLET(...)   CIRCE_DEFINE_INTERSERVER_SERVLET(::Circe::Auth::ServletContainer::insert_servlet, __VA_ARGS__)
+#define DEFINE_SERVLET_FOR(...)   CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(::Circe::Auth::ServletContainer::insert_servlet, __VA_ARGS__)
 
 namespace Circe {
 namespace Auth {
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Auth::HttpAuthenticationRequest req){
+DEFINE_SERVLET_FOR(Protocol::Auth::HttpAuthenticationRequest, /*conn*/, req){
 	Poseidon::Http::StatusCode resp_status_code = Poseidon::Http::ST_SERVICE_UNAVAILABLE;
 	Poseidon::OptionalMap resp_headers;
 	std::string auth_token = UserDefinedFunctions::check_http_authentication(resp_status_code, resp_headers,
@@ -29,7 +29,7 @@ DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/,
 	return resp;
 }
 
-DEFINE_SERVLET(const boost::shared_ptr<Common::InterserverConnection> &/*conn*/, Protocol::Auth::WebSocketAuthenticationRequest req){
+DEFINE_SERVLET_FOR(Protocol::Auth::WebSocketAuthenticationRequest, /*conn*/, req){
 	boost::container::deque<std::pair<Poseidon::WebSocket::OpCode, Poseidon::StreamBuffer> > resp_messages;
 	Poseidon::WebSocket::StatusCode resp_status_code = Poseidon::WebSocket::ST_INTERNAL_ERROR;
 	std::string resp_reason;

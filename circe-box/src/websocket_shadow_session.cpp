@@ -83,7 +83,7 @@ protected:
 			Poseidon::Mutex::UniqueLock lock(session->m_delivery_mutex);
 			DEBUG_THROW_ASSERT(session->m_delivery_job_active);
 			for(;;){
-				LOG_CIRCE_DEBUG("Collecting messages pending: session = ", (void *)session.get(), ", count = ", session->m_messages_pending.size());
+				LOG_CIRCE_TRACE("Collecting messages pending: session = ", (void *)session.get(), ", count = ", session->m_messages_pending.size());
 				if(session->m_messages_pending.empty()){
 					break;
 				}
@@ -154,7 +154,7 @@ bool WebSocketShadowSession::shutdown(Poseidon::WebSocket::StatusCode status_cod
 }
 bool WebSocketShadowSession::send(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload){
 	PROFILE_ME;
-	LOG_CIRCE_DEBUG("Sending message via WebSocketShadowSession: client_ip = ", get_client_ip(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
+	LOG_CIRCE_TRACE("Sending message via WebSocketShadowSession: client_ip = ", get_client_ip(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
 	if(has_been_shutdown()){
 		LOG_CIRCE_DEBUG("WebSocketShadowSessio has been shut down: client_ip = ", get_client_ip());
