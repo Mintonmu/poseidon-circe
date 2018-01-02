@@ -57,8 +57,8 @@ namespace Auth {
 #define MESSAGE_ID     1804
 #define MESSAGE_FIELDS \
 	FIELD_LIST         (messages,	\
-		FIELD_VUINT        (opcode)	\
-		FIELD_FLEXIBLE     (payload)	\
+	  FIELD_VUINT        (opcode)	\
+	  FIELD_FLEXIBLE     (payload)	\
 	)	\
 	FIELD_STRING       (auth_token)	\
 	FIELD_VUINT        (status_code)	\

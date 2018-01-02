@@ -15,6 +15,7 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/array.hpp>
 #include "cbpp_response.hpp"
+#include "poseidon/optional_map.hpp"
 
 extern template class Poseidon::PromiseContainer<Circe::Common::CbppResponse>;
 
@@ -56,6 +57,7 @@ private:
 	mutable Poseidon::RecursiveMutex m_mutex;
 	Poseidon::Uuid m_connection_uuid;
 	boost::uint64_t m_timestamp;
+	Poseidon::OptionalMap m_options;
 	boost::uint64_t m_next_serial;
 	boost::container::flat_multimap<boost::uint64_t, boost::weak_ptr<PromisedResponse> > m_weak_promises;
 
@@ -65,7 +67,8 @@ public:
 
 private:
 	bool is_connection_uuid_set() const NOEXCEPT;
-	void server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp);
+	void server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp, Poseidon::OptionalMap options_resp);
+	void client_accept_hello(Poseidon::OptionalMap options_resp);
 	void send_response(boost::uint64_t serial, CbppResponse resp);
 
 	MessageFilter *require_message_filter();
@@ -89,15 +92,16 @@ protected:
 
 	// The client shall call this function before sending anything else.
 	// The server shall not call this function.
-	void layer7_client_say_hello();
+	void layer7_client_say_hello(Poseidon::OptionalMap options_req);
 
 	virtual void layer7_post_set_connection_uuid() = 0;
 	virtual CbppResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) = 0;
 
 public:
 	bool has_authenticated() const;
-	// This function throws an exception if the connection UUID has not been set.
+	// These functions throw an exception if the connection UUID has not been set.
 	const Poseidon::Uuid &get_connection_uuid() const;
+	const std::string &get_option(const char *key) const;
 
 	const Poseidon::IpPort &get_remote_info() const NOEXCEPT {
 		return layer5_get_remote_info();

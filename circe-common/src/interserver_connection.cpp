@@ -4,6 +4,7 @@
 #include "precompiled.hpp"
 #include "interserver_connection.hpp"
 #include "cbpp_response.hpp"
+#include "protocol/utilities.hpp"
 #include "mmain.hpp"
 #include <poseidon/tiny_exception.hpp>
 #include <poseidon/socket_base.hpp>
@@ -34,36 +35,38 @@ enum {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
 
-#define MESSAGE_NAME   IS_ClientHello
+#define MESSAGE_NAME   ClientHello
 #define MESSAGE_ID     0x2001
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (connection_uuid, 16)	\
 	FIELD_VUINT        (timestamp)	\
 	FIELD_FIXED        (checksum_req, 32)	\
-	FIELD_LIST         (options_req,	\
-		FIELD_FLEXIBLE     (bytes)	\
+	FIELD_ARRAY        (options_req,	\
+	  FIELD_STRING       (key)	\
+	  FIELD_STRING       (value)	\
 	)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   IS_ServerHello
+#define MESSAGE_NAME   ServerHello
 #define MESSAGE_ID     0x2002
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (checksum_resp, 32)	\
-	FIELD_LIST         (options_resp,	\
-		FIELD_FLEXIBLE     (bytes)	\
+	FIELD_ARRAY        (options_resp,	\
+	  FIELD_STRING       (key)	\
+	  FIELD_STRING       (value)	\
 	)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   IS_UserRequestHeader
+#define MESSAGE_NAME   UserRequestHeader
 #define MESSAGE_ID     0
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (serial)	\
 	// payload
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   IS_UserResponseHeader
+#define MESSAGE_NAME   UserResponseHeader
 #define MESSAGE_ID     0
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (serial)	\
@@ -281,21 +284,31 @@ bool InterserverConnection::is_connection_uuid_set() const NOEXCEPT {
 	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	return !!m_connection_uuid;
 }
-void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp){
+void InterserverConnection::server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp, Poseidon::OptionalMap options_resp){
 	PROFILE_ME;
-	LOG_CIRCE_INFO("Accepted HELLO from ", get_remote_info());
+	LOG_CIRCE_INFO("Accepted client HELLO from ", get_remote_info());
 
 	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("server_accept_hello() shall be called exactly once by the server and must not be called by the client"));
 	const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, connection_uuid, timestamp));
 	{
-		IS_ServerHello msg;
+		ServerHello msg;
 		msg.checksum_resp = checksum_resp;
 		LOG_CIRCE_TRACE("Sending server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
 	}
 	m_connection_uuid = connection_uuid;
 	m_timestamp       = timestamp;
+	m_options         = STD_MOVE(options_resp);
+	layer7_post_set_connection_uuid();
+}
+void InterserverConnection::client_accept_hello(Poseidon::OptionalMap options_resp){
+	PROFILE_ME;
+	LOG_CIRCE_INFO("Accepted server HELLO from ", get_remote_info());
+
+	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
+	DEBUG_THROW_UNLESS(m_connection_uuid, Poseidon::Exception, Poseidon::sslit("client_accept_hello() shall be called exactly once by the client and must not be called by the server"));
+	m_options         = STD_MOVE(options_resp);
 	layer7_post_set_connection_uuid();
 }
 void InterserverConnection::send_response(boost::uint64_t serial, CbppResponse resp){
@@ -307,7 +320,7 @@ void InterserverConnection::send_response(boost::uint64_t serial, CbppResponse r
 	boost::uint16_t magic_number = boost::numeric_cast<boost::uint16_t>(message_id);
 	Poseidon::add_flags(magic_number, MFL_IS_RESPONSE);
 	// Initialize the header.
-	IS_UserResponseHeader hdr;
+	UserResponseHeader hdr;
 	hdr.serial   = serial;
 	hdr.err_code = resp.get_err_code();
 	hdr.err_msg  = STD_MOVE(resp.get_err_msg());
@@ -348,24 +361,24 @@ try {
 	LOG_CIRCE_TRACE("Inflate and dispatch: connection = ", (void *)this);
 
 	switch(magic_number){
-	case IS_ClientHello::ID: {
-		IS_ClientHello msg(STD_MOVE(encoded_payload));
+	case ClientHello::ID: {
+		ClientHello msg(STD_MOVE(encoded_payload));
 		LOG_CIRCE_TRACE("Received client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, Poseidon::Uuid(msg.connection_uuid), msg.timestamp));
 		DEBUG_THROW_UNLESS(msg.checksum_req == checksum_req, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE, Poseidon::sslit("Request checksum failed verification"));
-		server_accept_hello(Poseidon::Uuid(msg.connection_uuid), msg.timestamp);
+		server_accept_hello(Poseidon::Uuid(msg.connection_uuid), msg.timestamp, Protocol::copy_key_values(STD_MOVE(msg.options_req)));
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		const AUTO(checksum_seedx, calculate_checksum(m_application_key, SALT_NORMAL_DATA, m_connection_uuid, m_timestamp));
 		require_message_filter()->reseed_decoder_prng(checksum_seedx);
 		Poseidon::atomic_store(m_authenticated, true, Poseidon::ATOMIC_RELEASE);
 		return; }
-	case IS_ServerHello::ID: {
+	case ServerHello::ID: {
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
-		IS_ServerHello msg(STD_MOVE(encoded_payload));
+		ServerHello msg(STD_MOVE(encoded_payload));
 		LOG_CIRCE_TRACE("Received server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, m_connection_uuid, m_timestamp));
 		DEBUG_THROW_UNLESS(msg.checksum_resp == checksum_resp, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE, Poseidon::sslit("Response checksum failed verification"));
-		DEBUG_THROW_UNLESS(msg.options_resp.empty(), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_INVALID_ARGUMENT, Poseidon::sslit("Server option not supported"));
+		client_accept_hello(Protocol::copy_key_values(STD_MOVE(msg.options_resp)));
 		Poseidon::atomic_store(m_authenticated, true, Poseidon::ATOMIC_RELEASE);
 		return; }
 	}
@@ -378,7 +391,7 @@ try {
 
 	boost::uint16_t message_id = magic_number & MESSAGE_ID_MAX;
 	if(Poseidon::has_any_flags_of(magic_number, MFL_IS_RESPONSE)){
-		IS_UserResponseHeader hdr;
+		UserResponseHeader hdr;
 		hdr.deserialize(magic_payload);
 		LOG_CIRCE_TRACE("Received user-defined response: remote = ", get_remote_info(), ", hdr = ", hdr, ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
 		// Satisfy the promise.
@@ -400,7 +413,7 @@ try {
 			promise->set_success(STD_MOVE(resp));
 		}
 	} else if(Poseidon::has_any_flags_of(magic_number, MFL_WANTS_RESPONSE)){
-		IS_UserRequestHeader hdr;
+		UserRequestHeader hdr;
 		hdr.deserialize(magic_payload);
 		LOG_CIRCE_TRACE("Received user-defined request: remote = ", get_remote_info(), ", hdr = ", hdr, ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
 		Poseidon::enqueue(boost::make_shared<RequestMessageJob>(virtual_shared_from_this<InterserverConnection>(), message_id, true, hdr.serial, STD_MOVE(magic_payload)));
@@ -432,13 +445,13 @@ try {
 	LOG_CIRCE_TRACE("Deflate and send: connection = ", (void *)this);
 
 	switch(magic_number){
-	case IS_ClientHello::ID: {
+	case ClientHello::ID: {
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		layer5_send_data(magic_number, STD_MOVE(magic_payload));
 		const AUTO(checksum_seedx, calculate_checksum(m_application_key, SALT_NORMAL_DATA, m_connection_uuid, m_timestamp));
 		require_message_filter()->reseed_encoder_prng(checksum_seedx);
 		return; }
-	case IS_ServerHello::ID: {
+	case ServerHello::ID: {
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		layer5_send_data(magic_number, STD_MOVE(magic_payload));
 		return; }
@@ -504,35 +517,39 @@ void InterserverConnection::layer4_on_close(){
 	}
 }
 
-void InterserverConnection::layer7_client_say_hello(){
+void InterserverConnection::layer7_client_say_hello(Poseidon::OptionalMap options_req){
 	PROFILE_ME;
 
 	const AUTO(connection_uuid, Poseidon::Uuid::random());
 	const AUTO(timestamp, Poseidon::get_utc_time());
-	LOG_CIRCE_INFO("Sending HELLO to ", get_remote_info());
+	LOG_CIRCE_INFO("Sending client HELLO to ", get_remote_info());
 
 	const Poseidon::RecursiveMutex::UniqueLock lock(m_mutex);
 	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("layer7_client_say_hello() shall be called exactly once by the client and must not be called by the server"));
 	const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, connection_uuid, timestamp));
 	{
-		IS_ClientHello msg;
+		ClientHello msg;
 		msg.connection_uuid = connection_uuid;
 		msg.timestamp       = timestamp;
 		msg.checksum_req    = checksum_req;
+		Protocol::copy_key_values(msg.options_req, STD_MOVE(options_req));
 		LOG_CIRCE_TRACE("Sending client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
 	}
 	m_connection_uuid = connection_uuid;
 	m_timestamp       = timestamp;
-	layer7_post_set_connection_uuid();
 }
 
 bool InterserverConnection::has_authenticated() const {
 	return Poseidon::atomic_load(m_authenticated, Poseidon::ATOMIC_CONSUME);
 }
 const Poseidon::Uuid &InterserverConnection::get_connection_uuid() const {
-	DEBUG_THROW_UNLESS(is_connection_uuid_set(), Poseidon::Exception, Poseidon::sslit("InterserverConnection UUID has not been set"));
+	DEBUG_THROW_UNLESS(is_connection_uuid_set(), Poseidon::Exception, Poseidon::sslit("InterserverConnection has not been fully established"));
 	return m_connection_uuid;
+}
+const std::string &InterserverConnection::get_option(const char *key) const {
+	DEBUG_THROW_UNLESS(is_connection_uuid_set(), Poseidon::Exception, Poseidon::sslit("InterserverConnection has not been fully established"));
+	return m_options.get(key);
 }
 
 boost::shared_ptr<const PromisedResponse> InterserverConnection::send_request(const Poseidon::Cbpp::MessageBase &msg){
@@ -551,7 +568,7 @@ boost::shared_ptr<const PromisedResponse> InterserverConnection::send_request(co
 		boost::uint16_t magic_number = boost::numeric_cast<boost::uint16_t>(message_id);
 		Poseidon::add_flags(magic_number, MFL_WANTS_RESPONSE);
 		// Initialize the header.
-		IS_UserRequestHeader hdr;
+		UserRequestHeader hdr;
 		hdr.serial   = serial;
 		// Concatenate the payload to the header.
 		Poseidon::StreamBuffer magic_payload;

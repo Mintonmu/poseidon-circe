@@ -127,7 +127,7 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 			client->set_no_delay();
 			Poseidon::EpollDaemon::add_socket(client, true);
 			connector->m_weak_clients[*host_it] = client;
-			client->layer7_client_say_hello();
+			client->layer7_client_say_hello(VAL_INIT); // TODO: add options.
 		}
 		if(client->has_authenticated()){
 			const boost::uint64_t local_now = Poseidon::get_local_time();
