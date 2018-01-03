@@ -159,11 +159,24 @@ boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low
 void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders req_headers){
 	PROFILE_ME;
 
-	sync_decode_uri(req_headers.uri);
-	DEBUG_THROW_ASSERT(m_decoded_uri);
+	switch(req_headers.verb){
+	case Poseidon::Http::V_OPTIONS:
+		break;
 
-	sync_authenticate(req_headers.verb, m_decoded_uri.get(), req_headers.get_params, req_headers.headers);
-	DEBUG_THROW_ASSERT(m_auth_token);
+	case Poseidon::Http::V_GET:
+	case Poseidon::Http::V_PUT:
+	case Poseidon::Http::V_DELETE:
+	case Poseidon::Http::V_HEAD:
+	case Poseidon::Http::V_POST:
+		sync_decode_uri(req_headers.uri);
+		DEBUG_THROW_ASSERT(m_decoded_uri);
+		sync_authenticate(req_headers.verb, m_decoded_uri.get(), req_headers.get_params, req_headers.headers);
+		DEBUG_THROW_ASSERT(m_auth_token);
+		break;
+
+	default:
+		DEBUG_THROW(Poseidon::Http::Exception, Poseidon::Http::ST_NOT_IMPLEMENTED);
+	}
 
 	return Poseidon::Http::Session::on_sync_expect(STD_MOVE(req_headers));
 }
@@ -171,27 +184,32 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 	PROFILE_ME;
 	LOG_CIRCE_DEBUG("Received HTTP message: remote = ", get_remote_info(), ", verb = ", Poseidon::Http::get_string_from_verb(req_headers.verb), ", headers = ", req_headers.headers, ", req_entity.size() = ", req_entity.size());
 
-	if(!m_decoded_uri){
-		sync_decode_uri(req_headers.uri);
-		DEBUG_THROW_ASSERT(m_decoded_uri);
-	}
-	if(!m_auth_token){
-		sync_authenticate(req_headers.verb, m_decoded_uri.get(), req_headers.get_params, req_headers.headers);
-		DEBUG_THROW_ASSERT(m_auth_token);
-	}
-
 	const AUTO(resp_encoding_preferred, Poseidon::Http::pick_content_encoding(req_headers));
 	DEBUG_THROW_UNLESS(resp_encoding_preferred != Poseidon::Http::CE_NOT_ACCEPTABLE, Poseidon::Http::Exception, Poseidon::Http::ST_NOT_ACCEPTABLE);
 
 	Poseidon::Http::ResponseHeaders resp_headers = { 10001 };
 	Poseidon::StreamBuffer resp_entity;
 
-	// Process the request. `HEAD` is handled in the same way as `GET`.
-	// Fill in `resp_headers.status_code` and `resp_entity`.
+	// Handle the request.
 	switch(req_headers.verb){
-	case Poseidon::Http::V_HEAD:
+	case Poseidon::Http::V_OPTIONS:
+		resp_headers.status_code = Poseidon::Http::ST_OK;
+		break;
+
 	case Poseidon::Http::V_GET:
+	case Poseidon::Http::V_PUT:
+	case Poseidon::Http::V_DELETE:
+	case Poseidon::Http::V_HEAD:
 	case Poseidon::Http::V_POST: {
+		if(!m_decoded_uri){
+			sync_decode_uri(req_headers.uri);
+			DEBUG_THROW_ASSERT(m_decoded_uri);
+		}
+		if(!m_auth_token){
+			sync_authenticate(req_headers.verb, m_decoded_uri.get(), req_headers.get_params, req_headers.headers);
+			DEBUG_THROW_ASSERT(m_auth_token);
+		}
+
 		boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > servers_avail;
 		FoyerConnector::get_all_clients(servers_avail);
 		DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
@@ -206,7 +224,9 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		foyer_req.decoded_uri = m_decoded_uri.get();
 		Protocol::copy_key_values(foyer_req.params, STD_MOVE(req_headers.get_params));
 		Protocol::copy_key_values(foyer_req.headers, STD_MOVE(req_headers.headers));
-		foyer_req.entity      = STD_MOVE(req_entity);
+		if((req_headers.verb == Poseidon::Http::V_PUT) || (req_headers.verb == Poseidon::Http::V_POST)){
+			foyer_req.entity = STD_MOVE(req_entity);
+		}
 		LOG_CIRCE_TRACE("Sending request: ", foyer_req);
 		Protocol::Foyer::HttpResponseFromBox foyer_resp;
 		Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
@@ -219,15 +239,11 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		}
 		break; }
 
-	case Poseidon::Http::V_OPTIONS: {
-		resp_headers.status_code = Poseidon::Http::ST_OK;
-		break; }
-
 	default:
 		DEBUG_THROW(Poseidon::Http::Exception, Poseidon::Http::ST_NOT_IMPLEMENTED);
 	}
 
-	// Fill in other fields.
+	// Fill in other fields of the response headers.
 	const AUTO(desc, Poseidon::Http::get_status_code_desc(resp_headers.status_code));
 	resp_headers.reason = desc.desc_short;
 	const AUTO(keep_alive, Poseidon::Http::is_keep_alive_enabled(req_headers) && (resp_headers.status_code / 100 <= 3));
