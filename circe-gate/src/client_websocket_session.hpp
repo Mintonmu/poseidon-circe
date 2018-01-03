@@ -22,44 +22,37 @@ class ClientWebSocketSession : public Poseidon::WebSocket::Session {
 
 private:
 	class DeliveryJob;
-	class ClosureJob;
 
 private:
 	const Poseidon::Uuid m_client_uuid;
-
-	mutable Poseidon::Mutex m_closure_notification_mutex;
-	boost::shared_ptr<Poseidon::Timer> m_closure_notification_timer;
-	boost::optional<std::pair<Poseidon::WebSocket::StatusCode, std::string> > m_closure_reason;
 
 	// These are accessed only by the epoll thread.
 	boost::uint64_t m_request_counter_reset_time;
 	boost::uint64_t m_request_counter;
 
 	// These are accessed only by the primary thread.
-	boost::optional<std::string> m_auth_token;
+	boost::weak_ptr<Common::InterserverConnection> m_weak_foyer_conn;
 	boost::optional<Poseidon::Uuid> m_box_uuid;
-	boost::optional<Poseidon::Uuid> m_foyer_uuid;
+	boost::optional<std::pair<Poseidon::WebSocket::StatusCode, std::string> > m_closure_reason;
+
+	boost::optional<std::string> m_auth_token;
 
 	boost::shared_ptr<DeliveryJob> m_delivery_job_spare;
 	bool m_delivery_job_active;
-	boost::container::deque<std::pair<Poseidon::WebSocket::StatusCode, Poseidon::StreamBuffer> > m_messages_pending;
+	boost::container::deque<std::pair<Poseidon::WebSocket::OpCode, Poseidon::StreamBuffer> > m_messages_pending;
 
 public:
 	explicit ClientWebSocketSession(const boost::shared_ptr<ClientHttpSession> &parent);
 	~ClientWebSocketSession() OVERRIDE;
 
 private:
-	void on_closure_notification_low_level_timer();
-
-	void reserve_closure_notification_timer();
-	void drop_closure_notification_timer() NOEXCEPT;
-	void deliver_closure_notification(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT;
+	// This function should be only called by the destructor.
+	void notify_foyer_about_closure() const NOEXCEPT;
 
 	void sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params);
 
 protected:
 	// Callbacks run in the epoll thread.
-	void on_close(int err_code) OVERRIDE;
 	bool on_low_level_message_end(boost::uint64_t whole_size) OVERRIDE;
 
 	// Callbacks run in the primary thread.

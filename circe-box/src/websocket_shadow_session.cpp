@@ -93,7 +93,7 @@ protected:
 				foyer_req.client_uuid = session->m_client_uuid;
 				while(!session->m_messages_pending.empty()){
 					foyer_req.messages.emplace_back();
-					foyer_req.messages.back().opcode  = session->m_messages_pending.front().first;
+					foyer_req.messages.back().opcode  = boost::numeric_cast<boost::uint8_t>(session->m_messages_pending.front().first);
 					foyer_req.messages.back().payload = STD_MOVE(session->m_messages_pending.front().second);
 					session->m_messages_pending.pop_front();
 				}
