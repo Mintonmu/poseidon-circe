@@ -1,8 +1,8 @@
 // 这个文件是 Circe 服务器应用程序框架的一部分。
 // Copyleft 2017 - 2018, LH_Mouse. All wrongs reserved.
 
-#ifndef CIRCE_COMMON_CBPP_RESPONSE_HPP_
-#define CIRCE_COMMON_CBPP_RESPONSE_HPP_
+#ifndef CIRCE_COMMON_INTERSERVER_RESPONSE_HPP_
+#define CIRCE_COMMON_INTERSERVER_RESPONSE_HPP_
 
 #include <poseidon/cbpp/message_base.hpp>
 #include <poseidon/stream_buffer.hpp>
@@ -14,7 +14,7 @@ namespace Common {
 
 class InterserverConnection;
 
-class CbppResponse {
+class InterserverResponse {
 	friend InterserverConnection;
 
 private:
@@ -25,10 +25,10 @@ private:
 	Poseidon::StreamBuffer m_payload;
 
 public:
-	CbppResponse();
-	CbppResponse(long err_code, std::string err_msg = std::string());
-	CbppResponse(const Poseidon::Cbpp::MessageBase &msg);
-	~CbppResponse();
+	InterserverResponse();
+	InterserverResponse(long err_code, std::string err_msg = std::string());
+	InterserverResponse(const Poseidon::Cbpp::MessageBase &msg);
+	~InterserverResponse();
 
 public:
 	long get_err_code() const NOEXCEPT {
@@ -63,7 +63,7 @@ public:
 		m_payload = STD_MOVE(payload);
 	}
 
-	void swap(CbppResponse &rhs) NOEXCEPT {
+	void swap(InterserverResponse &rhs) NOEXCEPT {
 		using std::swap;
 		swap(m_err_code,   rhs.m_err_code);
 		swap(m_err_msg,    rhs.m_err_msg);
@@ -72,11 +72,11 @@ public:
 	}
 };
 
-inline void swap(CbppResponse &lhs, CbppResponse &rhs) NOEXCEPT {
+inline void swap(InterserverResponse &lhs, InterserverResponse &rhs) NOEXCEPT {
 	lhs.swap(rhs);
 }
 
-extern std::ostream &operator<<(std::ostream &os, const CbppResponse &rhs);
+extern std::ostream &operator<<(std::ostream &os, const InterserverResponse &rhs);
 
 }
 }

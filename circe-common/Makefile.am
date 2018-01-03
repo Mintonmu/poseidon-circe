@@ -38,7 +38,7 @@ pkginclude_protocol_HEADERS = \
 pkginclude_commondir = $(pkgincludedir)/common
 pkginclude_common_HEADERS = \
 	circe-common/src/fwd.hpp	\
-	circe-common/src/cbpp_response.hpp	\
+	circe-common/src/interserver_response.hpp	\
 	circe-common/src/interserver_servlet_callback.hpp	\
 	circe-common/src/interserver_connection.hpp	\
 	circe-common/src/interserver_servlet_container.hpp	\
@@ -52,7 +52,7 @@ lib_LTLIBRARIES = \
 
 lib_libcirce_common_la_SOURCES = \
 	../protocol/messages_external_definitions.cpp	\
-	circe-common/src/cbpp_response.cpp	\
+	circe-common/src/interserver_response.cpp	\
 	circe-common/src/interserver_connection.cpp	\
 	circe-common/src/interserver_servlet_container.cpp	\
 	circe-common/src/interserver_connector.cpp	\

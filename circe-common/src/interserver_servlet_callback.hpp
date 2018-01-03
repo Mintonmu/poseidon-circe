@@ -8,7 +8,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/cstdint.hpp>
 #include <poseidon/stream_buffer.hpp>
-#include "cbpp_response.hpp"
+#include "interserver_response.hpp"
 
 namespace Circe {
 namespace Common {
@@ -16,7 +16,7 @@ namespace Common {
 class InterserverConnection;
 
 typedef boost::function<
-	CbppResponse (const boost::shared_ptr<InterserverConnection> &connection, boost::uint16_t message_id, Poseidon::StreamBuffer payload)
+	InterserverResponse (const boost::shared_ptr<InterserverConnection> &connection, boost::uint16_t message_id, Poseidon::StreamBuffer payload)
 	> InterserverServletCallback;
 
 }

@@ -16,9 +16,9 @@
 		/* Define the servlet wrapper. We need some local definitions inside it. */	\
 		struct TOKEN_CAT2(InterserverServletWrapper_, __LINE__) {	\
 			/* Declare the user-defined callback. */	\
-			static ::Circe::Common::CbppResponse unwrapped_callback_(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> &, Msg_);	\
+			static ::Circe::Common::InterserverResponse unwrapped_callback_(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> &, Msg_);	\
 			/* This is the callback that matches `InterserverServletCallback`. */	\
-			static ::Circe::Common::CbppResponse callback_(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> &conn_, ::boost::uint16_t message_id_, ::Poseidon::StreamBuffer payload_){	\
+			static ::Circe::Common::InterserverResponse callback_(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> &conn_, ::boost::uint16_t message_id_, ::Poseidon::StreamBuffer payload_){	\
 				PROFILE_ME;	\
 				DEBUG_THROW_ASSERT(message_id_ == Msg_::ID);	\
 				AUTO(msg_, static_cast<Msg_>(STD_MOVE(payload_)));	\
@@ -35,6 +35,6 @@
 		}	\
 	}	\
 	/* The user is responsible for its definition, hence there is no brace after this prototype. */	\
-	::Circe::Common::CbppResponse TOKEN_CAT2(InterserverServletWrapper_, __LINE__)::unwrapped_callback_(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> & conn_param_, Msg_ msg_param_)
+	::Circe::Common::InterserverResponse TOKEN_CAT2(InterserverServletWrapper_, __LINE__)::unwrapped_callback_(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> & conn_param_, Msg_ msg_param_)
 
 #endif

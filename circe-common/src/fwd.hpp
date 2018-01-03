@@ -7,7 +7,7 @@
 namespace Circe {
 namespace Common {
 
-class CbppResponse;
+class InterserverResponse;
 class InterserverConnection;
 class InterserverServletContainer;
 class InterserverConnector;

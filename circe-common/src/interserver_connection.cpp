@@ -3,7 +3,8 @@
 
 #include "precompiled.hpp"
 #include "interserver_connection.hpp"
-#include "cbpp_response.hpp"
+#include "interserver_response.hpp"
+#include "protocol/exception.hpp"
 #include "protocol/utilities.hpp"
 #include "mmain.hpp"
 #include <poseidon/tiny_exception.hpp>
@@ -15,7 +16,7 @@
 #include <poseidon/job_base.hpp>
 #include <boost/random/mersenne_twister.hpp>
 
-template class Poseidon::PromiseContainer<Circe::Common::CbppResponse>;
+template class Poseidon::PromiseContainer<Circe::Common::InterserverResponse>;
 
 namespace Circe {
 namespace Common {
@@ -237,15 +238,15 @@ protected:
 
 		try {
 			LOG_CIRCE_TRACE("Dispatching message: message_id = ", m_message_id);
-			CbppResponse resp;
+			InterserverResponse resp;
 			try {
 				resp = connection->layer7_on_sync_message(m_message_id, STD_MOVE(m_payload));
-			} catch(Poseidon::Cbpp::Exception &e){
-				LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: mesasge_id = ", m_message_id, ", err_code = ", e.get_status_code(), ", err_msg = ", e.what());
-				resp = CbppResponse(e.get_status_code(), e.what());
+			} catch(Protocol::Exception &e){
+				LOG_CIRCE_ERROR("Protocol::Exception thrown: mesasge_id = ", m_message_id, ", err_code = ", e.get_status_code(), ", err_msg = ", e.what());
+				resp = InterserverResponse(e.get_status_code(), e.what());
 			} catch(std::exception &e){
 				LOG_CIRCE_ERROR("std::exception thrown: mesasge_id = ", m_message_id, ", err_msg = ", e.what());
-				resp = CbppResponse(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
+				resp = InterserverResponse(Protocol::ERR_INTERNAL_ERROR, e.what());
 			}
 			if(m_send_response){
 				connection->send_response(m_serial, STD_MOVE(resp));
@@ -253,7 +254,7 @@ protected:
 			LOG_CIRCE_TRACE("Done dispatching message: message_id = ", m_message_id);
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			connection->shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
+			connection->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
 		}
 	}
 };
@@ -312,7 +313,7 @@ void InterserverConnection::client_accept_hello(Poseidon::OptionalMap options_re
 	m_options         = STD_MOVE(options_resp);
 	layer7_post_set_connection_uuid();
 }
-void InterserverConnection::send_response(boost::uint64_t serial, CbppResponse resp){
+void InterserverConnection::send_response(boost::uint64_t serial, InterserverResponse resp){
 	PROFILE_ME;
 
 	const boost::uint64_t message_id = resp.get_message_id();
@@ -366,7 +367,7 @@ try {
 		ClientHello msg(STD_MOVE(encoded_payload));
 		LOG_CIRCE_TRACE("Received client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, Poseidon::Uuid(msg.connection_uuid), msg.timestamp));
-		DEBUG_THROW_UNLESS(msg.checksum_req == checksum_req, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE, Poseidon::sslit("Request checksum failed verification"));
+		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_req == checksum_req, Protocol::ERR_AUTHORIZATION_FAILURE, Poseidon::sslit("Request checksum failed verification"));
 		server_accept_hello(Poseidon::Uuid(msg.connection_uuid), msg.timestamp, Protocol::copy_key_values(STD_MOVE(msg.options_req)));
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		const AUTO(checksum_seedx, calculate_checksum(m_application_key, SALT_NORMAL_DATA, m_connection_uuid, m_timestamp));
@@ -378,12 +379,12 @@ try {
 		ServerHello msg(STD_MOVE(encoded_payload));
 		LOG_CIRCE_TRACE("Received server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, m_connection_uuid, m_timestamp));
-		DEBUG_THROW_UNLESS(msg.checksum_resp == checksum_resp, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE, Poseidon::sslit("Response checksum failed verification"));
+		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_resp == checksum_resp, Protocol::ERR_AUTHORIZATION_FAILURE, Poseidon::sslit("Response checksum failed verification"));
 		client_accept_hello(Protocol::copy_key_values(STD_MOVE(msg.options_resp)));
 		Poseidon::atomic_store(m_authenticated, true, Poseidon::ATOMIC_RELEASE);
 		return; }
 	}
-	DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED | MFL_RESERVED), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
+	CIRCE_PROTOCOL_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED | MFL_RESERVED), Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
 
 	const std::size_t size_deflated = encoded_payload.size();
 	Poseidon::StreamBuffer magic_payload = require_message_filter()->decode(STD_MOVE(encoded_payload));
@@ -406,7 +407,7 @@ try {
 			}
 		}
 		if(promise){
-			CbppResponse resp;
+			InterserverResponse resp;
 			resp.m_err_code   = hdr.err_code;
 			resp.m_err_msg    = STD_MOVE(hdr.err_msg);
 			resp.m_message_id = message_id;
@@ -422,12 +423,12 @@ try {
 		LOG_CIRCE_TRACE("Received user-defined notification: remote = ", get_remote_info(), ", message_id = ", message_id, ", payload_size = ", magic_payload.size());
 		Poseidon::enqueue(boost::make_shared<RequestMessageJob>(virtual_shared_from_this<InterserverConnection>(), message_id, false, 0xDEADBEEF, STD_MOVE(magic_payload)));
 	}
-} catch(Poseidon::Cbpp::Exception &e){
-	LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
+} catch(Protocol::Exception &e){
+	LOG_CIRCE_ERROR("Protocol::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
 	shutdown(e.get_status_code(), e.what());
 } catch(std::exception &e){
 	LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-	shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
+	shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
 }
 void InterserverConnection::launch_deflate_and_send(boost::uint16_t magic_number, Poseidon::StreamBuffer magic_payload){
 	PROFILE_ME;
@@ -457,7 +458,7 @@ try {
 		layer5_send_data(magic_number, STD_MOVE(magic_payload));
 		return; }
 	}
-	DEBUG_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED | MFL_RESERVED), Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
+	CIRCE_PROTOCOL_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED | MFL_RESERVED), Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
 
 	const std::size_t size_original = magic_payload.size();
 	Poseidon::StreamBuffer encoded_payload = require_message_filter()->encode(STD_MOVE(magic_payload));
@@ -465,12 +466,12 @@ try {
 	LOG_CIRCE_TRACE("Deflate result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), (size_original != 0) ? size_deflated * 100.0l / size_original : 0.0l, "%)");
 
 	layer5_send_data(magic_number, STD_MOVE(encoded_payload));
-} catch(Poseidon::Cbpp::Exception &e){
-	LOG_CIRCE_ERROR("Poseidon::Cbpp::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
+} catch(Protocol::Exception &e){
+	LOG_CIRCE_ERROR("Protocol::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
 	shutdown(e.get_status_code(), e.what());
 } catch(std::exception &e){
 	LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-	shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
+	shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
 }
 
 void InterserverConnection::layer5_on_receive_data(boost::uint16_t magic_number, Poseidon::StreamBuffer encoded_payload){
@@ -603,7 +604,7 @@ void wait_for_response(Poseidon::Cbpp::MessageBase &msg, const boost::shared_ptr
 	AUTO(resp, STD_MOVE_IDN(promise->get()));
 	promise->get() = VAL_INIT;
 
-	DEBUG_THROW_UNLESS(resp.get_err_code() == 0, Poseidon::Cbpp::Exception, resp.get_err_code(), Poseidon::SharedNts(resp.get_err_msg()));
+	CIRCE_PROTOCOL_THROW_UNLESS(resp.get_err_code() == 0, resp.get_err_code(), Poseidon::SharedNts(resp.get_err_msg()));
 	DEBUG_THROW_UNLESS(resp.get_message_id() != 0, Poseidon::Exception, Poseidon::sslit("No message but status code returned"));
 	DEBUG_THROW_UNLESS(resp.get_message_id() == msg.get_id(), Poseidon::Exception, Poseidon::sslit("Unexpected response message ID"));
 	msg.deserialize(resp.get_payload());

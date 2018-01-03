@@ -16,7 +16,7 @@ namespace Circe {
 namespace Common {
 
 class InterserverConnection;
-class CbppResponse;
+class InterserverResponse;
 
 class InterserverConnector : public virtual Poseidon::VirtualSharedFromThis {
 private:

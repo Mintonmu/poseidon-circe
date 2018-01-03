@@ -5,9 +5,9 @@
 #include "interserver_acceptor.hpp"
 #include "interserver_connection.hpp"
 #include "interserver_servlet_container.hpp"
-#include "cbpp_response.hpp"
+#include "interserver_response.hpp"
+#include "protocol/exception.hpp"
 #include <poseidon/singletons/epoll_daemon.hpp>
-#include <poseidon/cbpp/exception.hpp>
 #include <poseidon/cbpp/low_level_session.hpp>
 #include <poseidon/tcp_server_base.hpp>
 #include <poseidon/singletons/main_config.hpp>
@@ -39,7 +39,7 @@ protected:
 	// Poseidon::Cbpp::LowLevelSession
 	void on_low_level_data_message_header(boost::uint16_t message_id, boost::uint64_t payload_size) FINAL {
 		const std::size_t max_message_size = InterserverConnection::get_max_message_size();
-		DEBUG_THROW_UNLESS(payload_size <= max_message_size, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_REQUEST_TOO_LARGE, Poseidon::sslit("Message is too large"));
+		CIRCE_PROTOCOL_THROW_UNLESS(payload_size <= max_message_size, Protocol::ERR_REQUEST_TOO_LARGE, Poseidon::sslit("Message is too large"));
 		m_magic_number = message_id;
 		m_deflated_payload.clear();
 	}
@@ -50,7 +50,7 @@ protected:
 		InterserverConnection::layer5_on_receive_data(m_magic_number, STD_MOVE(m_deflated_payload));
 		return true;
 	}
-	bool on_low_level_control_message(Poseidon::Cbpp::StatusCode status_code, Poseidon::StreamBuffer param) FINAL {
+	bool on_low_level_control_message(Protocol::ErrorCode status_code, Poseidon::StreamBuffer param) FINAL {
 		InterserverConnection::layer5_on_receive_control(status_code, STD_MOVE(param));
 		return true;
 	}
@@ -86,7 +86,7 @@ protected:
 		PROFILE_ME;
 
 		const AUTO(acceptor, m_weak_acceptor.lock());
-		DEBUG_THROW_UNLESS(acceptor, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		CIRCE_PROTOCOL_THROW_UNLESS(acceptor, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 
 		const Poseidon::Mutex::UniqueLock lock(acceptor->m_mutex);
 		bool erase_it;
@@ -96,15 +96,15 @@ protected:
 		const AUTO(pair, acceptor->m_weak_sessions.emplace(get_connection_uuid(), virtual_shared_from_this<InterserverSession>()));
 		DEBUG_THROW_UNLESS(pair.second, Poseidon::Exception, Poseidon::sslit("Duplicate InterserverSession UUID"));
 	}
-	CbppResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) FINAL {
+	InterserverResponse layer7_on_sync_message(boost::uint16_t message_id, Poseidon::StreamBuffer payload) FINAL {
 		PROFILE_ME;
 
 		const AUTO(acceptor, m_weak_acceptor.lock());
-		DEBUG_THROW_UNLESS(acceptor, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		CIRCE_PROTOCOL_THROW_UNLESS(acceptor, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
 
 		LOG_CIRCE_TRACE("Dispatching: typeid(*this).name() = ", typeid(*this).name(), ", message_id = ", message_id);
 		const AUTO(servlet, acceptor->sync_get_servlet(message_id));
-		DEBUG_THROW_UNLESS(servlet, Poseidon::Cbpp::Exception, Poseidon::Cbpp::ST_NOT_FOUND, Poseidon::sslit("message_id not handled"));
+		CIRCE_PROTOCOL_THROW_UNLESS(servlet, Protocol::ERR_NOT_FOUND, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverSession>(), message_id, STD_MOVE(payload));
 	}
 };
@@ -149,7 +149,7 @@ InterserverAcceptor::InterserverAcceptor(std::string bind, boost::uint16_t port,
 }
 InterserverAcceptor::~InterserverAcceptor(){
 	LOG_CIRCE_INFO("InterserverAcceptor destructor: bind:port = ", m_bind, ':', m_port);
-	clear(Poseidon::Cbpp::ST_GONE_AWAY);
+	clear(Protocol::ERR_GONE_AWAY);
 }
 
 void InterserverAcceptor::activate(){
@@ -207,7 +207,7 @@ std::size_t InterserverAcceptor::safe_broadcast_notification(const Poseidon::Cbp
 			session->send_notification(msg);
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			session->layer5_shutdown(Poseidon::Cbpp::ST_INTERNAL_ERROR, e.what());
+			session->layer5_shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
 		}
 		++count_notified;
 	}

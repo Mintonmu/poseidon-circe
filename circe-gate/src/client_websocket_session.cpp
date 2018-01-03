@@ -7,7 +7,7 @@
 #include "mmain.hpp"
 #include "singletons/auth_connector.hpp"
 #include "singletons/foyer_connector.hpp"
-#include "common/cbpp_response.hpp"
+#include "common/interserver_response.hpp"
 #include "protocol/error_codes.hpp"
 #include "protocol/messages_auth.hpp"
 #include "protocol/messages_foyer.hpp"
