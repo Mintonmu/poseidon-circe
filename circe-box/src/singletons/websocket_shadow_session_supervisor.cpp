@@ -66,7 +66,7 @@ namespace {
 			}
 			return count_added;
 		}
-		void insert_session(const boost::shared_ptr<WebSocketShadowSession> &session){
+		void attach_session(const boost::shared_ptr<WebSocketShadowSession> &session){
 			PROFILE_ME;
 
 			const Poseidon::Mutex::UniqueLock lock(m_mutex);
@@ -209,7 +209,7 @@ std::size_t WebSocketShadowSessionSupervisor::get_all_sessions(boost::container:
 	}
 	return container->get_all_sessions(sessions_ret);
 }
-void WebSocketShadowSessionSupervisor::insert_session(const boost::shared_ptr<WebSocketShadowSession> &session){
+void WebSocketShadowSessionSupervisor::attach_session(const boost::shared_ptr<WebSocketShadowSession> &session){
 	PROFILE_ME;
 
 	const AUTO(container, g_container.lock());
@@ -217,7 +217,7 @@ void WebSocketShadowSessionSupervisor::insert_session(const boost::shared_ptr<We
 		LOG_CIRCE_WARNING("WebSocketShadowSessionSupervisor has not been initialized.");
 		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("WebSocketShadowSessionSupervisor has not been initialized"));
 	}
-	return container->insert_session(session);
+	return container->attach_session(session);
 }
 boost::shared_ptr<WebSocketShadowSession> WebSocketShadowSessionSupervisor::detach_session(const Poseidon::Uuid &client_uuid) NOEXCEPT {
 	PROFILE_ME;

@@ -34,7 +34,7 @@ DEFINE_SERVLET_FOR(Protocol::Box::HttpRequest, /*conn*/, req){
 DEFINE_SERVLET_FOR(Protocol::Box::WebSocketEstablishmentRequest, conn, req){
 	const AUTO(shadow_session, boost::make_shared<WebSocketShadowSession>(conn->get_connection_uuid(), Poseidon::Uuid(req.gate_uuid), Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.auth_token)));
 	UserDefinedFunctions::handle_websocket_establishment(shadow_session, STD_MOVE(req.decoded_uri), Protocol::copy_key_values(STD_MOVE(req.params)));
-	WebSocketShadowSessionSupervisor::insert_session(shadow_session);
+	WebSocketShadowSessionSupervisor::attach_session(shadow_session);
 
 	Protocol::Box::WebSocketEstablishmentResponse resp;
 	return resp;

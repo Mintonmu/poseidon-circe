@@ -16,7 +16,7 @@ private:
 public:
 	static boost::shared_ptr<WebSocketShadowSession> get_session(const Poseidon::Uuid &client_uuid);
 	static std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<WebSocketShadowSession> > &sessions_ret);
-	static void insert_session(const boost::shared_ptr<WebSocketShadowSession> &session);
+	static void attach_session(const boost::shared_ptr<WebSocketShadowSession> &session);
 	static boost::shared_ptr<WebSocketShadowSession> detach_session(const Poseidon::Uuid &client_uuid) NOEXCEPT;
 	static std::size_t clear(Poseidon::WebSocket::StatusCode status_code, const char *reason = "") NOEXCEPT;
 };
