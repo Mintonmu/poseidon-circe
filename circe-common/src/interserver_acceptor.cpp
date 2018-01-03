@@ -187,7 +187,7 @@ std::size_t InterserverAcceptor::get_all_sessions(boost::container::vector<boost
 		if(!session){
 			continue;
 		}
-		sessions_ret.emplace_back(STD_MOVE(session));
+		sessions_ret.emplace_back(STD_MOVE_IDN(session));
 		++count_added;
 	}
 	return count_added;

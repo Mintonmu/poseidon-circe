@@ -182,7 +182,7 @@ std::size_t InterserverConnector::get_all_clients(boost::container::vector<boost
 		if(!client){
 			continue;
 		}
-		clients_ret.emplace_back(STD_MOVE(client));
+		clients_ret.emplace_back(STD_MOVE_IDN(client));
 		++count_added;
 	}
 	return count_added;
