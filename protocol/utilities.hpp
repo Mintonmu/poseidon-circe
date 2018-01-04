@@ -20,9 +20,9 @@ void copy_key_values(boost::container::vector<DestinationT> &dst, const Poseidon
 		dst.back().value = it->second;
 	}
 }
+#ifdef POSEIDON_CXX11
 template<typename DestinationT>
-void copy_key_values(boost::container::vector<DestinationT> &dst, Poseidon::Move<Poseidon::OptionalMap> src_rv){
-	AUTO(src, STD_MOVE_IDN(src_rv));
+void copy_key_values(boost::container::vector<DestinationT> &dst, Poseidon::OptionalMap &&src){
 	dst.reserve(dst.size() + src.size());
 	for(AUTO(it, src.begin()); it != src.end(); ++it){
 		dst.emplace_back();
@@ -30,6 +30,7 @@ void copy_key_values(boost::container::vector<DestinationT> &dst, Poseidon::Move
 		dst.back().value = STD_MOVE(it->second);
 	}
 }
+#endif
 
 template<typename SourceT>
 void copy_key_values(Poseidon::OptionalMap &dst, const boost::container::vector<SourceT> &src){
@@ -37,13 +38,14 @@ void copy_key_values(Poseidon::OptionalMap &dst, const boost::container::vector<
 		dst.append(Poseidon::SharedNts(it->key), it->value);
 	}
 }
+#ifdef POSEIDON_CXX11
 template<typename SourceT>
-void copy_key_values(Poseidon::OptionalMap &dst, Poseidon::Move<boost::container::vector<SourceT> > src_rv){
-	AUTO(src, STD_MOVE_IDN(src_rv));
+void copy_key_values(Poseidon::OptionalMap &dst, boost::container::vector<SourceT> &&src){
 	for(AUTO(it, src.begin()); it != src.end(); ++it){
 		dst.append(Poseidon::SharedNts(it->key), STD_MOVE(it->value));
 	}
 }
+#endif
 
 template<typename DestinationT, typename SourceT>
 void copy_key_values(boost::container::vector<DestinationT> &dst, const boost::container::vector<SourceT> &src){
@@ -54,9 +56,9 @@ void copy_key_values(boost::container::vector<DestinationT> &dst, const boost::c
 		dst.back().value = it->value;
 	}
 }
+#ifdef POSEIDON_CXX11
 template<typename DestinationT, typename SourceT>
-void copy_key_values(boost::container::vector<DestinationT> &dst, Poseidon::Move<boost::container::vector<SourceT> > src_rv){
-	AUTO(src, STD_MOVE_IDN(src_rv));
+void copy_key_values(boost::container::vector<DestinationT> &dst, boost::container::vector<SourceT> &&src){
 	dst.reserve(dst.size() + src.size());
 	for(AUTO(it, src.begin()); it != src.end(); ++it){
 		dst.emplace_back();
@@ -64,19 +66,22 @@ void copy_key_values(boost::container::vector<DestinationT> &dst, Poseidon::Move
 		dst.back().value = STD_MOVE(it->value);
 	}
 }
+#endif
 
 template<typename SourceT>
 Poseidon::OptionalMap copy_key_values(const boost::container::vector<SourceT> &src){
 	Poseidon::OptionalMap dst;
-	((copy_key_values))(dst, src);
+	copy_key_values<>(dst, src);
 	return dst;
 }
+#ifdef POSEIDON_CXX11
 template<typename SourceT>
-Poseidon::OptionalMap copy_key_values(Poseidon::Move<boost::container::vector<SourceT> > src_rv){
+Poseidon::OptionalMap copy_key_values(boost::container::vector<SourceT> &&src){
 	Poseidon::OptionalMap dst;
-	((copy_key_values))(dst, STD_MOVE(src_rv));
+	copy_key_values<>(dst, STD_MOVE(src));
 	return dst;
 }
+#endif
 
 }
 }
