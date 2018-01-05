@@ -70,7 +70,7 @@ namespace {
 				Element elem = { key, Poseidon::saturated_add<boost::uint64_t>(now, 60000) };
 				it = m_map.insert<0>(STD_MOVE(elem)).first;
 			}
-			if(it->counters.at(counter_index)++ < counter_max_value){
+			if(++(it->counters.at(counter_index)) < counter_max_value){
 				return;
 			}
 			const AUTO(expiry_duration, get_config<boost::uint64_t>("client_generic_auto_ip_ban_expiry_duration", 60000));
