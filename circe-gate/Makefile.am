@@ -21,6 +21,7 @@ pkginclude_gate_HEADERS = \
 	circe-gate/src/singletons/client_http_acceptor.hpp	\
 	circe-gate/src/singletons/auth_connector.hpp	\
 	circe-gate/src/singletons/foyer_connector.hpp	\
+	circe-gate/src/singletons/ip_ban_list.hpp	\
 	circe-gate/src/mmain.hpp
 
 lib_LTLIBRARIES = \
@@ -33,6 +34,7 @@ lib_libcirce_gate_la_SOURCES = \
 	circe-gate/src/singletons/client_http_acceptor.cpp	\
 	circe-gate/src/singletons/auth_connector.cpp	\
 	circe-gate/src/singletons/foyer_connector.cpp	\
+	circe-gate/src/singletons/ip_ban_list.cpp	\
 	circe-gate/src/mmain.cpp	\
 	circe-gate/src/servlets.cpp
 

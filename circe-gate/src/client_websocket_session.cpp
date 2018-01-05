@@ -12,6 +12,7 @@
 #include "protocol/messages_auth.hpp"
 #include "protocol/messages_foyer.hpp"
 #include "protocol/utilities.hpp"
+#include "singletons/ip_ban_list.hpp"
 #include <poseidon/websocket/exception.hpp>
 #include <poseidon/job_base.hpp>
 
@@ -110,7 +111,8 @@ void ClientWebSocketSession::notify_foyer_about_closure() const NOEXCEPT {
 	}
 }
 
-void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params){
+void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params)
+try {
 	PROFILE_ME;
 
 	const AUTO(websocket_enabled, get_config<bool>("client_websocket_enabled", false));
@@ -160,17 +162,22 @@ void ClientWebSocketSession::sync_authenticate(const std::string &decoded_uri, c
 	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("Connection has been shut down"));
 	LOG_CIRCE_DEBUG("Established WebSocketConnection: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 	m_auth_token = STD_MOVE_IDN(auth_resp.auth_token);
+} catch(...){
+	IpBanList::accumulate_auth_failure(get_remote_info().ip());
+	throw;
 }
 
 bool ClientWebSocketSession::on_low_level_message_end(boost::uint64_t whole_size){
 	PROFILE_ME;
+
+	IpBanList::accumulate_websocket_request(get_remote_info().ip());
 
 	const AUTO(now, Poseidon::get_fast_mono_clock());
 	if(m_request_counter_reset_time < now){
 		m_request_counter = 0;
 		m_request_counter_reset_time = Poseidon::saturated_add<boost::uint64_t>(now, 60000);
 	}
-	const AUTO(max_requests_per_minute, get_config<boost::uint64_t>("client_websocket_max_requests_per_minute", 300));
+	const AUTO(max_requests_per_minute, get_config<boost::uint64_t>("client_websocket_max_requests_per_minute", 60));
 	DEBUG_THROW_UNLESS(m_request_counter < max_requests_per_minute, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Max number of requests per minute exceeded"));
 	++m_request_counter;
 

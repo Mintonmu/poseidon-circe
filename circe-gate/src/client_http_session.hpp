@@ -36,6 +36,8 @@ private:
 	void sync_decode_uri(const std::string &uri);
 	void sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers);
 
+	Poseidon::OptionalMap make_retry_after_headers(boost::uint64_t time_remaining) const;
+
 protected:
 	// Callbacks run in the epoll thread.
 	boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers) OVERRIDE;

@@ -12,6 +12,7 @@
 #include "protocol/messages_auth.hpp"
 #include "protocol/messages_foyer.hpp"
 #include "protocol/utilities.hpp"
+#include "singletons/ip_ban_list.hpp"
 #include <poseidon/job_base.hpp>
 #include <poseidon/http/request_headers.hpp>
 #include <poseidon/http/response_headers.hpp>
@@ -107,7 +108,8 @@ void ClientHttpSession::sync_decode_uri(const std::string &uri){
 	LOG_CIRCE_DEBUG("Decoded URI: ", decoded_uri);
 	m_decoded_uri = STD_MOVE_IDN(decoded_uri);
 }
-void ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers){
+void ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers)
+try {
 	PROFILE_ME;
 
 	const AUTO(http_enabled, get_config<bool>("client_http_enabled", false));
@@ -136,14 +138,33 @@ void ClientHttpSession::sync_authenticate(Poseidon::Http::Verb verb, const std::
 	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("Connection has been shut down"));
 	LOG_CIRCE_TRACE("Got authentication token: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 	m_auth_token = STD_MOVE_IDN(auth_resp.auth_token);
+} catch(...){
+	IpBanList::accumulate_auth_failure(get_remote_info().ip());
+	throw;
+}
+
+Poseidon::OptionalMap ClientHttpSession::make_retry_after_headers(boost::uint64_t time_remaining) const {
+	PROFILE_ME;
+
+	Poseidon::OptionalMap headers;
+	headers.set(Poseidon::sslit("Retry-After"), boost::lexical_cast<std::string>(time_remaining / 1000));
+	return headers;
 }
 
 boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers){
 	PROFILE_ME;
 
-	const AUTO_REF(req_headers, Poseidon::Http::Session::get_low_level_request_headers());
-	LOG_CIRCE_TRACE("Client HTTP request: verb = ", Poseidon::Http::get_string_from_verb(req_headers.verb), ", uri = ", req_headers.uri, ", headers = ", req_headers.headers);
+	const AUTO(time_remaining, IpBanList::get_ban_time_remaining(get_remote_info().ip()));
+	if(time_remaining != 0){
+		LOG_CIRCE_WARNING("Client IP is banned: remote = ", get_remote_info(), ", time_remaining = ", time_remaining);
+		Poseidon::Http::Session::send_default_and_shutdown(Poseidon::Http::ST_SERVICE_UNAVAILABLE, make_retry_after_headers(time_remaining));
+		return VAL_INIT;
+	}
 
+	IpBanList::accumulate_http_request(get_remote_info().ip());
+
+	const AUTO_REF(req_headers, Poseidon::Http::Session::get_low_level_request_headers());
+	LOG_CIRCE_DEBUG("Client HTTP request:\n", Poseidon::Http::get_string_from_verb(req_headers.verb), ' ', req_headers.uri, '\n', req_headers.headers);
 	const AUTO_REF(upgrade_str, req_headers.headers.get("Upgrade"));
 	if(::strcasecmp(upgrade_str.c_str(), "websocket") == 0){
 		AUTO(ws_session, boost::make_shared<ClientWebSocketSession>(virtual_shared_from_this<ClientHttpSession>()));
