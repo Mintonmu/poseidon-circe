@@ -7,7 +7,6 @@
 #include "protocol/messages_foyer.hpp"
 #include "../user_defined_functions.hpp"
 #include "../mmain.hpp"
-#include <poseidon/mutex.hpp>
 #include <poseidon/multi_index_map.hpp>
 #include <poseidon/singletons/timer_daemon.hpp>
 
@@ -17,25 +16,25 @@ namespace Box {
 namespace {
 	class SessionContainer : NONCOPYABLE {
 	private:
-		struct SessionElement {
+		struct Element {
 			// Invairants.
 			boost::shared_ptr<WebSocketShadowSession> session;
 			// Indices.
 			Poseidon::Uuid client_uuid;
 			std::pair<Poseidon::Uuid, Poseidon::Uuid> foyer_gate_uuid_pair;
 		};
-		MULTI_INDEX_MAP(SessionMap, SessionElement,
+		MULTI_INDEX_MAP(Map, Element,
 			UNIQUE_MEMBER_INDEX(client_uuid)
 			MULTI_MEMBER_INDEX(foyer_gate_uuid_pair)
 		);
 
 	private:
 		mutable Poseidon::Mutex m_mutex;
-		SessionMap m_sessions;
+		Map m_map;
 
 	public:
 		SessionContainer()
-			: m_sessions()
+			: m_map()
 		{ }
 		~SessionContainer(){
 			clear(Poseidon::WebSocket::ST_GOING_AWAY);
@@ -46,8 +45,8 @@ namespace {
 			PROFILE_ME;
 
 			const Poseidon::Mutex::UniqueLock lock(m_mutex);
-			const AUTO(it, m_sessions.find<0>(client_uuid));
-			if(it == m_sessions.end<0>()){
+			const AUTO(it, m_map.find<0>(client_uuid));
+			if(it == m_map.end<0>()){
 				return VAL_INIT;
 			}
 			AUTO(session, it->session);
@@ -58,8 +57,8 @@ namespace {
 
 			const Poseidon::Mutex::UniqueLock lock(m_mutex);
 			std::size_t count_added = 0;
-			sessions_ret.reserve(sessions_ret.size() + m_sessions.size());
-			for(AUTO(it, m_sessions.begin()); it != m_sessions.end(); ++it){
+			sessions_ret.reserve(sessions_ret.size() + m_map.size());
+			for(AUTO(it, m_map.begin()); it != m_map.end(); ++it){
 				AUTO(session, it->session);
 				sessions_ret.emplace_back(STD_MOVE(session));
 				++count_added;
@@ -70,20 +69,20 @@ namespace {
 			PROFILE_ME;
 
 			const Poseidon::Mutex::UniqueLock lock(m_mutex);
-			SessionElement elem = { session, session->get_client_uuid(), std::make_pair(session->get_foyer_uuid(), session->get_gate_uuid()) };
-			const AUTO(pair, m_sessions.insert(STD_MOVE(elem)));
+			Element elem = { session, session->get_client_uuid(), std::make_pair(session->get_foyer_uuid(), session->get_gate_uuid()) };
+			const AUTO(pair, m_map.insert(STD_MOVE(elem)));
 			DEBUG_THROW_UNLESS(pair.second, Poseidon::Exception, Poseidon::sslit("Duplicate WebSocketShadowSession UUID"));
 		}
 		boost::shared_ptr<WebSocketShadowSession> detach_session(const Poseidon::Uuid &client_uuid) NOEXCEPT {
 			PROFILE_ME;
 
 			const Poseidon::Mutex::UniqueLock lock(m_mutex);
-			const AUTO(it, m_sessions.find<0>(client_uuid));
-			if(it == m_sessions.end<0>()){
+			const AUTO(it, m_map.find<0>(client_uuid));
+			if(it == m_map.end<0>()){
 				return VAL_INIT;
 			}
 			AUTO(session, it->session);
-			m_sessions.erase<0>(it);
+			m_map.erase<0>(it);
 			return STD_MOVE(session);
 		}
 		std::size_t clear(Poseidon::WebSocket::StatusCode status_code, const char *reason = "") NOEXCEPT {
@@ -91,7 +90,7 @@ namespace {
 
 			const Poseidon::Mutex::UniqueLock lock(m_mutex);
 			std::size_t count_shutdown = 0;
-			for(AUTO(it, m_sessions.begin()); it != m_sessions.end(); it = m_sessions.erase(it)){
+			for(AUTO(it, m_map.begin()); it != m_map.end(); it = m_map.erase(it)){
 				AUTO(session, it->session);
 				LOG_CIRCE_DEBUG("Disconnecting WebSocketShadowSession: client_ip = ", session->get_client_ip());
 				session->shutdown(status_code, reason);
@@ -107,7 +106,7 @@ namespace {
 			boost::container::vector<std::pair<Poseidon::Uuid, Poseidon::Uuid> > foyer_gate_uuids_expired;
 			{
 				const Poseidon::Mutex::UniqueLock lock(m_mutex);
-				for(AUTO(it, m_sessions.begin<1>()); it != m_sessions.end<1>(); it = m_sessions.upper_bound<1>(it->foyer_gate_uuid_pair)){
+				for(AUTO(it, m_map.begin<1>()); it != m_map.end<1>(); it = m_map.upper_bound<1>(it->foyer_gate_uuid_pair)){
 					foyer_gate_uuids_expired.emplace_back(it->foyer_gate_uuid_pair);
 				}
 			}
@@ -142,9 +141,9 @@ namespace {
 				sessions_to_erase.clear();
 				{
 					const Poseidon::Mutex::UniqueLock lock(m_mutex);
-					const AUTO(range, m_sessions.equal_range<1>(foyer_gate_uuids_expired.back()));
+					const AUTO(range, m_map.equal_range<1>(foyer_gate_uuids_expired.back()));
 					sessions_to_erase.reserve(static_cast<std::size_t>(std::distance(range.first, range.second)));
-					for(AUTO(it, range.first); it != range.second; it = m_sessions.erase<1>(it)){
+					for(AUTO(it, range.first); it != range.second; it = m_map.erase<1>(it)){
 						AUTO(session, it->session);
 						sessions_to_erase.emplace_back(STD_MOVE(session));
 					}
