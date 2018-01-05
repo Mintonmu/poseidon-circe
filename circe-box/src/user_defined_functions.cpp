@@ -28,6 +28,11 @@ void UserDefinedFunctions::handle_http_request(
 
 	LOG_CIRCE_FATAL("TODO: Handle HTTP request: ", Poseidon::Http::get_string_from_verb(verb), " ", decoded_uri, "\n", params, "\n", req_entity);
 
+	if(decoded_uri == "/favicon.ico"){
+		resp_status_code = 404;
+		return;
+	}
+
 	resp_status_code = 200;
 	resp_headers.set(Poseidon::sslit("Content-Type"), "text/html");
 	resp_entity.put("<html>");
