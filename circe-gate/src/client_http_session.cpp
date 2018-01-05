@@ -155,7 +155,6 @@ Poseidon::OptionalMap ClientHttpSession::make_retry_after_headers(boost::uint64_
 boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers){
 	PROFILE_ME;
 
-	const AUTO(exempt_private, get_config<bool>("client_generic_exempt_private_addresses", true));
 	const AUTO(time_remaining, IpBanList::get_ban_time_remaining(get_remote_info().ip()));
 	if(time_remaining != 0){
 		LOG_CIRCE_WARNING("Client IP is banned: remote = ", get_remote_info(), ", time_remaining = ", time_remaining);
@@ -176,6 +175,7 @@ boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low
 		DEBUG_THROW(Poseidon::Http::Exception, Poseidon::Http::ST_NOT_IMPLEMENTED);
 	}
 
+	const AUTO(exempt_private, get_config<bool>("client_generic_exempt_private_addresses", true));
 	if(exempt_private && Poseidon::SockAddr(get_remote_info()).is_private()){
 		LOG_CIRCE_DEBUG("Client exempted: ", get_remote_info());
 	} else {
