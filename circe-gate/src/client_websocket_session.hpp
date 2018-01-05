@@ -26,10 +26,6 @@ private:
 private:
 	const Poseidon::Uuid m_client_uuid;
 
-	// These are accessed only by the epoll thread.
-	boost::uint64_t m_request_counter_reset_time;
-	boost::uint64_t m_request_counter;
-
 	// These are accessed only by the primary thread.
 	boost::weak_ptr<Common::InterserverConnection> m_weak_foyer_conn;
 	boost::optional<Poseidon::Uuid> m_box_uuid;

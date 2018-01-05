@@ -14,6 +14,7 @@
 #include "protocol/utilities.hpp"
 #include "singletons/ip_ban_list.hpp"
 #include <poseidon/job_base.hpp>
+#include <poseidon/sock_addr.hpp>
 #include <poseidon/http/request_headers.hpp>
 #include <poseidon/http/response_headers.hpp>
 #include <poseidon/http/urlencoded.hpp>
@@ -154,6 +155,7 @@ Poseidon::OptionalMap ClientHttpSession::make_retry_after_headers(boost::uint64_
 boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers){
 	PROFILE_ME;
 
+	const AUTO(exempt_private, get_config<bool>("client_generic_exempt_private_addresses", true));
 	const AUTO(time_remaining, IpBanList::get_ban_time_remaining(get_remote_info().ip()));
 	if(time_remaining != 0){
 		LOG_CIRCE_WARNING("Client IP is banned: remote = ", get_remote_info(), ", time_remaining = ", time_remaining);
@@ -161,20 +163,26 @@ boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low
 		return VAL_INIT;
 	}
 
-	IpBanList::accumulate_http_request(get_remote_info().ip());
-
 	const AUTO_REF(req_headers, Poseidon::Http::Session::get_low_level_request_headers());
 	LOG_CIRCE_DEBUG("Client HTTP request:\n", Poseidon::Http::get_string_from_verb(req_headers.verb), ' ', req_headers.uri, '\n', req_headers.headers);
+
 	const AUTO_REF(upgrade_str, req_headers.headers.get("Upgrade"));
 	if(::strcasecmp(upgrade_str.c_str(), "websocket") == 0){
 		AUTO(ws_session, boost::make_shared<ClientWebSocketSession>(virtual_shared_from_this<ClientHttpSession>()));
 		Poseidon::enqueue(boost::make_shared<WebSocketHandshakeJob>(virtual_shared_from_this<ClientHttpSession>(), req_headers, ws_session));
 		return STD_MOVE_IDN(ws_session);
-	} else if(upgrade_str.empty()){
-		return Poseidon::Http::Session::on_low_level_request_end(content_length, STD_MOVE(headers));
-	} else {
+	} else if(!upgrade_str.empty()){
+		LOG_CIRCE_WARNING("HTTP Upgrade header not handled: remote = ", get_remote_info(), ", upgrade_str = ", upgrade_str);
 		DEBUG_THROW(Poseidon::Http::Exception, Poseidon::Http::ST_NOT_IMPLEMENTED);
 	}
+
+	if(exempt_private && Poseidon::SockAddr(get_remote_info()).is_private()){
+		LOG_CIRCE_DEBUG("Client exempted: ", get_remote_info());
+	} else {
+		IpBanList::accumulate_http_request(get_remote_info().ip());
+	}
+
+	return Poseidon::Http::Session::on_low_level_request_end(content_length, STD_MOVE(headers));
 }
 
 void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders req_headers){

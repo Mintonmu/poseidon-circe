@@ -13,8 +13,9 @@
 #include "protocol/messages_foyer.hpp"
 #include "protocol/utilities.hpp"
 #include "singletons/ip_ban_list.hpp"
-#include <poseidon/websocket/exception.hpp>
 #include <poseidon/job_base.hpp>
+#include <poseidon/sock_addr.hpp>
+#include <poseidon/websocket/exception.hpp>
 
 namespace Circe {
 namespace Gate {
@@ -80,7 +81,6 @@ protected:
 ClientWebSocketSession::ClientWebSocketSession(const boost::shared_ptr<ClientHttpSession> &parent)
 	: Poseidon::WebSocket::Session(parent)
 	, m_client_uuid(parent->m_client_uuid)
-	, m_request_counter_reset_time(0), m_request_counter(0)
 {
 	LOG_CIRCE_DEBUG("ClientWebSocketSession constructor: remote = ", get_remote_info());
 }
@@ -170,16 +170,12 @@ try {
 bool ClientWebSocketSession::on_low_level_message_end(boost::uint64_t whole_size){
 	PROFILE_ME;
 
-	IpBanList::accumulate_websocket_request(get_remote_info().ip());
-
-	const AUTO(now, Poseidon::get_fast_mono_clock());
-	if(m_request_counter_reset_time < now){
-		m_request_counter = 0;
-		m_request_counter_reset_time = Poseidon::saturated_add<boost::uint64_t>(now, 60000);
+	const AUTO(exempt_private, get_config<bool>("client_generic_exempt_private_addresses", true));
+	if(exempt_private && Poseidon::SockAddr(get_remote_info()).is_private()){
+		LOG_CIRCE_DEBUG("Client exempted: ", get_remote_info());
+	} else {
+		IpBanList::accumulate_websocket_request(get_remote_info().ip());
 	}
-	const AUTO(max_requests_per_minute, get_config<boost::uint64_t>("client_websocket_max_requests_per_minute", 60));
-	DEBUG_THROW_UNLESS(m_request_counter < max_requests_per_minute, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Max number of requests per minute exceeded"));
-	++m_request_counter;
 
 	return Poseidon::WebSocket::Session::on_low_level_message_end(whole_size);
 }
