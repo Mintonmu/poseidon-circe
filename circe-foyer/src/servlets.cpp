@@ -110,7 +110,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedMessageRequestToBox, conn, re
 	box_req.client_uuid = req.client_uuid;
 	while(!req.messages.empty()){
 		box_req.messages.emplace_back();
-		box_req.messages.back().opcode  = STD_MOVE(req.messages.front().opcode);
+		box_req.messages.back().opcode  = req.messages.front().opcode;
 		box_req.messages.back().payload = STD_MOVE(req.messages.front().payload);
 		req.messages.pop_front();
 	}
@@ -131,7 +131,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedMessageRequestToGate, /*conn*
 	gate_req.client_uuid = req.client_uuid;
 	while(!req.messages.empty()){
 		gate_req.messages.emplace_back();
-		gate_req.messages.back().opcode  = STD_MOVE(req.messages.front().opcode);
+		gate_req.messages.back().opcode  = req.messages.front().opcode;
 		gate_req.messages.back().payload = STD_MOVE(req.messages.front().payload);
 		req.messages.pop_front();
 	}
