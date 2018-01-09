@@ -163,7 +163,7 @@ boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low
 	}
 
 	const AUTO_REF(req_headers, Poseidon::Http::Session::get_low_level_request_headers());
-	LOG_CIRCE_DEBUG("Client HTTP request:\n", Poseidon::Http::get_string_from_verb(req_headers.verb), ' ', req_headers.uri, '\n', req_headers.headers);
+	LOG_CIRCE_DEBUG("Received HTTP request from ", get_remote_info(), "\n", Poseidon::Http::get_string_from_verb(req_headers.verb), ' ', req_headers.uri, '\n', req_headers.headers);
 
 	const AUTO_REF(upgrade_str, req_headers.headers.get("Upgrade"));
 	if(::strcasecmp(upgrade_str.c_str(), "websocket") == 0){
@@ -211,7 +211,6 @@ void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders req_header
 }
 void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_headers, Poseidon::StreamBuffer req_entity){
 	PROFILE_ME;
-	LOG_CIRCE_DEBUG("Received HTTP message: remote = ", get_remote_info(), ", verb = ", Poseidon::Http::get_string_from_verb(req_headers.verb), ", headers = ", req_headers.headers, ", req_entity.size() = ", req_entity.size());
 
 	const AUTO(resp_encoding_preferred, Poseidon::Http::pick_content_encoding(req_headers));
 	DEBUG_THROW_UNLESS(resp_encoding_preferred != Poseidon::Http::CE_NOT_ACCEPTABLE, Poseidon::Http::Exception, Poseidon::Http::ST_NOT_ACCEPTABLE);
@@ -352,7 +351,7 @@ bool ClientHttpSession::shutdown(Poseidon::WebSocket::StatusCode status_code, co
 bool ClientHttpSession::send(Poseidon::Http::ResponseHeaders resp_headers, Poseidon::StreamBuffer entity){
 	PROFILE_ME;
 
-	LOG_CIRCE_TRACE("Sending HTTP message: remote = ", get_remote_info(), ", status_code = ", resp_headers.status_code, ", headers = ", resp_headers.headers, ", entity.size() = ", entity.size());
+	LOG_CIRCE_DEBUG("Sending HTTP response to ", get_remote_info(), "\n", resp_headers.status_code, " ", resp_headers.reason, "\n", resp_headers.headers);
 	return Poseidon::Http::Session::send(STD_MOVE(resp_headers), STD_MOVE(entity));
 }
 bool ClientHttpSession::send_default_and_shutdown(Poseidon::Http::StatusCode status_code, const Poseidon::OptionalMap &headers) NOEXCEPT {
