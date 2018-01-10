@@ -92,6 +92,7 @@ private:
 ClientHttpSession::ClientHttpSession(Poseidon::Move<Poseidon::UniqueFile> socket)
 	: Poseidon::Http::Session(STD_MOVE(socket))
 	, m_client_uuid(Poseidon::Uuid::random())
+	, m_first_request(true)
 {
 	LOG_CIRCE_DEBUG("ClientHttpSession constructor: remote = ", get_remote_info());
 }
@@ -155,11 +156,15 @@ Poseidon::OptionalMap ClientHttpSession::make_retry_after_headers(boost::uint64_
 boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers){
 	PROFILE_ME;
 
-	const AUTO(time_remaining, IpBanList::get_ban_time_remaining(get_remote_info().ip()));
-	if(time_remaining != 0){
-		LOG_CIRCE_WARNING("Client IP is banned: remote = ", get_remote_info(), ", time_remaining = ", time_remaining);
-		Poseidon::Http::Session::send_default_and_shutdown(Poseidon::Http::ST_SERVICE_UNAVAILABLE, make_retry_after_headers(time_remaining));
-		return VAL_INIT;
+	// Find and kill malicious clients early.
+	if(m_first_request){
+		const AUTO(time_remaining, IpBanList::get_ban_time_remaining(get_remote_info().ip()));
+		if(time_remaining != 0){
+			LOG_CIRCE_WARNING("Client IP is banned: remote = ", get_remote_info(), ", time_remaining = ", time_remaining);
+			Poseidon::Http::Session::send_default_and_shutdown(Poseidon::Http::ST_SERVICE_UNAVAILABLE, make_retry_after_headers(time_remaining));
+			return VAL_INIT;
+		}
+		m_first_request = false;
 	}
 
 	const AUTO_REF(req_headers, Poseidon::Http::Session::get_low_level_request_headers());
@@ -211,6 +216,9 @@ void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders req_header
 }
 void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_headers, Poseidon::StreamBuffer req_entity){
 	PROFILE_ME;
+
+	const AUTO(time_remaining, IpBanList::get_ban_time_remaining(get_remote_info().ip()));
+	DEBUG_THROW_UNLESS(time_remaining == 0, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE, make_retry_after_headers(time_remaining));
 
 	const AUTO(resp_encoding_preferred, Poseidon::Http::pick_content_encoding(req_headers));
 	DEBUG_THROW_UNLESS(resp_encoding_preferred != Poseidon::Http::CE_NOT_ACCEPTABLE, Poseidon::Http::Exception, Poseidon::Http::ST_NOT_ACCEPTABLE);

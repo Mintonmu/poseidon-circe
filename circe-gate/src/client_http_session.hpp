@@ -24,6 +24,9 @@ private:
 private:
 	const Poseidon::Uuid m_client_uuid;
 
+	// These are accessed only by the epoll thread.
+	bool m_first_request;
+
 	// These are accessed only by the primary thread.
 	boost::optional<std::string> m_decoded_uri;
 	boost::optional<std::string> m_auth_token;
