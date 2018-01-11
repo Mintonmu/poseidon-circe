@@ -14,7 +14,7 @@
 #include <poseidon/cbpp/message_base.hpp>
 #include <poseidon/singletons/workhorse_camp.hpp>
 #include <poseidon/job_base.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <openssl/aes.h>
 
 template class Poseidon::PromiseContainer<Circe::Common::InterserverResponse>;
 
@@ -108,41 +108,55 @@ Poseidon::Sha256 calculate_checksum(const std::string &application_key, const ch
 
 }
 
-class InterserverConnection::MessageFilter {
+class InterserverConnection::StreamCipher : NONCOPYABLE {
 private:
-	class ConstantSeedSequence {
-	private:
-		boost::array<unsigned char, 32> m_seed;
+	::AES_KEY m_key;
+	boost::array<unsigned char, 16> m_chunk;
+	unsigned m_count;
 
-	public:
-		ConstantSeedSequence(const boost::array<unsigned char, 32> &seed)
-			: m_seed(seed)
-		{ }
+public:
+	explicit StreamCipher(const boost::array<unsigned char, 32> &seed){
+		reset(seed);
+	}
 
-	public:
-		template<typename RandomAccessIteratorT>
-		void generate(RandomAccessIteratorT from, RandomAccessIteratorT to){
-			for(RandomAccessIteratorT it = from; it != to; ++it){
-				const std::size_t off = static_cast<std::size_t>(it - from);
-				*it = static_cast<VALUE_TYPE(*it)>(off ^ m_seed[off % sizeof(m_seed)]);
-			}
+public:
+	void reset(const boost::array<unsigned char, 32> &seed){
+		DEBUG_THROW_ASSERT(::AES_set_encrypt_key(seed.data(), 256, &m_key) == 0);
+		m_chunk.fill(42);
+		m_count = 16;
+	}
+	int filter(int input, bool to_encrypt){
+		if(m_count == 16){
+			::AES_encrypt(m_chunk.data(), m_chunk.data(), &m_key);
+			m_count = 0;
 		}
-	};
+		unsigned char &mask = m_chunk.at(m_count++);
+		// https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Feedback_(CFB)
+		//   Encryption:
+		//     ciphertext <= mask ^ plaintext
+		//     mask       <= ENCRYPT(ciphertext)
+		//   Decryption:
+		//     plaintext  <= mask ^ ciphertext
+		//     mask       <= ENCRYPT(ciphertext)
+		const int output = mask ^ input;
+		mask = static_cast<unsigned char>(to_encrypt ? output : input);
+		return output;
+	}
+};
 
+class InterserverConnection::MessageFilter : NONCOPYABLE {
 private:
-	ConstantSeedSequence m_seed_seq;
 	// Decoder
-	boost::random::mt19937 m_decryptor_prng;
+	StreamCipher m_decryptor;
 	Poseidon::Inflator m_inflator;
 	// Encoder
-	boost::random::mt19937 m_encryptor_prng;
+	StreamCipher m_encryptor;
 	Poseidon::Deflator m_deflator;
 
 public:
 	MessageFilter(const boost::array<unsigned char, 32> &seed, int compression_level)
-		: m_seed_seq(seed)
-		, m_decryptor_prng(m_seed_seq), m_inflator(false)
-		, m_encryptor_prng(m_seed_seq), m_deflator(false, compression_level)
+		: m_decryptor(seed), m_inflator(false)
+		, m_encryptor(seed), m_deflator(false, compression_level)
 	{ }
 	~MessageFilter(){
 		// Silence the warnings.
@@ -154,56 +168,53 @@ public:
 	Poseidon::StreamBuffer decode(Poseidon::StreamBuffer encoded_payload){
 		PROFILE_ME;
 
-		std::basic_string<unsigned char> temp;
-		temp.reserve(encoded_payload.size() + 4);
-		// Step 1: Decrypt the payload.
-		temp.resize(encoded_payload.size());
-		DEBUG_THROW_ASSERT((encoded_payload.get(&*temp.begin(), temp.size()) == temp.size()) && encoded_payload.empty());
-		for(AUTO(it, temp.begin()); it != temp.end(); ++it){
-			*it = static_cast<unsigned char>(*it ^ m_decryptor_prng());
+		Poseidon::StreamBuffer temp;
+		// Step 1: Decrypt the block.
+		for(std::size_t i = encoded_payload.size(); i != 0; --i){
+			temp.put(m_decryptor.filter(encoded_payload.get(), false));
 		}
 		// Step 2: Append the terminator bytes to this block.
-		static CONSTEXPR const unsigned char s_trailer[4] = { 0x00, 0x00, 0xFF, 0xFF };
-		temp.append(s_trailer, sizeof(s_trailer));
-		// Step 3: Inflate the buffer.
-		m_inflator.put(temp.data(), temp.size());
+		temp.put(0x00);
+		temp.put(0x00);
+		temp.put(0xFF);
+		temp.put(0xFF);
+		// Step 3: Inflate the block.
+		m_inflator.put(temp);
 		m_inflator.flush();
-		Poseidon::StreamBuffer magic_payload = STD_MOVE(m_inflator.get_buffer());
-		m_inflator.get_buffer().clear();
+		// Step 4: Return the block decoded.
+		Poseidon::StreamBuffer magic_payload;
+		magic_payload.swap(m_inflator.get_buffer());
 		return magic_payload;
 	}
 	void reseed_decoder_prng(const boost::array<unsigned char, 32> &seed){
 		PROFILE_ME;
 
-		m_seed_seq = seed;
-		m_decryptor_prng.seed(m_seed_seq);
+		m_decryptor.reset(seed);
 	}
 	Poseidon::StreamBuffer encode(Poseidon::StreamBuffer magic_payload){
 		PROFILE_ME;
 
-		std::basic_string<unsigned char> temp;
-		temp.reserve(magic_payload.size());
-		// Step 1: Deflate the buffer.
+		Poseidon::StreamBuffer temp;
+		// Step 1: Deflate the block.
 		m_deflator.put(magic_payload);
 		m_deflator.flush();
-		temp = m_deflator.get_buffer().dump_byte_string();
-		m_deflator.get_buffer().clear();
-		static CONSTEXPR const unsigned char s_trailer[4] = { 0x00, 0x00, 0xFF, 0xFF };
-		DEBUG_THROW_ASSERT(temp.compare(temp.size() - sizeof(s_trailer), std::string::npos, s_trailer, sizeof(s_trailer)) == 0);
+		temp.swap(m_deflator.get_buffer());
 		// Step 2: Drop the the terminator bytes from this block.
-		temp.erase(temp.size() - sizeof(s_trailer));
-		// Step 3: Encrypt the payload.
-		for(AUTO(it, temp.begin()); it != temp.end(); ++it){
-			*it = static_cast<unsigned char>(*it ^ m_encryptor_prng());
+		DEBUG_THROW_ASSERT(temp.unput() == 0xFF);
+		DEBUG_THROW_ASSERT(temp.unput() == 0xFF);
+		DEBUG_THROW_ASSERT(temp.unput() == 0x00);
+		DEBUG_THROW_ASSERT(temp.unput() == 0x00);
+		// Step 3: Encrypt the block.
+		Poseidon::StreamBuffer encoded_payload;
+		for(std::size_t i = temp.size(); i != 0; --i){
+			encoded_payload.put(m_encryptor.filter(temp.get(), true));
 		}
-		Poseidon::StreamBuffer encoded_payload = Poseidon::StreamBuffer(temp);
 		return encoded_payload;
 	}
 	void reseed_encoder_prng(const boost::array<unsigned char, 32> &seed){
 		PROFILE_ME;
 
-		m_seed_seq = seed;
-		m_encryptor_prng.seed(m_seed_seq);
+		m_encryptor.reset(seed);
 	}
 };
 

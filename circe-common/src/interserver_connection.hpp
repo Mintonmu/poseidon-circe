@@ -26,6 +26,7 @@ typedef Poseidon::PromiseContainer<InterserverResponse> PromisedResponse;
 
 class InterserverConnection : public virtual Poseidon::VirtualSharedFromThis {
 private:
+	class StreamCipher;
 	class MessageFilter;
 	class RequestMessageJob;
 
