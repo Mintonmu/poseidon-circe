@@ -1,6 +1,6 @@
 #!/bin/bash
 
-_common_pp="-DNDEBUG"
+_common_pp="-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC"
 _c_pp="-std=c99"
 _cxx_pp="-std=c++11"
 _optimize="-O2 -g3"
