@@ -37,7 +37,7 @@ enum {
 #pragma GCC diagnostic ignored "-Wunused-function"
 
 #define MESSAGE_NAME   ClientHello
-#define MESSAGE_ID     0x2001
+#define MESSAGE_ID     MFL_PREDEFINED + 1
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (connection_uuid, 16)	\
 	FIELD_VUINT        (timestamp)	\
@@ -50,7 +50,7 @@ enum {
 #include <poseidon/cbpp/message_generator.hpp>
 
 #define MESSAGE_NAME   ServerHello
-#define MESSAGE_ID     0x2002
+#define MESSAGE_ID     MFL_PREDEFINED + 2
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (checksum_resp, 32)	\
 	FIELD_ARRAY        (options_resp,	\
