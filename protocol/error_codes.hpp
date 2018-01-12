@@ -28,13 +28,14 @@ namespace ErrorCodes {
 		ERR_GONE_AWAY                            = Poseidon::Cbpp::ST_GONE_AWAY,             // -12
 		ERR_INVALID_ARGUMENT                     = Poseidon::Cbpp::ST_INVALID_ARGUMENT,      // -13
 		ERR_UNSUPPORTED                          = Poseidon::Cbpp::ST_UNSUPPORTED,           // -14
+		ERR_RESERVED_RESPONSE_UNINITIALIZED      = -900,
+		ERR_RESERVED_RESPONSE_DESTROYED          = -901,
 
 		ERR_GATE_CONNECTION_LOST                 = 50001,
 		ERR_AUTH_CONNECTION_LOST                 = 50002,
 		ERR_FOYER_CONNECTION_LOST                = 50003,
 		ERR_BOX_CONNECTION_LOST                  = 50004,
 		ERR_WEBSOCKET_SHADOW_SESSION_NOT_FOUND   = 50005,
-		ERR_RESERVED_RESPONSE_UNINITIALIZED      = 50006,
 	};
 }
 

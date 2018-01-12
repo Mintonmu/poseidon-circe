@@ -611,9 +611,11 @@ void InterserverConnection::send_notification(const Poseidon::Cbpp::MessageBase 
 void wait_for_response(Poseidon::Cbpp::MessageBase &msg, const boost::shared_ptr<const PromisedResponse> &promise){
 	PROFILE_ME;
 
+	InterserverResponse resp;
+	resp.set_err_code(Protocol::ERR_RESERVED_RESPONSE_DESTROYED);
 	Poseidon::yield(promise);
-	AUTO(resp, STD_MOVE_IDN(promise->get()));
-	promise->get() = VAL_INIT;
+	resp.swap(promise->get());
+	LOG_CIRCE_TRACE("Response: ", resp);
 
 	CIRCE_PROTOCOL_THROW_UNLESS(resp.get_err_code() == 0, resp.get_err_code(), Poseidon::SharedNts(resp.get_err_msg()));
 	DEBUG_THROW_UNLESS(resp.get_message_id() != 0, Poseidon::Exception, Poseidon::sslit("No message payload but status code returned"));
