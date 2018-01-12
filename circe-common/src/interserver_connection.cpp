@@ -616,7 +616,7 @@ void wait_for_response(Poseidon::Cbpp::MessageBase &msg, const boost::shared_ptr
 	promise->get() = VAL_INIT;
 
 	CIRCE_PROTOCOL_THROW_UNLESS(resp.get_err_code() == 0, resp.get_err_code(), Poseidon::SharedNts(resp.get_err_msg()));
-	DEBUG_THROW_UNLESS(resp.get_message_id() != 0, Poseidon::Exception, Poseidon::sslit("No message but status code returned"));
+	DEBUG_THROW_UNLESS(resp.get_message_id() != 0, Poseidon::Exception, Poseidon::sslit("No message payload but status code returned"));
 	DEBUG_THROW_UNLESS(resp.get_message_id() == msg.get_id(), Poseidon::Exception, Poseidon::sslit("Unexpected response message ID"));
 	msg.deserialize(resp.get_payload());
 	if(!resp.get_payload().empty()){
