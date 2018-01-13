@@ -1,5 +1,10 @@
 # poseidon-circe
-HTTP + WebSocket load balancer based on Poseidon
+
+基于 [poseidon](https://github.com/lhmouse/poseidon) 的 HTTP 和 WebSocket 负载均衡框架。
+
+在 [Wiki 页面](https://github.com/lhmouse/poseidon-circe/wiki) 上有服务器架构图和消息流程图。
+
+服务器间通信基于 TCP 的长连接，数据流采用 deflate 压缩和 AES CFB 模式加密。
 
 ### 编译并运行
 
@@ -32,7 +37,7 @@ make -j$(nproc)
 
 ### 定制功能
 
-修改以下两个文件来自定义 HTTP 和 WebSocket 消息的处理行为：
+直接复制并修改 Auth Server（登录认证服务器）和 Box Server（业务服务器）的代码。只需修改以下两个文件，就可自定义 HTTP 和 WebSocket 消息的处理行为：
 
 ```text
 circe-auth/src/user_defined_functions.cpp
