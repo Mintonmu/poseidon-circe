@@ -15,7 +15,8 @@ git submodule init
 git submodule update
 
 pushd poseidon
-git checkout master && git pull
+git checkout master
+git reset --hard origin/master
 ./reconfig_optimized_debug_cxx11.sh
 # 如果已安装 poseidon 可以跳过这一步，直接转到 [1]。
 make -j$(nproc)
