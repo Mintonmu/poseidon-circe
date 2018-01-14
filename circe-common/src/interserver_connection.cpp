@@ -209,6 +209,7 @@ public:
 		for(std::size_t i = temp.size(); i != 0; --i){
 			encoded_payload.put(m_encryptor.filter(temp.get(), true));
 		}
+		// Step 4: Return the block encoded.
 		return encoded_payload;
 	}
 	void reseed_encoder_prng(const boost::array<unsigned char, 32> &seed){
