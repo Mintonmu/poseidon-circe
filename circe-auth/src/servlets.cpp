@@ -37,11 +37,10 @@ DEFINE_SERVLET_FOR(Protocol::Auth::WebSocketAuthenticationRequest, /*conn*/, req
 		Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.decoded_uri), Protocol::copy_key_values(STD_MOVE(req.params)));
 
 	Protocol::Auth::WebSocketAuthenticationResponse resp;
-	while(!resp_messages.empty()){
-		resp.messages.emplace_back();
-		resp.messages.back().opcode  = boost::numeric_cast<unsigned>(resp_messages.front().first);
-		resp.messages.back().payload = STD_MOVE(resp_messages.front().second);
-		resp_messages.pop_front();
+	for(AUTO(qmit, resp_messages.begin()); qmit != resp_messages.end(); ++qmit){
+		const AUTO(rmit, Protocol::emplace_at_end(resp.messages));
+		rmit->opcode  = boost::numeric_cast<unsigned>(qmit->first);
+		rmit->payload = STD_MOVE(qmit->second);
 	}
 	resp.auth_token  = STD_MOVE(auth_token);
 	resp.status_code = resp_status_code;
