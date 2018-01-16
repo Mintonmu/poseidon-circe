@@ -6,6 +6,7 @@
 #include "singletons/box_acceptor.hpp"
 #include "protocol/error_codes.hpp"
 #include "protocol/messages_foyer.hpp"
+#include "protocol/utilities.hpp"
 #include <poseidon/websocket/exception.hpp>
 #include <poseidon/job_base.hpp>
 
@@ -83,26 +84,28 @@ protected:
 			Poseidon::Mutex::UniqueLock lock(session->m_delivery_mutex);
 			DEBUG_THROW_ASSERT(session->m_delivery_job_active);
 			for(;;){
-				LOG_CIRCE_TRACE("Collecting messages pending: session = ", (void *)session.get(), ", count = ", session->m_messages_pending.size());
-				if(session->m_messages_pending.empty()){
+				VALUE_TYPE(session->m_messages_pending) messages_pending;
+				messages_pending.swap(session->m_messages_pending);
+				LOG_CIRCE_TRACE("Messages pending: session = ", (void *)session.get(), ", count = ", messages_pending.size());
+				if(messages_pending.empty()){
 					break;
 				}
-				// Send messages that have been enqueued.
+				lock.unlock();
+
 				Protocol::Foyer::WebSocketPackedMessageRequestToGate foyer_req;
 				foyer_req.gate_uuid   = session->m_gate_uuid;
 				foyer_req.client_uuid = session->m_client_uuid;
-				while(!session->m_messages_pending.empty()){
-					foyer_req.messages.emplace_back();
-					foyer_req.messages.back().opcode  = boost::numeric_cast<boost::uint8_t>(session->m_messages_pending.front().first);
-					foyer_req.messages.back().payload = STD_MOVE(session->m_messages_pending.front().second);
-					session->m_messages_pending.pop_front();
+				for(AUTO(qmit, messages_pending.begin()); qmit != messages_pending.end(); ++qmit){
+					const AUTO(rmit, Protocol::emplace_at_end(foyer_req.messages));
+					rmit->opcode  = boost::numeric_cast<boost::uint8_t>(qmit->first);
+					rmit->payload = STD_MOVE(qmit->second);
 				}
 				LOG_CIRCE_TRACE("Sending request: ", foyer_req);
 				Protocol::Foyer::WebSocketPackedMessageResponseFromGate foyer_resp;
-				lock.unlock();
 				Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
-				lock.lock();
 				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+
+				lock.lock();
 			}
 			session->m_delivery_job_active = false;
 		} catch(Poseidon::WebSocket::Exception &e){

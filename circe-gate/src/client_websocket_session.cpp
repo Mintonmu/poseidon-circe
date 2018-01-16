@@ -48,19 +48,20 @@ protected:
 
 			DEBUG_THROW_ASSERT(ws_session->m_delivery_job_active);
 			for(;;){
-				LOG_CIRCE_TRACE("Collecting messages pending: ws_session = ", (void *)ws_session.get(), ", count = ", ws_session->m_messages_pending.size());
-				if(ws_session->m_messages_pending.empty()){
+				VALUE_TYPE(ws_session->m_messages_pending) messages_pending;
+				messages_pending.swap(ws_session->m_messages_pending);
+				LOG_CIRCE_TRACE("Messages pending: ws_session = ", (void *)ws_session.get(), ", count = ", messages_pending.size());
+				if(messages_pending.empty()){
 					break;
 				}
-				// Send messages that have been enqueued.
+
 				Protocol::Foyer::WebSocketPackedMessageRequestToBox foyer_req;
 				foyer_req.box_uuid    = ws_session->m_box_uuid.get();
 				foyer_req.client_uuid = ws_session->m_client_uuid;
-				while(!ws_session->m_messages_pending.empty()){
-					foyer_req.messages.emplace_back();
-					foyer_req.messages.back().opcode  = boost::numeric_cast<boost::uint8_t>(ws_session->m_messages_pending.front().first);
-					foyer_req.messages.back().payload = STD_MOVE(ws_session->m_messages_pending.front().second);
-					ws_session->m_messages_pending.pop_front();
+				for(AUTO(qmit, messages_pending.begin()); qmit != messages_pending.end(); ++qmit){
+					const AUTO(rmit, Protocol::emplace_at_end(foyer_req.messages));
+					rmit->opcode  = boost::numeric_cast<boost::uint8_t>(qmit->first);
+					rmit->payload = STD_MOVE(qmit->second);
 				}
 				LOG_CIRCE_TRACE("Sending request: ", foyer_req);
 				Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
@@ -133,9 +134,8 @@ try {
 	Protocol::Auth::WebSocketAuthenticationResponse auth_resp;
 	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 	LOG_CIRCE_TRACE("Received response: ", auth_resp);
-	while(!auth_resp.messages.empty()){
-		send(boost::numeric_cast<Poseidon::WebSocket::OpCode>(auth_resp.messages.front().opcode), STD_MOVE(auth_resp.messages.front().payload));
-		auth_resp.messages.pop_front();
+	for(AUTO(qmit, auth_resp.messages.begin()); qmit != auth_resp.messages.end(); ++qmit){
+		send(boost::numeric_cast<Poseidon::WebSocket::OpCode>(qmit->opcode), STD_MOVE(qmit->payload));
 	}
 	DEBUG_THROW_UNLESS(!auth_resp.auth_token.empty(), Poseidon::WebSocket::Exception, boost::numeric_cast<Poseidon::WebSocket::StatusCode>(auth_resp.status_code), Poseidon::SharedNts(auth_resp.reason));
 	LOG_CIRCE_DEBUG("Auth server has allowed WebSocket client: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);

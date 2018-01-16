@@ -84,7 +84,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketClosureNotificationToBox, conn, ntf
 	LOG_CIRCE_TRACE("Sending notification: ", box_ntfy);
 	box_conn->send_notification(box_ntfy);
 
-	return 0;
+	return Protocol::ERR_SUCCESS;
 }
 
 DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketKillNotificationToGate, /*conn*/, ntfy){
@@ -98,7 +98,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketKillNotificationToGate, /*conn*/, n
 	LOG_CIRCE_TRACE("Sending notification: ", gate_ntfy);
 	gate_conn->send_notification(gate_ntfy);
 
-	return 0;
+	return Protocol::ERR_SUCCESS;
 }
 
 DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedMessageRequestToBox, conn, req){
@@ -108,11 +108,10 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedMessageRequestToBox, conn, re
 	Protocol::Box::WebSocketPackedMessageRequest box_req;
 	box_req.gate_uuid   = conn->get_connection_uuid();
 	box_req.client_uuid = req.client_uuid;
-	while(!req.messages.empty()){
-		box_req.messages.emplace_back();
-		box_req.messages.back().opcode  = req.messages.front().opcode;
-		box_req.messages.back().payload = STD_MOVE(req.messages.front().payload);
-		req.messages.pop_front();
+	for(AUTO(qmit, req.messages.begin()); qmit != req.messages.end(); ++qmit){
+		const AUTO(rmit, Protocol::emplace_at_end(box_req.messages));
+		rmit->opcode  = qmit->opcode;
+		rmit->payload = STD_MOVE(qmit->payload);
 	}
 	LOG_CIRCE_TRACE("Sending request: ", box_req);
 	Protocol::Box::WebSocketPackedMessageResponse box_resp;
@@ -129,11 +128,10 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedMessageRequestToGate, /*conn*
 
 	Protocol::Gate::WebSocketPackedMessageRequest gate_req;
 	gate_req.client_uuid = req.client_uuid;
-	while(!req.messages.empty()){
-		gate_req.messages.emplace_back();
-		gate_req.messages.back().opcode  = req.messages.front().opcode;
-		gate_req.messages.back().payload = STD_MOVE(req.messages.front().payload);
-		req.messages.pop_front();
+	for(AUTO(qmit, req.messages.begin()); qmit != req.messages.end(); ++qmit){
+		const AUTO(rmit, Protocol::emplace_at_end(gate_req.messages));
+		rmit->opcode  = qmit->opcode;
+		rmit->payload = STD_MOVE(qmit->payload);
 	}
 	LOG_CIRCE_TRACE("Sending request: ", gate_req);
 	Protocol::Gate::WebSocketPackedMessageResponse gate_resp;
@@ -150,6 +148,60 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::CheckGateRequest, /*conn*/, req){
 
 	Protocol::Foyer::CheckGateResponse resp;
 	return resp;
+}
+
+DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedBroadcastNotificationToGate, /*conn*/, ntfy){
+	struct GateServerElement {
+		boost::shared_ptr<Common::InterserverConnection> gate_conn;
+		boost::container::flat_set<Poseidon::Uuid> clients;
+	};
+	boost::container::flat_map<Poseidon::Uuid, GateServerElement> gate_servers;
+	gate_servers.reserve(ntfy.clients.size());
+
+	// Collect gate servers.
+	for(AUTO(qcit, ntfy.clients.begin()); qcit != ntfy.clients.end(); ++qcit){
+		const AUTO(gspair, gate_servers.emplace(Poseidon::Uuid(qcit->gate_uuid), GateServerElement()));
+		// Get the session for this gate server if a new element has just been inserted.
+		AUTO_REF(gate_conn, gspair.first->second.gate_conn);
+		if(gspair.second){
+			gate_conn = FoyerAcceptor::get_session(gspair.first->first);
+		}
+		// Ignore all clients on a gate server that could not be found.
+		if(!gate_conn){
+			LOG_CIRCE_TRACE("> Gate server not found: ", gspair.first->first);
+			continue;
+		}
+		gspair.first->second.clients.insert(Poseidon::Uuid(qcit->client_uuid));
+	}
+
+	Protocol::Gate::WebSocketPackedBroadcastNotification gate_ntfy;
+	// Send messages to gate servers.
+	for(AUTO(gsit, gate_servers.begin()); gsit != gate_servers.end(); ++gsit){
+		const AUTO_REF(gate_conn, gsit->second.gate_conn);
+		if(!gate_conn){
+			continue;
+		}
+		try {
+			// Fill in UUIDs of target clients.
+			gate_ntfy.clients.clear();
+			for(AUTO(cit, gsit->second.clients.begin()); cit != gsit->second.clients.end(); ++cit){
+				gate_ntfy.clients.emplace_back();
+				gate_ntfy.clients.back().client_uuid = *cit;
+			}
+			// Fill in the message body. Note that this happens at most once.
+			for(AUTO(qmit, ntfy.messages.begin()); qmit != ntfy.messages.end(); ++qmit){
+				const AUTO(rmit, Protocol::emplace_at_end(gate_ntfy.messages));
+				rmit->opcode  = qmit->opcode;
+				rmit->payload = STD_MOVE(qmit->payload);
+			}
+			gate_conn->send_notification(gate_ntfy);
+		} catch(std::exception &e){
+			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			gate_conn->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+		}
+	}
+
+	return Protocol::ERR_SUCCESS;
 }
 
 }

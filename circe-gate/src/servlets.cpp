@@ -22,16 +22,15 @@ DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketKillNotification, /*conn*/, ntfy){
 		ws_session->shutdown(boost::numeric_cast<Poseidon::WebSocket::StatusCode>(ntfy.status_code), ntfy.reason.c_str());
 	}
 
-	return 0;
+	return Protocol::ERR_SUCCESS;
 }
 
 DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedMessageRequest, /*conn*/, req){
 	const AUTO(ws_session, ClientHttpAcceptor::get_websocket_session(Poseidon::Uuid(req.client_uuid)));
 	if(ws_session){
 		try {
-			while(!req.messages.empty()){
-				ws_session->send(boost::numeric_cast<Poseidon::WebSocket::OpCode>(req.messages.front().opcode), STD_MOVE(req.messages.front().payload));
-				req.messages.pop_front();
+			for(AUTO(qmit, req.messages.begin()); qmit != req.messages.end(); ++qmit){
+				ws_session->send(boost::numeric_cast<Poseidon::WebSocket::OpCode>(qmit->opcode), STD_MOVE(qmit->payload));
 			}
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
@@ -41,6 +40,24 @@ DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedMessageRequest, /*conn*/, req)
 
 	Protocol::Gate::WebSocketPackedMessageResponse resp;
 	return resp;
+}
+
+DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedBroadcastNotification, /*conn*/, req){
+	for(AUTO(qcit, req.clients.begin()); qcit != req.clients.end(); ++qcit){
+		const AUTO(ws_session, ClientHttpAcceptor::get_websocket_session(Poseidon::Uuid(qcit->client_uuid)));
+		if(ws_session){
+			try {
+				for(AUTO(qmit, req.messages.begin()); qmit != req.messages.end(); ++qmit){
+					ws_session->send(boost::numeric_cast<Poseidon::WebSocket::OpCode>(qmit->opcode), qmit->payload);
+				}
+			} catch(std::exception &e){
+				LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+				ws_session->shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
+			}
+		}
+	}
+
+	return Protocol::ERR_SUCCESS;
 }
 
 }

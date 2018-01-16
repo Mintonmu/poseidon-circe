@@ -144,8 +144,7 @@ namespace {
 					const AUTO(range, m_map.equal_range<1>(foyer_gate_uuids_expired.back()));
 					sessions_to_erase.reserve(static_cast<std::size_t>(std::distance(range.first, range.second)));
 					for(AUTO(it, range.first); it != range.second; it = m_map.erase<1>(it)){
-						AUTO(session, it->session);
-						sessions_to_erase.emplace_back(STD_MOVE(session));
+						sessions_to_erase.emplace_back(it->session);
 					}
 				}
 				while(!sessions_to_erase.empty()){

@@ -51,16 +51,15 @@ DEFINE_SERVLET_FOR(Protocol::Box::WebSocketClosureNotification, /*conn*/, ntfy){
 		}
 	}
 
-	return 0;
+	return Protocol::ERR_SUCCESS;
 }
 
 DEFINE_SERVLET_FOR(Protocol::Box::WebSocketPackedMessageRequest, /*conn*/, req){
 	const AUTO(shadow_session, WebSocketShadowSessionSupervisor::get_session(Poseidon::Uuid(req.client_uuid)));
 	if(shadow_session){
 		try {
-			while(!req.messages.empty()){
-				UserDefinedFunctions::handle_websocket_message(shadow_session, boost::numeric_cast<Poseidon::WebSocket::OpCode>(req.messages.front().opcode), STD_MOVE(req.messages.front().payload));
-				req.messages.pop_front();
+			for(AUTO(qmit, req.messages.begin()); qmit != req.messages.end(); ++qmit){
+				UserDefinedFunctions::handle_websocket_message(shadow_session, boost::numeric_cast<Poseidon::WebSocket::OpCode>(qmit->opcode), STD_MOVE(qmit->payload));
 			}
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());

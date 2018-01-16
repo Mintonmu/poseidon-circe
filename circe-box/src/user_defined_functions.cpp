@@ -3,6 +3,10 @@
 
 #include "precompiled.hpp"
 #include "user_defined_functions.hpp"
+#include "protocol/utilities.hpp"
+
+#include "protocol/messages_foyer.hpp"
+#include "singletons/box_acceptor.hpp"
 
 namespace Circe {
 namespace Box {
@@ -64,11 +68,25 @@ void UserDefinedFunctions::handle_websocket_message(
 
 	LOG_CIRCE_FATAL("TODO: Handle WebSocket message: ", opcode, ": ", payload);
 
+//	for(unsigned i = 0; i < 3; ++i){
+//		char str[100];
+//		std::sprintf(str, "hello %d", i);
+//		client_session->send(Poseidon::WebSocket::OP_DATA_TEXT, Poseidon::StreamBuffer(str));
+//	}
+	Protocol::Foyer::WebSocketPackedBroadcastNotificationToGate ntfy;
+	for(unsigned i = 0; i < 3; ++i){
+		ntfy.clients.emplace_back();
+		ntfy.clients.back().gate_uuid = client_session->get_gate_uuid();;
+		ntfy.clients.back().client_uuid = client_session->get_client_uuid();
+	}
 	for(unsigned i = 0; i < 3; ++i){
 		char str[100];
 		std::sprintf(str, "hello %d", i);
-		client_session->send(Poseidon::WebSocket::OP_DATA_TEXT, Poseidon::StreamBuffer(str));
+		AUTO(it, Protocol::emplace_at_end(ntfy.messages));
+		it->opcode = Poseidon::WebSocket::OP_DATA_TEXT;
+		it->payload = Poseidon::StreamBuffer(str);
 	}
+	BoxAcceptor::safe_broadcast_notification(ntfy);
 }
 
 void UserDefinedFunctions::handle_websocket_closure(
