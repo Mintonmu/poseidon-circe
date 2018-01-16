@@ -217,7 +217,7 @@ void ClientWebSocketSession::on_sync_control_message(Poseidon::WebSocket::OpCode
 	}
 
 	if(opcode == Poseidon::WebSocket::OP_PONG){
-		LOG_CIRCE_DEBUG("Received PONG from client: remote = ", get_remote_info(), ", payload = ", payload);
+		LOG_CIRCE_TRACE("Received PONG from client: remote = ", get_remote_info(), ", payload = ", payload);
 	}
 
 	Poseidon::WebSocket::Session::on_sync_control_message(opcode, STD_MOVE(payload));

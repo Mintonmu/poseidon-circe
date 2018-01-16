@@ -7,6 +7,7 @@
 
 #include "protocol/messages_foyer.hpp"
 #include "singletons/box_acceptor.hpp"
+#include "singletons/websocket_shadow_session_supervisor.hpp"
 
 namespace Circe {
 namespace Box {
@@ -73,18 +74,22 @@ void UserDefinedFunctions::handle_websocket_message(
 //		std::sprintf(str, "hello %d", i);
 //		client_session->send(Poseidon::WebSocket::OP_DATA_TEXT, Poseidon::StreamBuffer(str));
 //	}
+
+	boost::container::vector<boost::shared_ptr<WebSocketShadowSession> > clients;
+	WebSocketShadowSessionSupervisor::get_all_sessions(clients);
+
 	Protocol::Foyer::WebSocketPackedBroadcastNotificationToGate ntfy;
-	for(unsigned i = 0; i < 3; ++i){
-		ntfy.clients.emplace_back();
-		ntfy.clients.back().gate_uuid = client_session->get_gate_uuid();;
-		ntfy.clients.back().client_uuid = client_session->get_client_uuid();
+	for(AUTO(rit, clients.begin()); rit != clients.end(); ++rit){
+		const AUTO(wit, Protocol::emplace_at_end(ntfy.clients));
+		wit->gate_uuid = (*rit)->get_gate_uuid();
+		wit->client_uuid = (*rit)->get_client_uuid();
 	}
 	for(unsigned i = 0; i < 3; ++i){
+		const AUTO(rit, Protocol::emplace_at_end(ntfy.messages));
+		rit->opcode = Poseidon::WebSocket::OP_DATA_TEXT;
 		char str[100];
 		std::sprintf(str, "hello %d", i);
-		AUTO(it, Protocol::emplace_at_end(ntfy.messages));
-		it->opcode = Poseidon::WebSocket::OP_DATA_TEXT;
-		it->payload = Poseidon::StreamBuffer(str);
+		rit->payload = Poseidon::StreamBuffer(str);
 	}
 	BoxAcceptor::safe_broadcast_notification(ntfy);
 }
