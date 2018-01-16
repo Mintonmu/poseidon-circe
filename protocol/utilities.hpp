@@ -83,6 +83,11 @@ Poseidon::OptionalMap copy_key_values(boost::container::vector<SourceT> &&src){
 }
 #endif
 
+template<typename ContainerT>
+typename ContainerT::iterator emplace_at_end(ContainerT &dst){
+	return dst.emplace(dst.end());
+}
+
 }
 }
 

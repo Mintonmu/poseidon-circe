@@ -36,6 +36,19 @@ namespace Gate {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
+#define MESSAGE_NAME   WebSocketPackedBroadcastNotification
+#define MESSAGE_ID     1105
+#define MESSAGE_FIELDS \
+	FIELD_LIST         (clients,	\
+	  FIELD_FIXED        (client_uuid, 16)	\
+	)	\
+	FIELD_LIST         (messages,	\
+	  FIELD_VUINT        (opcode)\
+	  FIELD_FLEXIBLE     (payload)	\
+	)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
 }
 }
 }
