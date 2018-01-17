@@ -33,6 +33,7 @@ private:
 
 	boost::optional<std::string> m_auth_token;
 
+	mutable Poseidon::Mutex m_delivery_mutex;
 	boost::shared_ptr<DeliveryJob> m_delivery_job_spare;
 	bool m_delivery_job_active;
 	boost::container::deque<std::pair<Poseidon::WebSocket::OpCode, Poseidon::StreamBuffer> > m_messages_pending;

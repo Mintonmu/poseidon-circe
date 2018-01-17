@@ -46,6 +46,7 @@ protected:
 			const AUTO(foyer_conn, ws_session->m_weak_foyer_conn.lock());
 			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Connection to foyer server was lost"));
 
+			Poseidon::Mutex::UniqueLock lock(ws_session->m_delivery_mutex);
 			DEBUG_THROW_ASSERT(ws_session->m_delivery_job_active);
 			for(;;){
 				VALUE_TYPE(ws_session->m_messages_pending) messages_pending;
@@ -54,6 +55,7 @@ protected:
 				if(messages_pending.empty()){
 					break;
 				}
+				lock.unlock();
 
 				Protocol::Foyer::WebSocketPackedMessageRequestToBox foyer_req;
 				foyer_req.box_uuid    = ws_session->m_box_uuid.get();
@@ -67,6 +69,8 @@ protected:
 				Protocol::Foyer::WebSocketPackedMessageResponseFromBox foyer_resp;
 				Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
 				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+
+				lock.lock();
 			}
 			ws_session->m_delivery_job_active = false;
 		} catch(Poseidon::WebSocket::Exception &e){
@@ -184,6 +188,7 @@ void ClientWebSocketSession::on_sync_data_message(Poseidon::WebSocket::OpCode op
 	PROFILE_ME;
 	LOG_CIRCE_DEBUG("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
+	const Poseidon::Mutex::UniqueLock lock(m_delivery_mutex);
 	if(!m_delivery_job_spare){
 		m_delivery_job_spare = boost::make_shared<DeliveryJob>(virtual_shared_from_this<ClientWebSocketSession>());
 		m_delivery_job_active = false;
