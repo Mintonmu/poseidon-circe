@@ -1,3 +1,5 @@
+![GNU nano for the win!](https://raw.githubusercontent.com/lhmouse/poseidon/master/gnu-nano-ftw.png)
+
 # poseidon-circe
 
 基于 [poseidon](https://github.com/lhmouse/poseidon) 的 HTTP 和 WebSocket 负载均衡框架。
