@@ -35,6 +35,8 @@ public:
 	boost::uint64_t get_last_access_time() const;
 	void touch_value();
 	void set_value(std::string value_new);
+
+	
 };
 
 }
