@@ -34,7 +34,8 @@ pkginclude_protocol_HEADERS = \
 	../protocol/messages_pilot.hpp	\
 	../protocol/error_codes.hpp	\
 	../protocol/exception.hpp	\
-	../protocol/utilities.hpp
+	../protocol/utilities.hpp	\
+	../protocol/mysql_pilot.hpp
 
 pkginclude_commondir = $(pkgincludedir)/common
 pkginclude_common_HEADERS = \
@@ -53,6 +54,8 @@ lib_LTLIBRARIES = \
 
 lib_libcirce_common_la_SOURCES = \
 	../protocol/messages_external_definitions.cpp	\
+	../protocol/mysql_external_definitions.cpp	\
+	../protocol/mongodb_external_definitions.cpp	\
 	circe-common/src/interserver_response.cpp	\
 	circe-common/src/interserver_connection.cpp	\
 	circe-common/src/interserver_servlet_container.cpp	\
