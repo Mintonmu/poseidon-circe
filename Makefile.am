@@ -8,6 +8,7 @@ EXTRA_DIST = \
 	etc/circe/circe-foyer-template.conf	\
 	etc/circe/circe-auth-template.conf	\
 	etc/circe/circe-box-template.conf
+##_INSERT_NEW_CONFIG_FILE_HERE
 
 SUBDIRS = \
 	circe-common	\
@@ -15,3 +16,4 @@ SUBDIRS = \
 	circe-foyer	\
 	circe-auth	\
 	circe-box
+##_INSERT_NEW_DIRECTORY_HERE

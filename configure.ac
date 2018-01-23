@@ -17,6 +17,6 @@ AC_CONFIG_FILES([
 	circe-gate/Makefile
 	circe-foyer/Makefile
 	circe-auth/Makefile
-	circe-box/Makefile
-])
+	circe-box/Makefile])
+##_INSERT_NEW_MAKEFILE_HERE
 AC_OUTPUT
