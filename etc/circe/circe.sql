@@ -6,10 +6,9 @@ USE `circe`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Pilot_Compass` (
   `key` varchar(255) NOT NULL,
-  `last_access_time` datetime NOT NULL,
-  `version` int(10) unsigned NOT NULL,
   `value` text NOT NULL,
-  PRIMARY KEY (`key`),
+  `version` int(10) unsigned NOT NULL,
+  `last_access_time` datetime NOT NULL,
   KEY `last_access_time` (`last_access_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
