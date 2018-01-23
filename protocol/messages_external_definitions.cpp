@@ -7,3 +7,4 @@
 #include "messages_foyer.hpp"
 #include "messages_auth.hpp"
 #include "messages_box.hpp"
+#include "messages_pilot.hpp"

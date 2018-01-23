@@ -31,6 +31,7 @@ pkginclude_protocol_HEADERS = \
 	../protocol/messages_foyer.hpp	\
 	../protocol/messages_auth.hpp	\
 	../protocol/messages_box.hpp	\
+	../protocol/messages_pilot.hpp	\
 	../protocol/error_codes.hpp	\
 	../protocol/exception.hpp	\
 	../protocol/utilities.hpp

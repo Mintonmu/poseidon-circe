@@ -15,13 +15,18 @@ pkginclude_HEADERS =
 
 pkginclude_pilotdir = $(pkgincludedir)/pilot
 pkginclude_pilot_HEADERS = \
+	circe-pilot/src/singletons/servlet_container.hpp	\
+	circe-pilot/src/singletons/pilot_acceptor.hpp	\
 	circe-pilot/src/mmain.hpp
 
 lib_LTLIBRARIES = \
 	lib/libcirce-pilot.la
 
 lib_libcirce_pilot_la_SOURCES = \
-	circe-pilot/src/mmain.cpp
+	circe-pilot/src/singletons/servlet_container.cpp	\
+	circe-pilot/src/singletons/pilot_acceptor.cpp	\
+	circe-pilot/src/mmain.cpp	\
+	circe-pilot/src/servlets.cpp
 
 lib_libcirce_pilot_la_LDFLAGS = \
 	-module -no-undefined -version-info 0:0:0
