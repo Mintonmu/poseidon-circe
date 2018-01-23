@@ -3,7 +3,7 @@
 set -e
 
 _conf="etc/circe/main.conf"
-_output="misc/circe.sql"
+_output="etc/circe/circe.sql"
 
 _host="$(sed -r "s/mysql_server_addr\\s*=\\s*([^\\s]*)/\\1/;t;d" "${_conf}" | head -n1)"; [[ -z "${_host}" ]] && _host="localhost"
 _port="$(sed -r "s/mysql_server_port\\s*=\\s*([^\\s]*)/\\1/;t;d" "${_conf}" | head -n1)"; [[ -z "${_port}" ]] && _port="3306"
