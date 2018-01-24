@@ -27,6 +27,7 @@ namespace {
 		UNIQUE_MEMBER_INDEX(compass_key)
 		MULTI_MEMBER_INDEX(last_access_time)
 	);
+
 	Poseidon::Mutex g_mutex;
 	boost::weak_ptr<CompassContainer> g_weak_compass_container;
 }
