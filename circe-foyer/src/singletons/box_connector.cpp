@@ -28,8 +28,6 @@ namespace {
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
-	PROFILE_ME;
-
 	const AUTO(hosts, get_config_all<std::string>("box_connector_host"));
 	const AUTO(port, get_config<boost::uint16_t>("box_connector_port"));
 	const AUTO(appkey, get_config<std::string>("box_connector_appkey"));

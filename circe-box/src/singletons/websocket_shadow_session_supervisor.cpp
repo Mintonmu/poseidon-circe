@@ -162,7 +162,15 @@ namespace {
 	};
 
 	boost::weak_ptr<SessionContainer> g_container;
+}
 
+MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_ESSENTIAL){
+	const AUTO(container, boost::make_shared<SessionContainer>());
+	handles.push(container);
+	g_container = container;
+}
+
+namespace {
 	void ping_timer_proc(){
 		PROFILE_ME;
 
@@ -176,10 +184,6 @@ namespace {
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
-	const AUTO(container, boost::make_shared<SessionContainer>());
-	handles.push(container);
-	g_container = container;
-
 	const AUTO(ping_interval, get_config<boost::uint64_t>("websocket_shadow_session_ping_interval", 60000));
 	const AUTO(timer, Poseidon::TimerDaemon::register_timer(0, ping_interval, boost::bind(&ping_timer_proc)));
 	handles.push(timer);

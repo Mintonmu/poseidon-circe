@@ -28,8 +28,6 @@ namespace {
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
-	PROFILE_ME;
-
 	const AUTO(bind, get_config<std::string>("auth_acceptor_bind"));
 	const AUTO(port, get_config<boost::uint16_t>("auth_acceptor_port"));
 	const AUTO(appkey, get_config<std::string>("auth_acceptor_appkey"));
