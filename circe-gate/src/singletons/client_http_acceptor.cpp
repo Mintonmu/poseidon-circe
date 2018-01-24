@@ -122,10 +122,12 @@ namespace {
 		}
 	};
 
+	Poseidon::Mutex g_mutex;
 	boost::weak_ptr<SpecializedAcceptor> g_weak_acceptor;
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(bind, get_config<std::string>("client_http_acceptor_bind"));
 	const AUTO(port, get_config<boost::uint16_t>("client_http_acceptor_port"));
 	const AUTO(cert, get_config<std::string>("client_http_acceptor_certificate"));
@@ -139,6 +141,7 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 boost::shared_ptr<ClientHttpSession> ClientHttpAcceptor::get_session(const Poseidon::Uuid &client_uuid){
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
 		LOG_CIRCE_WARNING("ClientHttpAcceptor has not been initialized.");
@@ -149,6 +152,7 @@ boost::shared_ptr<ClientHttpSession> ClientHttpAcceptor::get_session(const Posei
 std::size_t ClientHttpAcceptor::get_all_sessions(boost::container::vector<boost::shared_ptr<ClientHttpSession> > &sessions_ret){
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
 		LOG_CIRCE_WARNING("ClientHttpAcceptor has not been initialized.");
@@ -159,6 +163,7 @@ std::size_t ClientHttpAcceptor::get_all_sessions(boost::container::vector<boost:
 boost::shared_ptr<ClientWebSocketSession> ClientHttpAcceptor::get_websocket_session(const Poseidon::Uuid &client_uuid){
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
 		LOG_CIRCE_WARNING("ClientHttpAcceptor has not been initialized.");
@@ -169,6 +174,7 @@ boost::shared_ptr<ClientWebSocketSession> ClientHttpAcceptor::get_websocket_sess
 std::size_t ClientHttpAcceptor::get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<ClientWebSocketSession> > &sessions_ret){
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
 		LOG_CIRCE_WARNING("ClientHttpAcceptor has not been initialized.");
@@ -179,6 +185,7 @@ std::size_t ClientHttpAcceptor::get_all_websocket_sessions(boost::container::vec
 std::size_t ClientHttpAcceptor::clear(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT {
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
 		LOG_CIRCE_WARNING("ClientHttpAcceptor has not been initialized.");
