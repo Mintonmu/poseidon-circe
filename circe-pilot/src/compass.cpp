@@ -3,6 +3,7 @@
 
 #include "precompiled.hpp"
 #include "compass.hpp"
+#include "singletons/compass_repository.hpp"
 #include "orm.hpp"
 
 namespace Circe {
@@ -22,10 +23,10 @@ namespace {
 Compass::Compass(const CompassKey &compass_key)
 	: m_compass_key(compass_key), m_dao(create_dao(compass_key))
 {
-	LOG_CIRCE_DEBUG("Compass constructor: compass_key = ", m_compass_key);
+	LOG_CIRCE_DEBUG("Compass constructor: compass_key = ", get_compass_key());
 }
 Compass::~Compass(){
-	LOG_CIRCE_DEBUG("Compass destructor: compass_key = ", m_compass_key);
+	LOG_CIRCE_DEBUG("Compass destructor: compass_key = ", get_compass_key());
 }
 
 const std::string &Compass::get_value() const {
@@ -39,15 +40,21 @@ boost::uint64_t Compass::get_last_access_time() const {
 }
 
 void Compass::touch_value(){
+	PROFILE_ME;
+
 	const AUTO(utc_now, Poseidon::get_utc_time());
 	m_dao->last_access_time = utc_now;
+	CompassRepository::update_compass(this);
 }
 void Compass::set_value(std::string value_new){
+	PROFILE_ME;
+
 	const AUTO(version_new, m_dao->version + 1);
 	const AUTO(utc_now, Poseidon::get_utc_time());
 	m_dao->value = STD_MOVE(value_new);
 	m_dao->version = version_new;
 	m_dao->last_access_time = utc_now;
+	CompassRepository::update_compass(this);
 }
 
 }

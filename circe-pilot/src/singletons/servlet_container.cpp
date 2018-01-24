@@ -12,8 +12,6 @@ namespace {
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_ESSENTIAL){
-	PROFILE_ME;
-
 	const AUTO(weak_container, boost::make_shared<Common::InterserverServletContainer>());
 	handles.push(weak_container);
 	g_weak_container = weak_container;

@@ -15,7 +15,8 @@ CompassKey::CompassKey(const void *data, std::size_t size){
 }
 
 void CompassKey::to_string(char (&str)[40]) const {
-	// https://en.wikipedia.org/wiki/Ascii85
+	// Algorithm specification:
+	//   https://en.wikipedia.org/wiki/Ascii85
 	for(unsigned i = 0; i < 8; ++i){
 		boost::uint32_t word = 0;
 		for(unsigned j = 0; j < 4; ++j){
@@ -23,7 +24,10 @@ void CompassKey::to_string(char (&str)[40]) const {
 			word += m_data[i * 4 + j];
 		}
 		for(unsigned j = 0; j < 5; ++j){
-			str[i * 5 + (4 - j)] = static_cast<char>(word % 85 + 33);
+			// Character table specification:
+			//   https://tools.ietf.org/html/rfc1924
+			static CONSTEXPR const char s_table[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~";
+			str[i * 5 + (4 - j)] = s_table[word % 85];
 			word /= 85;
 		}
 	}
