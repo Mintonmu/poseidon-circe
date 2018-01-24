@@ -210,12 +210,14 @@ void ClientWebSocketSession::on_sync_control_message(Poseidon::WebSocket::OpCode
 	if(opcode == Poseidon::WebSocket::OP_CLOSE){
 		char data[125];
 		std::size_t size = payload.peek(data, sizeof(data));
+		boost::uint16_t temp16;
 		if(size == 0){
-			m_closure_reason = std::make_pair(Poseidon::WebSocket::ST_NORMAL_CLOSURE, "");
+			temp16 = Poseidon::WebSocket::ST_NORMAL_CLOSURE;
+			m_closure_reason = std::make_pair(temp16, "");
 		} else if(size < 2){
-			m_closure_reason = std::make_pair(Poseidon::WebSocket::ST_INACCEPTABLE, "No enough bytes in WebSocket closure frame");
+			temp16 = Poseidon::WebSocket::ST_INACCEPTABLE;
+			m_closure_reason = std::make_pair(temp16, "No enough bytes in WebSocket closure frame");
 		} else {
-			boost::uint16_t temp16;
 			std::memcpy(&temp16, data, 2);
 			m_closure_reason = std::make_pair(Poseidon::load_be(temp16), std::string(data + 2, size - 2));
 		}

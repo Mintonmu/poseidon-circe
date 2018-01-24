@@ -32,8 +32,8 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::HttpRequestToBox, conn, req){
 	box_req.auth_token  = STD_MOVE(req.auth_token);
 	box_req.verb        = req.verb;
 	box_req.decoded_uri = STD_MOVE(req.decoded_uri);
-	Protocol::copy_key_values(box_req.params, STD_MOVE(req.params));
-	Protocol::copy_key_values(box_req.headers, STD_MOVE(req.headers));
+	Protocol::copy_key_values(box_req.params, STD_MOVE_IDN(req.params));
+	Protocol::copy_key_values(box_req.headers, STD_MOVE_IDN(req.headers));
 	box_req.entity      = STD_MOVE(req.entity);
 	LOG_CIRCE_TRACE("Sending request: ", box_req);
 	Protocol::Box::HttpResponse box_resp;
@@ -43,7 +43,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::HttpRequestToBox, conn, req){
 	Protocol::Foyer::HttpResponseFromBox resp;
 	resp.box_uuid    = box_conn->get_connection_uuid();
 	resp.status_code = box_resp.status_code;
-	Protocol::copy_key_values(resp.headers, STD_MOVE(box_resp.headers));
+	Protocol::copy_key_values(resp.headers, STD_MOVE_IDN(box_resp.headers));
 	resp.entity      = STD_MOVE(box_resp.entity);
 	return resp;
 }
@@ -61,7 +61,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketEstablishmentRequestToBox, conn, re
 	box_req.client_ip   = STD_MOVE(req.client_ip);
 	box_req.auth_token  = STD_MOVE(req.auth_token);
 	box_req.decoded_uri = STD_MOVE(req.decoded_uri);
-	Protocol::copy_key_values(box_req.params, STD_MOVE(req.params));
+	Protocol::copy_key_values(box_req.params, STD_MOVE_IDN(req.params));
 	LOG_CIRCE_TRACE("Sending request: ", box_req);
 	Protocol::Box::WebSocketEstablishmentResponse box_resp;
 	Common::wait_for_response(box_resp, box_conn->send_request(box_req));
@@ -150,11 +150,14 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::CheckGateRequest, /*conn*/, req){
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedBroadcastNotificationToGate, /*conn*/, ntfy){
+namespace {
 	struct GateServerElement {
 		boost::shared_ptr<Common::InterserverConnection> gate_conn;
 		boost::container::flat_set<Poseidon::Uuid> clients;
 	};
+}
+
+DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedBroadcastNotificationToGate, /*conn*/, ntfy){
 	boost::container::flat_map<Poseidon::Uuid, GateServerElement> gate_servers;
 	gate_servers.reserve(ntfy.clients.size());
 

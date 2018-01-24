@@ -134,7 +134,7 @@ try {
 	Protocol::Auth::HttpAuthenticationResponse auth_resp;
 	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 	LOG_CIRCE_TRACE("Received response: ", auth_resp);
-	DEBUG_THROW_UNLESS(!auth_resp.auth_token.empty(), Poseidon::Http::Exception, boost::numeric_cast<Poseidon::Http::StatusCode>(auth_resp.status_code), Protocol::copy_key_values(STD_MOVE(auth_resp.headers)));
+	DEBUG_THROW_UNLESS(!auth_resp.auth_token.empty(), Poseidon::Http::Exception, boost::numeric_cast<Poseidon::Http::StatusCode>(auth_resp.status_code), Protocol::copy_key_values(STD_MOVE_IDN(auth_resp.headers)));
 	LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 
 	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("Connection has been shut down"));
@@ -269,7 +269,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		LOG_CIRCE_TRACE("Received response: ", foyer_resp);
 
 		resp_headers.status_code = boost::numeric_cast<Poseidon::Http::StatusCode>(foyer_resp.status_code);
-		resp_headers.headers     = Protocol::copy_key_values(STD_MOVE(foyer_resp.headers));
+		resp_headers.headers     = Protocol::copy_key_values(STD_MOVE_IDN(foyer_resp.headers));
 		if(req_headers.verb != Poseidon::Http::V_HEAD){
 			resp_entity = STD_MOVE(foyer_resp.entity);
 		}

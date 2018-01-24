@@ -20,7 +20,7 @@ DEFINE_SERVLET_FOR(Protocol::Auth::HttpAuthenticationRequest, /*conn*/, req){
 	Poseidon::OptionalMap resp_headers;
 	std::string auth_token = UserDefinedFunctions::check_http_authentication(resp_status_code, resp_headers,
 		Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), boost::numeric_cast<Poseidon::Http::Verb>(req.verb), STD_MOVE(req.decoded_uri),
-		Protocol::copy_key_values(STD_MOVE(req.params)), Protocol::copy_key_values(STD_MOVE(req.headers)));
+		Protocol::copy_key_values(STD_MOVE_IDN(req.params)), Protocol::copy_key_values(STD_MOVE_IDN(req.headers)));
 
 	Protocol::Auth::HttpAuthenticationResponse resp;
 	resp.auth_token  = STD_MOVE(auth_token);
@@ -34,7 +34,7 @@ DEFINE_SERVLET_FOR(Protocol::Auth::WebSocketAuthenticationRequest, /*conn*/, req
 	Poseidon::WebSocket::StatusCode resp_status_code = Poseidon::WebSocket::ST_INTERNAL_ERROR;
 	std::string resp_reason;
 	std::string auth_token = UserDefinedFunctions::check_websocket_authentication(resp_messages, resp_status_code, resp_reason,
-		Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.decoded_uri), Protocol::copy_key_values(STD_MOVE(req.params)));
+		Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.decoded_uri), Protocol::copy_key_values(STD_MOVE_IDN(req.params)));
 
 	Protocol::Auth::WebSocketAuthenticationResponse resp;
 	for(AUTO(qmit, resp_messages.begin()); qmit != resp_messages.end(); ++qmit){

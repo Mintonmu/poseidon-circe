@@ -22,7 +22,7 @@ DEFINE_SERVLET_FOR(Protocol::Box::HttpRequest, /*conn*/, req){
 	Poseidon::StreamBuffer resp_entity;
 	UserDefinedFunctions::handle_http_request(resp_status_code, resp_headers, resp_entity,
 		Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.auth_token), boost::numeric_cast<Poseidon::Http::Verb>(req.verb), STD_MOVE(req.decoded_uri),
-		Protocol::copy_key_values(STD_MOVE(req.params)), Protocol::copy_key_values(STD_MOVE(req.headers)), STD_MOVE(req.entity));
+		Protocol::copy_key_values(STD_MOVE_IDN(req.params)), Protocol::copy_key_values(STD_MOVE_IDN(req.headers)), STD_MOVE(req.entity));
 
 	Protocol::Box::HttpResponse resp;
 	resp.status_code = resp_status_code;
@@ -33,7 +33,7 @@ DEFINE_SERVLET_FOR(Protocol::Box::HttpRequest, /*conn*/, req){
 
 DEFINE_SERVLET_FOR(Protocol::Box::WebSocketEstablishmentRequest, conn, req){
 	const AUTO(shadow_session, boost::make_shared<WebSocketShadowSession>(conn->get_connection_uuid(), Poseidon::Uuid(req.gate_uuid), Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.auth_token)));
-	UserDefinedFunctions::handle_websocket_establishment(shadow_session, STD_MOVE(req.decoded_uri), Protocol::copy_key_values(STD_MOVE(req.params)));
+	UserDefinedFunctions::handle_websocket_establishment(shadow_session, STD_MOVE(req.decoded_uri), Protocol::copy_key_values(STD_MOVE_IDN(req.params)));
 	WebSocketShadowSessionSupervisor::attach_session(shadow_session);
 
 	Protocol::Box::WebSocketEstablishmentResponse resp;

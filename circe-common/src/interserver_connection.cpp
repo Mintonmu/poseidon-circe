@@ -380,7 +380,7 @@ try {
 		LOG_CIRCE_TRACE("Received client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, Poseidon::Uuid(msg.connection_uuid), msg.timestamp));
 		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_req == checksum_req, Protocol::ERR_AUTHORIZATION_FAILURE, Poseidon::sslit("Request checksum failed verification"));
-		server_accept_hello(Poseidon::Uuid(msg.connection_uuid), msg.timestamp, Protocol::copy_key_values(STD_MOVE(msg.options_req)));
+		server_accept_hello(Poseidon::Uuid(msg.connection_uuid), msg.timestamp, Protocol::copy_key_values(STD_MOVE_IDN(msg.options_req)));
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		const AUTO(checksum_seedx, calculate_checksum(m_application_key, SALT_NORMAL_DATA, m_connection_uuid, m_timestamp));
 		require_message_filter()->reseed_decoder_prng(checksum_seedx);
@@ -392,7 +392,7 @@ try {
 		LOG_CIRCE_TRACE("Received server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, m_connection_uuid, m_timestamp));
 		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_resp == checksum_resp, Protocol::ERR_AUTHORIZATION_FAILURE, Poseidon::sslit("Response checksum failed verification"));
-		client_accept_hello(Protocol::copy_key_values(STD_MOVE(msg.options_resp)));
+		client_accept_hello(Protocol::copy_key_values(STD_MOVE_IDN(msg.options_resp)));
 		Poseidon::atomic_store(m_authenticated, true, Poseidon::ATOMIC_RELEASE);
 		return; }
 	}
