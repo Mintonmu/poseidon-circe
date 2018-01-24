@@ -24,10 +24,12 @@ namespace {
 		}
 	};
 
+	Poseidon::Mutex g_mutex;
 	boost::weak_ptr<SpecializedAcceptor> g_weak_acceptor;
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(bind, get_config<std::string>("box_acceptor_bind"));
 	const AUTO(port, get_config<boost::uint16_t>("box_acceptor_port"));
 	const AUTO(appkey, get_config<std::string>("box_acceptor_appkey"));
@@ -41,6 +43,7 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 boost::shared_ptr<Common::InterserverConnection> BoxAcceptor::get_session(const Poseidon::Uuid &connection_uuid){
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
 		LOG_CIRCE_WARNING("BoxAcceptor has not been initialized.");
@@ -51,6 +54,7 @@ boost::shared_ptr<Common::InterserverConnection> BoxAcceptor::get_session(const 
 std::size_t BoxAcceptor::get_all_sessions(boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > &sessions_ret){
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
 		LOG_CIRCE_WARNING("BoxAcceptor has not been initialized.");
@@ -61,6 +65,7 @@ std::size_t BoxAcceptor::get_all_sessions(boost::container::vector<boost::shared
 std::size_t BoxAcceptor::safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT {
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
 		LOG_CIRCE_WARNING("BoxAcceptor has not been initialized.");
@@ -71,6 +76,7 @@ std::size_t BoxAcceptor::safe_broadcast_notification(const Poseidon::Cbpp::Messa
 std::size_t BoxAcceptor::clear(long err_code, const char *err_msg) NOEXCEPT {
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
 		LOG_CIRCE_WARNING("BoxAcceptor has not been initialized.");

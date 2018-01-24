@@ -5,7 +5,6 @@
 #define CIRCE_COMMON_INTERSERVER_SERVLET_CONTAINER_HPP_
 
 #include <poseidon/fwd.hpp>
-#include <poseidon/mutex.hpp>
 #include <boost/container/flat_map.hpp>
 #include "interserver_servlet_callback.hpp"
 
@@ -14,7 +13,6 @@ namespace Common {
 
 class InterserverServletContainer {
 private:
-	mutable Poseidon::Mutex m_mutex;
 	boost::container::flat_map<boost::uint16_t, boost::weak_ptr<const InterserverServletCallback> > m_servlets;
 
 public:

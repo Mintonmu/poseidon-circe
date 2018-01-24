@@ -11,7 +11,6 @@ namespace Common {
 boost::shared_ptr<const InterserverServletCallback> InterserverServletContainer::get_servlet(boost::uint16_t message_id) const {
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(m_mutex);
 	const AUTO(it, m_servlets.find(message_id));
 	if(it == m_servlets.end()){
 		return VAL_INIT;
@@ -23,7 +22,6 @@ void InterserverServletContainer::insert_servlet(boost::uint16_t message_id, con
 	DEBUG_THROW_UNLESS(InterserverConnection::is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
 	DEBUG_THROW_UNLESS(servlet, Poseidon::Exception, Poseidon::sslit("Null servlet pointer"));
 
-	const Poseidon::Mutex::UniqueLock lock(m_mutex);
 	bool erase_it;
 	for(AUTO(it, m_servlets.begin()); it != m_servlets.end(); erase_it ? (it = m_servlets.erase(it)) : ++it){
 		erase_it = it->second.expired();
@@ -34,8 +32,7 @@ void InterserverServletContainer::insert_servlet(boost::uint16_t message_id, con
 bool InterserverServletContainer::remove_servlet(boost::uint16_t message_id) NOEXCEPT {
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(m_mutex);
-	return m_servlets.erase(message_id);
+	return m_servlets.erase(message_id) != 0;
 }
 
 }

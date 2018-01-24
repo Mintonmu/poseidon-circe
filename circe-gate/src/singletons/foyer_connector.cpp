@@ -24,10 +24,12 @@ namespace {
 		}
 	};
 
+	Poseidon::Mutex g_mutex;
 	boost::weak_ptr<SpecializedConnector> g_weak_connector;
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(hosts, get_config_all<std::string>("foyer_connector_host"));
 	const AUTO(port, get_config<boost::uint16_t>("foyer_connector_port"));
 	const AUTO(appkey, get_config<std::string>("foyer_connector_appkey"));
@@ -40,6 +42,7 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 boost::shared_ptr<Common::InterserverConnection> FoyerConnector::get_client(const Poseidon::Uuid &connection_uuid){
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
 		LOG_CIRCE_WARNING("FoyerConnector has not been initialized.");
@@ -50,6 +53,7 @@ boost::shared_ptr<Common::InterserverConnection> FoyerConnector::get_client(cons
 std::size_t FoyerConnector::get_all_clients(boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > &clients_ret){
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
 		LOG_CIRCE_WARNING("FoyerConnector has not been initialized.");
@@ -60,6 +64,7 @@ std::size_t FoyerConnector::get_all_clients(boost::container::vector<boost::shar
 std::size_t FoyerConnector::safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT {
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
 		LOG_CIRCE_WARNING("FoyerConnector has not been initialized.");
@@ -70,6 +75,7 @@ std::size_t FoyerConnector::safe_broadcast_notification(const Poseidon::Cbpp::Me
 std::size_t FoyerConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
 	PROFILE_ME;
 
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
 		LOG_CIRCE_WARNING("FoyerConnector has not been initialized.");
