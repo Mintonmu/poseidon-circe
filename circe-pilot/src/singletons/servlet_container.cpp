@@ -9,45 +9,26 @@ namespace Pilot {
 
 namespace {
 	Poseidon::Mutex g_mutex;
-	boost::weak_ptr<Common::InterserverServletContainer> g_weak_container;
-}
-
-MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_ESSENTIAL){
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
-	const AUTO(weak_container, boost::make_shared<Common::InterserverServletContainer>());
-	handles.push(weak_container);
-	g_weak_container = weak_container;
+	Common::InterserverServletContainer g_container;
 }
 
 boost::shared_ptr<const Common::InterserverServletCallback> ServletContainer::get_servlet(boost::uint16_t message_id){
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(g_mutex);
-	const AUTO(container, g_weak_container.lock());
-	if(!container){
-		return VAL_INIT;
-	}
-	return container->get_servlet(message_id);
+	return g_container.get_servlet(message_id);
 }
 void ServletContainer::insert_servlet(boost::uint16_t message_id, const boost::shared_ptr<Common::InterserverServletCallback> &servlet){
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(g_mutex);
-	const AUTO(container, g_weak_container.lock());
-	if(!container){
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("ServletContainer has not been initialized"));
-	}
-	container->insert_servlet(message_id, servlet);
+	g_container.insert_servlet(message_id, servlet);
 }
 bool ServletContainer::remove_servlet(boost::uint16_t message_id) NOEXCEPT {
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(g_mutex);
-	const AUTO(container, g_weak_container.lock());
-	if(!container){
-		return false;
-	}
-	return container->remove_servlet(message_id);
+	return g_container.remove_servlet(message_id);
 }
 
 }
