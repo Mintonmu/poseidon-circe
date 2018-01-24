@@ -12,7 +12,7 @@ namespace Pilot {
 #define OBJECT_NAME    ORM_Compass
 #define OBJECT_TABLE   "Pilot::Compass"
 #define OBJECT_FIELDS  \
-	FIELD_STRING       (compass_name)	\
+	FIELD_STRING       (compass_key)	\
 	FIELD_STRING       (value)	\
 	FIELD_UNSIGNED     (version)	\
 	FIELD_DATETIME     (last_access_time)	\
