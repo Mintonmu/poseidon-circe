@@ -8,8 +8,8 @@
 #include <string>
 #include <boost/cstdint.hpp>
 #include <boost/container/flat_map.hpp>
-#include <boost/optional.hpp>
-#include "common/interserver_connection.hpp"
+#include "compass_key.hpp"
+#include "common/fwd.hpp"
 
 namespace Circe {
 namespace Pilot {
@@ -18,25 +18,24 @@ class ORM_Compass;
 
 class Compass : public virtual Poseidon::VirtualSharedFromThis {
 private:
-	const boost::shared_ptr<ORM_Compass> m_dop;
-
-	boost::container::flat_map<boost::weak_ptr<Common::InterserverConnection>, boost::uint64_t> m_readers;
-	boost::optional<std::pair<boost::weak_ptr<Common::InterserverConnection>, boost::uint64_t> > m_writer;
+	const CompassKey m_compass_key;
+	const boost::shared_ptr<ORM_Compass> m_dao;
 
 public:
-	explicit Compass(const std::string &key);
+	explicit Compass(const CompassKey &compass_key);
 	~Compass() OVERRIDE;
 
 public:
-	const std::string &get_key() const;
+	const CompassKey &get_compass_key() const {
+		return m_compass_key;
+	}
 
 	const std::string &get_value() const;
 	boost::uint32_t get_version() const;
 	boost::uint64_t get_last_access_time() const;
+
 	void touch_value();
 	void set_value(std::string value_new);
-
-	
 };
 
 }
