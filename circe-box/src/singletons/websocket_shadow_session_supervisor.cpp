@@ -184,8 +184,8 @@ namespace {
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
-	const AUTO(ping_interval, get_config<boost::uint64_t>("websocket_shadow_session_ping_interval", 60000));
-	const AUTO(timer, Poseidon::TimerDaemon::register_timer(0, ping_interval, boost::bind(&ping_timer_proc)));
+	const AUTO(ping_timer_interval, get_config<boost::uint64_t>("websocket_shadow_session_ping_timer_interval", 60000));
+	const AUTO(timer, Poseidon::TimerDaemon::register_timer(0, ping_timer_interval, boost::bind(&ping_timer_proc)));
 	handles.push(timer);
 }
 
