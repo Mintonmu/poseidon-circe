@@ -14,21 +14,33 @@ namespace Circe {
 namespace Pilot {
 
 class CompassKey {
+public:
+	static CompassKey from_string(const std::string &str);
+	static CompassKey from_hash_of(const void *data, std::size_t size);
+
 private:
-	boost::array<unsigned char, 32> m_data;
+	boost::array<char, 40> m_chars;
+
+private:
+	explicit CompassKey(const boost::array<char, 40> &chars);
 
 public:
-	CompassKey(const void *data, std::size_t size);
-
-public:
-	const unsigned char *data() const {
-		return m_data.data();
+	const char *begin() const {
+		return m_chars.begin();
+	}
+	const char *end() const {
+		return m_chars.end();
+	}
+	const char *data() const {
+		return m_chars.data();
 	}
 	std::size_t size() const {
-		return m_data.size();
+		return m_chars.size();
 	}
 
-	void to_string(char (&str)[40]) const;
+	std::string to_string() const {
+		return std::string(m_chars.begin(), m_chars.end());
+	}
 };
 
 inline bool operator==(const CompassKey &lhs, const CompassKey &rhs){

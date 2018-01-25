@@ -16,13 +16,12 @@ private:
 	CompassRepository();
 
 private:
-	static bool update_compass(const volatile Compass *compass) NOEXCEPT;
+	static bool update_compass(const volatile Compass *ptr) NOEXCEPT;
 
 public:
 	static boost::shared_ptr<Compass> get_compass(const CompassKey &compass_key);
 	static boost::shared_ptr<Compass> open_compass(const CompassKey &compass_key);
-	static void insert_compass(const boost::shared_ptr<Compass> &compass);
-	static bool remove_compass(const volatile Compass *compass) NOEXCEPT;
+	static bool remove_compass(const volatile Compass *ptr) NOEXCEPT;
 };
 
 }

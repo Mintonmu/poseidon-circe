@@ -23,6 +23,7 @@ private:
 
 public:
 	explicit Compass(const CompassKey &compass_key);
+	explicit Compass(const boost::shared_ptr<ORM_Compass> &dao);
 	~Compass() OVERRIDE;
 
 public:
