@@ -35,7 +35,6 @@ boost::uint32_t Compass::get_version() const {
 boost::uint64_t Compass::get_last_access_time() const {
 	return m_dao->last_access_time;
 }
-
 void Compass::touch_value(){
 	PROFILE_ME;
 
