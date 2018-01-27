@@ -54,8 +54,8 @@ namespace {
 		// ... and from database.
 		try {
 			Poseidon::Buffer_ostream sql_os;
-			sql_os <<"DELETE FROM `Pilot::Compass` WHERE `last_access_time` <= " <<Poseidon::MySql::DateTimeFormatter(expiry_time);
-			Poseidon::MySqlDaemon::enqueue_for_deleting("Pilot::Compass", sql_os.get_buffer().dump_string());
+			sql_os <<"DELETE FROM `Pilot.Compass` WHERE `last_access_time` <= " <<Poseidon::MySql::DateTimeFormatter(expiry_time);
+			Poseidon::MySqlDaemon::enqueue_for_deleting("Pilot.Compass", sql_os.get_buffer().dump_string());
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 		}
@@ -67,7 +67,7 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_ESSENTIAL){
 	const AUTO(mysql_conn, Poseidon::MySqlDaemon::create_connection());
 	const AUTO(compass_container, boost::make_shared<CompassContainer>());
 	LOG_CIRCE_INFO("Loading compasses from MySQL master...");
-	mysql_conn->execute_sql("SELECT * FROM `Pilot::Compass`");
+	mysql_conn->execute_sql("SELECT * FROM `Pilot.Compass`");
 	while(mysql_conn->fetch_row()){
 		const AUTO(dao, boost::make_shared<ORM_Compass>());
 		dao->fetch(mysql_conn);

@@ -4,7 +4,7 @@ CREATE DATABASE /*!32312 IF NOT EXISTS*/ `circe` /*!40100 DEFAULT CHARACTER SET 
 USE `circe`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `Pilot::Compass` (
+CREATE TABLE `Pilot.Compass` (
   `compass_key` char(40) NOT NULL,
   `value` text NOT NULL,
   `version` int(10) unsigned NOT NULL,
