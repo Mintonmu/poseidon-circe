@@ -384,7 +384,7 @@ try {
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		const AUTO(checksum_seedx, calculate_checksum(m_application_key, SALT_NORMAL_DATA, m_connection_uuid, m_timestamp));
 		require_message_filter()->reseed_decoder_prng(checksum_seedx);
-		Poseidon::atomic_store(m_authenticated, true, Poseidon::ATOMIC_RELEASE);
+		Poseidon::atomic_store(m_authenticated, true, Poseidon::memorder_release);
 		return; }
 	case ServerHello::ID: {
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
@@ -393,7 +393,7 @@ try {
 		const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, m_connection_uuid, m_timestamp));
 		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_resp == checksum_resp, Protocol::ERR_AUTHORIZATION_FAILURE, Poseidon::sslit("Response checksum failed verification"));
 		client_accept_hello(Protocol::copy_key_values(STD_MOVE_IDN(msg.options_resp)));
-		Poseidon::atomic_store(m_authenticated, true, Poseidon::ATOMIC_RELEASE);
+		Poseidon::atomic_store(m_authenticated, true, Poseidon::memorder_release);
 		return; }
 	}
 	CIRCE_PROTOCOL_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, MFL_PREDEFINED | MFL_RESERVED), Protocol::ERR_INVALID_ARGUMENT, Poseidon::sslit("Reserved bits set"));
@@ -555,7 +555,7 @@ void InterserverConnection::layer7_client_say_hello(Poseidon::OptionalMap option
 }
 
 bool InterserverConnection::has_authenticated() const {
-	return Poseidon::atomic_load(m_authenticated, Poseidon::ATOMIC_CONSUME);
+	return Poseidon::atomic_load(m_authenticated, Poseidon::memorder_consume);
 }
 const Poseidon::Uuid &InterserverConnection::get_connection_uuid() const {
 	DEBUG_THROW_UNLESS(is_connection_uuid_set(), Poseidon::Exception, Poseidon::sslit("InterserverConnection has not been fully established"));

@@ -129,17 +129,17 @@ WebSocketShadowSession::~WebSocketShadowSession(){
 }
 
 bool WebSocketShadowSession::has_been_shutdown() const {
-	return Poseidon::atomic_load(m_shutdown, Poseidon::ATOMIC_ACQUIRE);
+	return Poseidon::atomic_load(m_shutdown, Poseidon::memorder_acquire);
 }
 void WebSocketShadowSession::mark_shutdown() NOEXCEPT {
-	Poseidon::atomic_store(m_shutdown, true, Poseidon::ATOMIC_RELEASE);
+	Poseidon::atomic_store(m_shutdown, true, Poseidon::memorder_release);
 }
 bool WebSocketShadowSession::shutdown(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT {
 	PROFILE_ME;
 
-	bool was_shutdown = Poseidon::atomic_load(m_shutdown, Poseidon::ATOMIC_ACQUIRE);
+	bool was_shutdown = Poseidon::atomic_load(m_shutdown, Poseidon::memorder_acquire);
 	if(!was_shutdown){
-		was_shutdown = Poseidon::atomic_exchange(m_shutdown, true, Poseidon::ATOMIC_ACQ_REL);
+		was_shutdown = Poseidon::atomic_exchange(m_shutdown, true, Poseidon::memorder_acq_rel);
 	}
 	if(was_shutdown){
 		return false;
