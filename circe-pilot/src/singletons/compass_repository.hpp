@@ -16,7 +16,7 @@ private:
 	CompassRepository();
 
 private:
-	static bool update_compass(const volatile Compass *ptr) NOEXCEPT;
+	static bool update_compass_indices(const volatile Compass *ptr) NOEXCEPT;
 
 public:
 	static boost::shared_ptr<Compass> get_compass(const CompassKey &compass_key);

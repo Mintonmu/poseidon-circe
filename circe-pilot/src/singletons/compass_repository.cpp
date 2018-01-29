@@ -84,7 +84,7 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 	handles.push(timer);
 }
 
-bool CompassRepository::update_compass(const volatile Compass *ptr) NOEXCEPT {
+bool CompassRepository::update_compass_indices(const volatile Compass *ptr) NOEXCEPT {
 	PROFILE_ME;
 
 	const Poseidon::Mutex::UniqueLock lock(g_mutex);

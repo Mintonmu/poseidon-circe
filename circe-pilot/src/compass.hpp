@@ -5,8 +5,8 @@
 #define CIRCE_PILOT_COMPASS_HPP_
 
 #include <poseidon/virtual_shared_from_this.hpp>
-#include <string>
 #include <boost/cstdint.hpp>
+#include <string>
 #include "compass_key.hpp"
 #include "common/fwd.hpp"
 
@@ -33,6 +33,7 @@ public:
 	const std::string &get_value() const;
 	boost::uint32_t get_version() const;
 	boost::uint64_t get_last_access_time() const;
+
 	void touch_value();
 	void set_value(std::string value_new);
 };
