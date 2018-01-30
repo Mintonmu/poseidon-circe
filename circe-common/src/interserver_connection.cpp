@@ -157,7 +157,9 @@ public:
 	MessageFilter(const boost::array<unsigned char, 32> &seed, int compression_level)
 		: m_decryptor(seed), m_inflator(false)
 		, m_encryptor(seed), m_deflator(false, compression_level)
-	{ }
+	{
+		//
+	}
 	~MessageFilter(){
 		// Silence the warnings.
 		m_inflator.clear();
@@ -233,7 +235,9 @@ public:
 	RequestMessageJob(const boost::shared_ptr<InterserverConnection> &connection, boost::uint16_t message_id, bool send_response, boost::uint64_t serial, Poseidon::StreamBuffer payload)
 		: m_guard(boost::dynamic_pointer_cast<Poseidon::SocketBase>(connection)), m_weak_connection(connection)
 		, m_message_id(message_id), m_send_response(send_response), m_serial(serial), m_payload(STD_MOVE(payload))
-	{ }
+	{
+		//
+	}
 
 protected:
 	boost::weak_ptr<const void> get_category() const FINAL {

@@ -16,7 +16,9 @@ namespace {
 	public:
 		SpecializedConnector(boost::container::vector<std::string> hosts, boost::uint16_t port, std::string application_key)
 			: Common::InterserverConnector(STD_MOVE(hosts), port, STD_MOVE(application_key))
-		{ }
+		{
+			//
+		}
 
 	protected:
 		boost::shared_ptr<const Common::InterserverServletCallback> sync_get_servlet(boost::uint16_t message_id) const OVERRIDE {

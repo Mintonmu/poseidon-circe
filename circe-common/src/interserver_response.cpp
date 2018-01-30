@@ -11,7 +11,9 @@ namespace Common {
 InterserverResponse::InterserverResponse()
 	: m_err_code(Protocol::ERR_RESERVED_RESPONSE_UNINITIALIZED), m_err_msg()
 	, m_message_id(0xDEADBEEF), m_payload()
-{ }
+{
+	//
+}
 InterserverResponse::InterserverResponse(long err_code, std::string err_msg)
 	: m_err_code(err_code), m_err_msg(STD_MOVE(err_msg))
 	, m_message_id(), m_payload()
@@ -24,7 +26,9 @@ InterserverResponse::InterserverResponse(const Poseidon::Cbpp::MessageBase &msg)
 {
 	LOG_CIRCE_TRACE("Constructing InterserverResponse from message: msg = ", msg);
 }
-InterserverResponse::~InterserverResponse(){ }
+InterserverResponse::~InterserverResponse(){
+	//
+}
 
 // Non-member functions.
 std::ostream &operator<<(std::ostream &os, const InterserverResponse &rhs){

@@ -38,7 +38,9 @@ public:
 	WebSocketHandshakeJob(const boost::shared_ptr<ClientHttpSession> &http_session, Poseidon::Http::RequestHeaders req_headers, const boost::shared_ptr<ClientWebSocketSession> &ws_session)
 		: m_guard(http_session), m_weak_http_session(http_session)
 		, m_req_headers(STD_MOVE(req_headers)), m_weak_ws_session(ws_session)
-	{ }
+	{
+		//
+	}
 
 private:
 	boost::weak_ptr<const void> get_category() const FINAL {

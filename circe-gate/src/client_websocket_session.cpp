@@ -28,7 +28,9 @@ private:
 public:
 	explicit DeliveryJob(const boost::shared_ptr<ClientWebSocketSession> &ws_session)
 		: m_weak_parent(ws_session->get_weak_parent()), m_weak_ws_session(ws_session)
-	{ }
+	{
+		//
+	}
 
 protected:
 	boost::weak_ptr<const void> get_category() const FINAL {

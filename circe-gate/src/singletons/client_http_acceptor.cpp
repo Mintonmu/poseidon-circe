@@ -19,7 +19,9 @@ namespace {
 	public:
 		SpecializedAcceptor(const std::string &bind, boost::uint16_t port, const std::string &cert, const std::string &pkey)
 			: Poseidon::TcpServerBase(Poseidon::IpPort(bind.c_str(), port), cert.c_str(), pkey.c_str())
-		{ }
+		{
+			//
+		}
 		~SpecializedAcceptor() OVERRIDE {
 			clear(Poseidon::WebSocket::ST_GOING_AWAY);
 		}

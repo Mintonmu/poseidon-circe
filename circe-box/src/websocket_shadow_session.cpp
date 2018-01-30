@@ -28,7 +28,9 @@ public:
 		const Poseidon::Uuid &gate_uuid, const Poseidon::Uuid &client_uuid, Poseidon::WebSocket::StatusCode status_code, std::string reason)
 		: m_weak_session(session), m_weak_foyer_conn(foyer_conn)
 		, m_gate_uuid(gate_uuid), m_client_uuid(client_uuid), m_status_code(status_code), m_reason(STD_MOVE(reason))
-	{ }
+	{
+		//
+	}
 
 protected:
 	boost::weak_ptr<const void> get_category() const FINAL {
@@ -63,7 +65,9 @@ private:
 public:
 	explicit DeliveryJob(const boost::shared_ptr<WebSocketShadowSession> &session)
 		: m_weak_session(session)
-	{ }
+	{
+		//
+	}
 
 protected:
 	boost::weak_ptr<const void> get_category() const FINAL {

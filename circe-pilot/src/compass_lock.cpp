@@ -8,8 +8,12 @@
 namespace Circe {
 namespace Pilot {
 
-CompassLock::CompassLock(){ }
-CompassLock::~CompassLock(){ }
+CompassLock::CompassLock(){
+	//
+}
+CompassLock::~CompassLock(){
+	//
+}
 
 void CompassLock::collect_expired_connections(){
 	PROFILE_ME;

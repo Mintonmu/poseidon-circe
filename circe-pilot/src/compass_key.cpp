@@ -52,7 +52,9 @@ CompassKey CompassKey::from_hash_of(const void *data, std::size_t size){
 
 CompassKey::CompassKey(const boost::array<char, 40> &chars)
 	: m_chars(chars)
-{ }
+{
+	//
+}
 
 std::ostream &operator<<(std::ostream &os, const CompassKey &rhs){
 	char str[41];
