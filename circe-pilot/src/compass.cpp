@@ -36,21 +36,43 @@ boost::uint64_t Compass::get_last_access_time() const {
 }
 
 void Compass::touch_value(){
-	PROFILE_ME;
-
 	const AUTO(utc_now, Poseidon::get_utc_time());
 	m_dao->last_access_time = utc_now;
 	CompassRepository::update_compass_indices(this);
 }
 void Compass::set_value(std::string value_new){
-	PROFILE_ME;
-
 	const AUTO(version_new, m_dao->version + 1);
 	const AUTO(utc_now, Poseidon::get_utc_time());
 	m_dao->value = STD_MOVE(value_new);
 	m_dao->version = version_new;
 	m_dao->last_access_time = utc_now;
 	CompassRepository::update_compass_indices(this);
+}
+
+bool Compass::is_locked_shared() const {
+	return m_lock.is_locked_shared();
+}
+bool Compass::is_locked_shared_by(const Poseidon::Uuid &connection_uuid) const {
+	return m_lock.is_locked_shared_by(connection_uuid);
+}
+bool Compass::try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection) const {
+	return m_lock.try_lock_shared(connection);
+}
+void Compass::release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection) const {
+	return m_lock.release_lock_shared(connection);
+}
+
+bool Compass::is_locked_exclusive() const {
+	return m_lock.is_locked_exclusive();
+}
+bool Compass::is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid) const {
+	return m_lock.is_locked_exclusive_by(connection_uuid);
+}
+bool Compass::try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection){
+	return m_lock.try_lock_exclusive(connection);
+}
+void Compass::release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection){
+	return m_lock.release_lock_exclusive(connection);
 }
 
 }

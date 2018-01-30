@@ -5,13 +5,13 @@
 #include "compass_key.hpp"
 #include <poseidon/sha256.hpp>
 
+namespace Circe {
+namespace Pilot {
+
 // Algorithm specification:
 //   https://en.wikipedia.org/wiki/Ascii85
 // Character table specification:
 //   https://tools.ietf.org/html/rfc1924
-
-namespace Circe {
-namespace Pilot {
 
 namespace {
 	CONSTEXPR const char s_table[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~";

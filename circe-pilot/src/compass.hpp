@@ -5,20 +5,20 @@
 #define CIRCE_PILOT_COMPASS_HPP_
 
 #include <poseidon/virtual_shared_from_this.hpp>
-#include <boost/cstdint.hpp>
-#include <string>
+#include <poseidon/uuid.hpp>
 #include "compass_key.hpp"
-#include "common/fwd.hpp"
+#include "compass_lock.hpp"
 
 namespace Circe {
 namespace Pilot {
 
 class ORM_Compass;
 
-class Compass : public virtual Poseidon::VirtualSharedFromThis {
+class Compass : NONCOPYABLE, public virtual Poseidon::VirtualSharedFromThis {
 private:
 	const CompassKey m_compass_key;
 	const boost::shared_ptr<ORM_Compass> m_dao;
+	mutable CompassLock m_lock;
 
 public:
 	explicit Compass(const CompassKey &compass_key);
@@ -30,12 +30,23 @@ public:
 		return m_compass_key;
 	}
 
+	// Value observrs and modifiers.
 	const std::string &get_value() const;
 	boost::uint32_t get_version() const;
 	boost::uint64_t get_last_access_time() const;
-
 	void touch_value();
 	void set_value(std::string value_new);
+
+	// Interserver lock observers and modifiers.
+	bool is_locked_shared() const;
+	bool is_locked_shared_by(const Poseidon::Uuid &connection_uuid) const;
+	bool try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &conn) const;
+	void release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection) const;
+
+	bool is_locked_exclusive() const;
+	bool is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid) const;
+	bool try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &conn);
+	void release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
 };
 
 }
