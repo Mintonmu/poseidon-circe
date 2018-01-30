@@ -44,10 +44,7 @@ bool CompassLock::try_lock_shared(const boost::shared_ptr<Common::InterserverCon
 	// Allow recursive locking.
 	if(m_readers.find(connection->get_connection_uuid()) == m_readers.end()){
 		// At the first attempt, succeed unless there is a writer other than this connection itself.
-		if(m_writers.lower_bound(connection->get_connection_uuid()) != m_writers.begin()){
-			return false;
-		}
-		if(m_writers.upper_bound(connection->get_connection_uuid()) != m_writers.end()){
+		if(m_writers.equal_range(connection->get_connection_uuid()) != std::make_pair(m_writers.begin(), m_writers.end())){
 			return false;
 		}
 	}
@@ -85,10 +82,7 @@ bool CompassLock::try_lock_exclusive(const boost::shared_ptr<Common::Interserver
 	// Allow recursive locking.
 	if(m_writers.find(connection->get_connection_uuid()) == m_writers.end()){
 		// At the first attempt, succeed unless there is a reader other than this connection itself or another writer.
-		if(m_readers.lower_bound(connection->get_connection_uuid()) != m_readers.begin()){
-			return false;
-		}
-		if(m_readers.upper_bound(connection->get_connection_uuid()) != m_readers.end()){
+		if(m_readers.equal_range(connection->get_connection_uuid()) != std::make_pair(m_readers.begin(), m_readers.end())){
 			return false;
 		}
 		if(!m_writers.empty()){
