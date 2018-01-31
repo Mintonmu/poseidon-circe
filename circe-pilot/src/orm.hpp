@@ -13,9 +13,9 @@ namespace Pilot {
 #define OBJECT_TABLE   "Pilot.Compass"
 #define OBJECT_FIELDS  \
 	FIELD_STRING       (compass_key)	\
+	FIELD_DATETIME     (last_access_time)	\
 	FIELD_STRING       (value)	\
 	FIELD_UNSIGNED     (version)	\
-	FIELD_DATETIME     (last_access_time)	\
 	//
 #include <poseidon/mysql/object_generator.hpp>
 

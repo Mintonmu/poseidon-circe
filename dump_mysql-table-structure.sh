@@ -2,8 +2,10 @@
 
 set -e
 
-_conf="etc/circe/main.conf"
 _output="etc/circe/circe.sql"
+_conf="etc/circe/main.conf"
+
+printf "Dumping MySQL table structure into '%s' using settings from '%s'...\\n" "${_output}" "${_conf}"
 
 _host="$(sed -r "s/mysql_server_addr\\s*=\\s*([^\\s]*)/\\1/;t;d" "${_conf}" | head -n1)"; [[ -z "${_host}" ]] && _host="localhost"
 _port="$(sed -r "s/mysql_server_port\\s*=\\s*([^\\s]*)/\\1/;t;d" "${_conf}" | head -n1)"; [[ -z "${_port}" ]] && _port="3306"
