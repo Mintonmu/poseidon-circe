@@ -30,11 +30,12 @@ public:
 		return m_compass_key;
 	}
 
-	// Value observrs and modifiers.
+	// Data observrs and modifiers.
+	boost::uint64_t get_last_access_time() const;
+	void update_last_access_time();
+
 	const std::string &get_value() const;
 	boost::uint32_t get_version() const;
-	boost::uint64_t get_last_access_time() const;
-	void touch_value();
 	void set_value(std::string value_new);
 
 	// Interserver lock observers and modifiers.
