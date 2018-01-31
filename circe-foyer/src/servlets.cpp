@@ -150,22 +150,18 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::CheckGateRequest, /*conn*/, req){
 	return resp;
 }
 
-namespace {
-	struct GateServerElement {
-		boost::shared_ptr<Common::InterserverConnection> gate_conn;
-		boost::container::flat_set<Poseidon::Uuid> clients;
-	};
-}
-
 DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedBroadcastNotificationToGate, /*conn*/, ntfy){
-	boost::container::flat_map<Poseidon::Uuid, GateServerElement> gate_servers;
+	boost::container::flat_map<Poseidon::Uuid,
+		std::pair<boost::shared_ptr<Common::InterserverConnection>, // gate_conn
+		          boost::container::flat_set<Poseidon::Uuid> >      // clients
+		> gate_servers;
 	gate_servers.reserve(ntfy.clients.size());
 
 	// Collect gate servers.
 	for(AUTO(qcit, ntfy.clients.begin()); qcit != ntfy.clients.end(); ++qcit){
-		const AUTO(gspair, gate_servers.emplace(Poseidon::Uuid(qcit->gate_uuid), GateServerElement()));
+		const AUTO(gspair, gate_servers.emplace(Poseidon::Uuid(qcit->gate_uuid), VALUE_TYPE(gate_servers)::mapped_type()));
 		// Get the session for this gate server if a new element has just been inserted.
-		AUTO_REF(gate_conn, gspair.first->second.gate_conn);
+		AUTO_REF(gate_conn, gspair.first->second.first);
 		if(gspair.second){
 			gate_conn = FoyerAcceptor::get_session(gspair.first->first);
 		}
@@ -174,20 +170,20 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedBroadcastNotificationToGate, 
 			LOG_CIRCE_TRACE("> Gate server not found: ", gspair.first->first);
 			continue;
 		}
-		gspair.first->second.clients.insert(Poseidon::Uuid(qcit->client_uuid));
+		gspair.first->second.second.insert(Poseidon::Uuid(qcit->client_uuid));
 	}
 
 	Protocol::Gate::WebSocketPackedBroadcastNotification gate_ntfy;
 	// Send messages to gate servers.
 	for(AUTO(gsit, gate_servers.begin()); gsit != gate_servers.end(); ++gsit){
-		const AUTO_REF(gate_conn, gsit->second.gate_conn);
+		const AUTO_REF(gate_conn, gsit->second.first);
 		if(!gate_conn){
 			continue;
 		}
 		try {
 			// Fill in UUIDs of target clients.
 			gate_ntfy.clients.clear();
-			for(AUTO(cit, gsit->second.clients.begin()); cit != gsit->second.clients.end(); ++cit){
+			for(AUTO(cit, gsit->second.second.begin()); cit != gsit->second.second.end(); ++cit){
 				gate_ntfy.clients.emplace_back();
 				gate_ntfy.clients.back().client_uuid = *cit;
 			}
