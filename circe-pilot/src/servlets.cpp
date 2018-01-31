@@ -55,49 +55,55 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 	bool updated = false;
 	std::size_t criterion_index = 0;
 
-	if(!req.criteria.empty()){
-		// Exclusive locking is required to modify the value.
-		const bool locked_exclusive = compass->try_lock_exclusive(connection);
-		if(locked_exclusive){
-			// This exclusive lock has to be released once.
-			--exclusive_lock_disposition;
+	// Search for the first match.
+	while((criterion_index < req.criteria.size()) && (req.criteria.at(criterion_index).value_cmp != value_old)){
+		++criterion_index;
+	}
+	LOG_CIRCE_DEBUG("Compass comparison result: req = ", req, ", criterion_index = ", criterion_index);
 
-			try {
-				// Update the value safely.
-				while(criterion_index < req.criteria.size()){
-					AUTO_REF(src, req.criteria.at(criterion_index));
-					if(value_old == src.value_cmp){
-						compass->set_value(STD_MOVE(src.value_new));
-						updated = true;
-						break;
-					}
-					++criterion_index;
-				}
+	bool locked;
+	if(!req.criteria.empty() && (criterion_index >= req.criteria.size())){
+		// Don't lock the value if the comparison fails.
+		locked = false;
+	} else if(req.criteria.empty() && (exclusive_lock_disposition <= 0)){
+		// Ask for shared locking if the value isn't to be modified.
+		locked = compass->try_lock_shared(connection);
+		shared_lock_disposition -= locked;
+	} else {
+		// Otherwise, ask for exclusive locking.
+		locked = compass->try_lock_exclusive(connection);
+		exclusive_lock_disposition -= locked;
+	}
+	// Update the value only if the value has been locked successfully.
+	if(locked){
+		try {
+			// Update the value safely.
+			compass->set_value(STD_MOVE(req.criteria.at(criterion_index).value_new));
+			updated = true;
 
-				// If shared locking has been requested, guarantee it.
-				while(shared_lock_disposition < 0){
-					compass->release_lock_shared(connection);
-					++shared_lock_disposition;
-				}
-				while(shared_lock_disposition > 0){
-					DEBUG_THROW_ASSERT(compass->try_lock_shared(connection));
-					--shared_lock_disposition;
-				}
-
-				// If exclusive locking has been requested, guarantee it.
-				while(exclusive_lock_disposition < 0){
-					compass->release_lock_exclusive(connection);
-					++exclusive_lock_disposition;
-				}
-				while(exclusive_lock_disposition > 0){
-					DEBUG_THROW_ASSERT(compass->try_lock_exclusive(connection));
-					--exclusive_lock_disposition;
-				}
-			} catch(std::exception &e){
-				LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-				connection->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
-				throw;
+			// If shared locking has been requested, guarantee it.
+			while(shared_lock_disposition < 0){
+				compass->release_lock_shared(connection);
+				++shared_lock_disposition;
 			}
+			while(shared_lock_disposition > 0){
+				DEBUG_THROW_ASSERT(compass->try_lock_shared(connection));
+				--shared_lock_disposition;
+			}
+
+			// If exclusive locking has been requested, guarantee it.
+			while(exclusive_lock_disposition < 0){
+				compass->release_lock_exclusive(connection);
+				++exclusive_lock_disposition;
+			}
+			while(exclusive_lock_disposition > 0){
+				DEBUG_THROW_ASSERT(compass->try_lock_exclusive(connection));
+				--exclusive_lock_disposition;
+			}
+		} catch(std::exception &e){
+			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			connection->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+			throw;
 		}
 	}
 	compass->update_last_access_time();
@@ -149,12 +155,11 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 	unsigned version_old = compass->get_version();
 	bool updated = false;
 
-	// Exclusive locking is required to modify the value.
-	const bool locked_exclusive = compass->try_lock_exclusive(connection);
-	if(locked_exclusive){
-		// This exclusive lock has to be released once.
-		--exclusive_lock_disposition;
-
+	// Ask for exclusive locking.
+	bool locked = compass->try_lock_exclusive(connection);
+	exclusive_lock_disposition -= locked;
+	// Update the value only if the value has been locked successfully.
+	if(locked){
 		try {
 			// Update the value safely.
 			compass->set_value(STD_MOVE(req.value_new));
