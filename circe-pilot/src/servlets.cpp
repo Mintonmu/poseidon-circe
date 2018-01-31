@@ -15,6 +15,101 @@
 namespace Circe {
 namespace Pilot {
 
+DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
+	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_string(req.key)));
+	DEBUG_THROW_ASSERT(compass);
+	LOG_CIRCE_DEBUG("Opened compass: ", compass->get_compass_key());
+
+	int shared_lock_disposition;
+	int exclusive_lock_disposition;
+	switch(req.lock_disposition){
+	case Protocol::Pilot::LOCK_LEAVE_ALONE:
+		shared_lock_disposition = 0;
+		exclusive_lock_disposition = 0;
+		break;
+	case Protocol::Pilot::LOCK_TRY_ACQUIRE_SHARED:
+		shared_lock_disposition = 1;
+		exclusive_lock_disposition = 0;
+		break;
+	case Protocol::Pilot::LOCK_TRY_ACQUIRE_EXCLUSIVE:
+		shared_lock_disposition = 0;
+		exclusive_lock_disposition = 1;
+		break;
+	case Protocol::Pilot::LOCK_RELEASE_SHARED:
+		shared_lock_disposition = -1;
+		exclusive_lock_disposition = 0;
+		break;
+	case Protocol::Pilot::LOCK_RELEASE_EXCLUSIVE:
+		shared_lock_disposition = 0;
+		exclusive_lock_disposition = -1;
+		break;
+	default:
+		LOG_CIRCE_ERROR("Unknown lock_disposition: ", req.lock_disposition);
+		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Unknown lock_disposition"));
+	}
+	DEBUG_THROW_ASSERT(!(shared_lock_disposition < 0) || compass->is_locked_shared_by(connection->get_connection_uuid()));
+	DEBUG_THROW_ASSERT(!(exclusive_lock_disposition < 0) || compass->is_locked_exclusive_by(connection->get_connection_uuid()));
+
+	std::string value_old = compass->get_value();
+	unsigned version_old = compass->get_version();
+	bool updated = false;
+	std::size_t criterion_index = 0;
+
+	if(!req.criteria.empty()){
+		// Exclusive locking is required to modify the value.
+		const bool locked_exclusive = compass->try_lock_exclusive(connection);
+		if(locked_exclusive){
+			// This exclusive lock has to be released once.
+			--exclusive_lock_disposition;
+
+			try {
+				// Update the value safely.
+				while(criterion_index < req.criteria.size()){
+					AUTO_REF(src, req.criteria.at(criterion_index));
+					if(value_old == src.value_cmp){
+						compass->set_value(STD_MOVE(src.value_new));
+						updated = true;
+						break;
+					}
+					++criterion_index;
+				}
+
+				// If shared locking has been requested, guarantee it.
+				while(shared_lock_disposition < 0){
+					compass->release_lock_shared(connection);
+					++shared_lock_disposition;
+				}
+				while(shared_lock_disposition > 0){
+					DEBUG_THROW_ASSERT(compass->try_lock_shared(connection));
+					--shared_lock_disposition;
+				}
+
+				// If exclusive locking has been requested, guarantee it.
+				while(exclusive_lock_disposition < 0){
+					compass->release_lock_exclusive(connection);
+					++exclusive_lock_disposition;
+				}
+				while(exclusive_lock_disposition > 0){
+					DEBUG_THROW_ASSERT(compass->try_lock_exclusive(connection));
+					--exclusive_lock_disposition;
+				}
+			} catch(std::exception &e){
+				LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+				connection->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+				throw;
+			}
+		}
+	}
+	compass->update_last_access_time();
+
+	Protocol::Pilot::CompareExchangeResponse resp;
+	resp.value_old       = STD_MOVE(value_old);
+	resp.version_old     = version_old;
+	resp.updated         = updated;
+	resp.criterion_index = criterion_index;
+	return resp;
+}
+
 DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_string(req.key)));
 	DEBUG_THROW_ASSERT(compass);
@@ -63,6 +158,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 		try {
 			// Update the value safely.
 			compass->set_value(STD_MOVE(req.value_new));
+			updated = true;
 
 			// If shared locking has been requested, guarantee it.
 			while(shared_lock_disposition < 0){
@@ -88,7 +184,6 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 			connection->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
 			throw;
 		}
-		updated = true;
 	}
 	compass->update_last_access_time();
 
