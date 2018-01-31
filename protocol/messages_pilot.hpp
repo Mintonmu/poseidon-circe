@@ -10,20 +10,13 @@ namespace Circe {
 namespace Protocol {
 namespace Pilot {
 
-// lock_disposition
+// Constants for `lock_disposition`.
 enum {
-	LDP_LEAVE_ALONE            =  0, // Do not try acquiring a lock.
-	LDP_TRY_ACQUIRE_EXCLUSIVE  = 21, // Try acquiring the lock for exclusive (write) access. The lock is recursive.
-	LDP_TRY_ACQUIRE_SHARED     = 22, // Try acquiring the lock for shared (read-only) access. The lock is recursive.
-	LDP_RELEASE_EXCLUSIVE      = 28, // Negate a previous `LDP_TRY_ACQUIRE_EXCLUSIVE` operation.
-	LDP_RELEASE_SHARED         = 29, // Negate a previous `LDP_TRY_ACQUIRE_SHARED` operation.
-};
-
-// lock_state_{old,new}
-enum {
-	LST_FREE                   = 91, // The lock is not locked.
-	LST_LOCKED_EXCLUSIVE       = 92, // The lock is in exclusive mode.
-	LST_LOCKED_SHARED          = 93, // The lock is in shared mode.
+	LOCK_LEAVE_ALONE            =  0,
+	LOCK_TRY_ACQUIRE_SHARED     = 11,
+	LOCK_TRY_ACQUIRE_EXCLUSIVE  = 12,
+	LOCK_RELEASE_SHARED         = 31,
+	LOCK_RELEASE_EXCLUSIVE      = 32,
 };
 
 #define MESSAGE_NAME   CompareExchangeRequest
@@ -41,11 +34,10 @@ enum {
 #define MESSAGE_NAME   CompareExchangeResponse
 #define MESSAGE_ID     1102
 #define MESSAGE_FIELDS \
-	FIELD_VUINT        (successful)	\
-	FIELD_VUINT        (criterion_index)	\
 	FIELD_STRING       (value_old)	\
-	FIELD_VUINT        (lock_state_old)	\
-	FIELD_VUINT        (lock_state_new)	\
+	FIELD_VUINT        (version_old)	\
+	FIELD_VUINT        (updated)	\
+	FIELD_VUINT        (criterion_index)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
@@ -61,10 +53,9 @@ enum {
 #define MESSAGE_NAME   ExchangeResponse
 #define MESSAGE_ID     1104
 #define MESSAGE_FIELDS \
-	FIELD_VUINT        (successful)	\
 	FIELD_STRING       (value_old)	\
-	FIELD_VUINT        (lock_state_old)	\
-	FIELD_VUINT        (lock_state_new)	\
+	FIELD_VUINT        (version_old)	\
+	FIELD_VUINT        (updated)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
