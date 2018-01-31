@@ -51,6 +51,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 	DEBUG_THROW_ASSERT(!(exclusive_lock_disposition < 0) || compass->is_locked_exclusive_by(connection->get_connection_uuid()));
 
 	std::string value_old = compass->get_value();
+	unsigned version_old = compass->get_version();
 	bool updated = false;
 
 	// Exclusive locking is required to modify the value.
@@ -91,8 +92,9 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 	compass->update_last_access_time();
 
 	Protocol::Pilot::ExchangeResponse resp;
-	resp.value_old = STD_MOVE(value_old);
-	resp.updated   = updated;
+	resp.value_old   = STD_MOVE(value_old);
+	resp.version_old = version_old;
+	resp.updated     = updated;
 	return resp;
 }
 
