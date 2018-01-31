@@ -27,13 +27,13 @@ private:
 public:
 	bool is_locked_shared();
 	bool is_locked_shared_by(const Poseidon::Uuid &connection_uuid);
-	bool try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &conn);
-	void release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &conn);
+	bool try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection);
+	void release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection);
 
 	bool is_locked_exclusive();
 	bool is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid);
-	bool try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &conn);
-	void release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &conn);
+	bool try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
+	void release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
 };
 
 }

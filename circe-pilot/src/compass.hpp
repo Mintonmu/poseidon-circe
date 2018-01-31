@@ -41,12 +41,12 @@ public:
 	// Interserver lock observers and modifiers.
 	bool is_locked_shared() const;
 	bool is_locked_shared_by(const Poseidon::Uuid &connection_uuid) const;
-	bool try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &conn) const;
+	bool try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection) const;
 	void release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection) const;
 
 	bool is_locked_exclusive() const;
 	bool is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid) const;
-	bool try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &conn);
+	bool try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
 	void release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
 };
 

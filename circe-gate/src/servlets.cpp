@@ -15,7 +15,7 @@
 namespace Circe {
 namespace Gate {
 
-DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketKillNotification, /*conn*/, ntfy){
+DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketKillNotification, /*connection*/, ntfy){
 	const AUTO(ws_session, ClientHttpAcceptor::get_websocket_session(Poseidon::Uuid(ntfy.client_uuid)));
 	if(ws_session){
 		LOG_CIRCE_INFO("Killing client WebSocket session: remote = ", ws_session->get_remote_info(), ", ntfy = ", ntfy);
@@ -25,7 +25,7 @@ DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketKillNotification, /*conn*/, ntfy){
 	return Protocol::ERR_SUCCESS;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedMessageRequest, /*conn*/, req){
+DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedMessageRequest, /*connection*/, req){
 	const AUTO(ws_session, ClientHttpAcceptor::get_websocket_session(Poseidon::Uuid(req.client_uuid)));
 	if(ws_session){
 		try {
@@ -42,7 +42,7 @@ DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedMessageRequest, /*conn*/, req)
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedBroadcastNotification, /*conn*/, req){
+DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedBroadcastNotification, /*connection*/, req){
 	for(AUTO(qcit, req.clients.begin()); qcit != req.clients.end(); ++qcit){
 		const AUTO(ws_session, ClientHttpAcceptor::get_websocket_session(Poseidon::Uuid(qcit->client_uuid)));
 		if(ws_session){

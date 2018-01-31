@@ -18,7 +18,7 @@
 namespace Circe {
 namespace Foyer {
 
-DEFINE_SERVLET_FOR(Protocol::Foyer::HttpRequestToBox, conn, req){
+DEFINE_SERVLET_FOR(Protocol::Foyer::HttpRequestToBox, connection, req){
 	boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > servers_avail;
 	BoxConnector::get_all_clients(servers_avail);
 	CIRCE_PROTOCOL_THROW_UNLESS(servers_avail.size() != 0, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
@@ -26,7 +26,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::HttpRequestToBox, conn, req){
 	DEBUG_THROW_ASSERT(box_conn);
 
 	Protocol::Box::HttpRequest box_req;
-	box_req.gate_uuid   = conn->get_connection_uuid();
+	box_req.gate_uuid   = connection->get_connection_uuid();
 	box_req.client_uuid = req.client_uuid;
 	box_req.client_ip   = STD_MOVE(req.client_ip);
 	box_req.auth_token  = STD_MOVE(req.auth_token);
@@ -48,7 +48,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::HttpRequestToBox, conn, req){
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketEstablishmentRequestToBox, conn, req){
+DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketEstablishmentRequestToBox, connection, req){
 	boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > servers_avail;
 	BoxConnector::get_all_clients(servers_avail);
 	CIRCE_PROTOCOL_THROW_UNLESS(servers_avail.size() != 0, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
@@ -56,7 +56,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketEstablishmentRequestToBox, conn, re
 	DEBUG_THROW_ASSERT(box_conn);
 
 	Protocol::Box::WebSocketEstablishmentRequest box_req;
-	box_req.gate_uuid   = conn->get_connection_uuid();
+	box_req.gate_uuid   = connection->get_connection_uuid();
 	box_req.client_uuid = req.client_uuid;
 	box_req.client_ip   = STD_MOVE(req.client_ip);
 	box_req.auth_token  = STD_MOVE(req.auth_token);
@@ -72,12 +72,12 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketEstablishmentRequestToBox, conn, re
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketClosureNotificationToBox, conn, ntfy){
+DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketClosureNotificationToBox, connection, ntfy){
 	const AUTO(box_conn, BoxConnector::get_client(Poseidon::Uuid(ntfy.box_uuid)));
 	CIRCE_PROTOCOL_THROW_UNLESS(box_conn, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 
 	Protocol::Box::WebSocketClosureNotification box_ntfy;
-	box_ntfy.gate_uuid   = conn->get_connection_uuid();
+	box_ntfy.gate_uuid   = connection->get_connection_uuid();
 	box_ntfy.client_uuid = ntfy.client_uuid;
 	box_ntfy.status_code = ntfy.status_code;
 	box_ntfy.reason      = STD_MOVE(ntfy.reason);
@@ -87,7 +87,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketClosureNotificationToBox, conn, ntf
 	return Protocol::ERR_SUCCESS;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketKillNotificationToGate, /*conn*/, ntfy){
+DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketKillNotificationToGate, /*connection*/, ntfy){
 	const AUTO(gate_conn, FoyerAcceptor::get_session(Poseidon::Uuid(ntfy.gate_uuid)));
 	CIRCE_PROTOCOL_THROW_UNLESS(gate_conn, Protocol::ERR_GATE_CONNECTION_LOST, Poseidon::sslit("The gate server specified was not found"));
 
@@ -101,12 +101,12 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketKillNotificationToGate, /*conn*/, n
 	return Protocol::ERR_SUCCESS;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedMessageRequestToBox, conn, req){
+DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedMessageRequestToBox, connection, req){
 	const AUTO(box_conn, BoxConnector::get_client(Poseidon::Uuid(req.box_uuid)));
 	CIRCE_PROTOCOL_THROW_UNLESS(box_conn, Protocol::ERR_BOX_CONNECTION_LOST, Poseidon::sslit("Connection to box server was lost"));
 
 	Protocol::Box::WebSocketPackedMessageRequest box_req;
-	box_req.gate_uuid   = conn->get_connection_uuid();
+	box_req.gate_uuid   = connection->get_connection_uuid();
 	box_req.client_uuid = req.client_uuid;
 	for(AUTO(qmit, req.messages.begin()); qmit != req.messages.end(); ++qmit){
 		const AUTO(rmit, Protocol::emplace_at_end(box_req.messages));
@@ -122,7 +122,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedMessageRequestToBox, conn, re
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedMessageRequestToGate, /*conn*/, req){
+DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedMessageRequestToGate, /*connection*/, req){
 	const AUTO(gate_conn, FoyerAcceptor::get_session(Poseidon::Uuid(req.gate_uuid)));
 	CIRCE_PROTOCOL_THROW_UNLESS(gate_conn, Protocol::ERR_GATE_CONNECTION_LOST, Poseidon::sslit("The gate server specified was not found"));
 
@@ -142,7 +142,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedMessageRequestToGate, /*conn*
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Foyer::CheckGateRequest, /*conn*/, req){
+DEFINE_SERVLET_FOR(Protocol::Foyer::CheckGateRequest, /*connection*/, req){
 	const AUTO(gate_conn, FoyerAcceptor::get_session(Poseidon::Uuid(req.gate_uuid)));
 	CIRCE_PROTOCOL_THROW_UNLESS(gate_conn, Protocol::ERR_GATE_CONNECTION_LOST, Poseidon::sslit("The gate server specified was not found"));
 
@@ -150,7 +150,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::CheckGateRequest, /*conn*/, req){
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedBroadcastNotificationToGate, /*conn*/, ntfy){
+DEFINE_SERVLET_FOR(Protocol::Foyer::WebSocketPackedBroadcastNotificationToGate, /*connection*/, ntfy){
 	boost::container::flat_map<Poseidon::Uuid,
 		std::pair<boost::shared_ptr<Common::InterserverConnection>, // gate_conn
 		          boost::container::flat_set<Poseidon::Uuid> >      // clients

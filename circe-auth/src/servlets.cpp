@@ -15,7 +15,7 @@
 namespace Circe {
 namespace Auth {
 
-DEFINE_SERVLET_FOR(Protocol::Auth::HttpAuthenticationRequest, /*conn*/, req){
+DEFINE_SERVLET_FOR(Protocol::Auth::HttpAuthenticationRequest, /*connection*/, req){
 	Poseidon::Http::StatusCode resp_status_code = Poseidon::Http::ST_SERVICE_UNAVAILABLE;
 	Poseidon::OptionalMap resp_headers;
 	std::string auth_token = UserDefinedFunctions::check_http_authentication(resp_status_code, resp_headers,
@@ -29,7 +29,7 @@ DEFINE_SERVLET_FOR(Protocol::Auth::HttpAuthenticationRequest, /*conn*/, req){
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Auth::WebSocketAuthenticationRequest, /*conn*/, req){
+DEFINE_SERVLET_FOR(Protocol::Auth::WebSocketAuthenticationRequest, /*connection*/, req){
 	boost::container::deque<std::pair<Poseidon::WebSocket::OpCode, Poseidon::StreamBuffer> > resp_messages;
 	Poseidon::WebSocket::StatusCode resp_status_code = Poseidon::WebSocket::ST_INTERNAL_ERROR;
 	std::string resp_reason;

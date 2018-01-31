@@ -16,7 +16,7 @@
 namespace Circe {
 namespace Box {
 
-DEFINE_SERVLET_FOR(Protocol::Box::HttpRequest, /*conn*/, req){
+DEFINE_SERVLET_FOR(Protocol::Box::HttpRequest, /*connection*/, req){
 	Poseidon::Http::StatusCode resp_status_code = Poseidon::Http::ST_SERVICE_UNAVAILABLE;
 	Poseidon::OptionalMap resp_headers;
 	Poseidon::StreamBuffer resp_entity;
@@ -31,8 +31,8 @@ DEFINE_SERVLET_FOR(Protocol::Box::HttpRequest, /*conn*/, req){
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Box::WebSocketEstablishmentRequest, conn, req){
-	const AUTO(shadow_session, boost::make_shared<WebSocketShadowSession>(conn->get_connection_uuid(), Poseidon::Uuid(req.gate_uuid), Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.auth_token)));
+DEFINE_SERVLET_FOR(Protocol::Box::WebSocketEstablishmentRequest, connection, req){
+	const AUTO(shadow_session, boost::make_shared<WebSocketShadowSession>(connection->get_connection_uuid(), Poseidon::Uuid(req.gate_uuid), Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.auth_token)));
 	UserDefinedFunctions::handle_websocket_establishment(shadow_session, STD_MOVE(req.decoded_uri), Protocol::copy_key_values(STD_MOVE_IDN(req.params)));
 	WebSocketShadowSessionSupervisor::attach_session(shadow_session);
 
@@ -40,7 +40,7 @@ DEFINE_SERVLET_FOR(Protocol::Box::WebSocketEstablishmentRequest, conn, req){
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Box::WebSocketClosureNotification, /*conn*/, ntfy){
+DEFINE_SERVLET_FOR(Protocol::Box::WebSocketClosureNotification, /*connection*/, ntfy){
 	const AUTO(shadow_session, WebSocketShadowSessionSupervisor::detach_session(Poseidon::Uuid(ntfy.client_uuid)));
 	if(shadow_session){
 		shadow_session->mark_shutdown();
@@ -54,7 +54,7 @@ DEFINE_SERVLET_FOR(Protocol::Box::WebSocketClosureNotification, /*conn*/, ntfy){
 	return Protocol::ERR_SUCCESS;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Box::WebSocketPackedMessageRequest, /*conn*/, req){
+DEFINE_SERVLET_FOR(Protocol::Box::WebSocketPackedMessageRequest, /*connection*/, req){
 	const AUTO(shadow_session, WebSocketShadowSessionSupervisor::get_session(Poseidon::Uuid(req.client_uuid)));
 	if(shadow_session){
 		try {
