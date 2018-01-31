@@ -88,6 +88,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 			connection->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
 			throw;
 		}
+		updated = true;
 	}
 	compass->update_last_access_time();
 
