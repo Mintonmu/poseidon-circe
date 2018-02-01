@@ -16,7 +16,7 @@ namespace Circe {
 namespace Pilot {
 
 DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
-	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_string(req.key)));
+	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_hash_of(req.key.data(), req.key.size())));
 	DEBUG_THROW_ASSERT(compass);
 	LOG_CIRCE_DEBUG("Opened compass: ", compass->get_compass_key());
 
@@ -59,7 +59,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 	while((criterion_index < req.criteria.size()) && (req.criteria.at(criterion_index).value_cmp != value_old)){
 		++criterion_index;
 	}
-	LOG_CIRCE_DEBUG("Compass comparison result: req = ", req, ", criterion_index = ", criterion_index);
+	LOG_CIRCE_DEBUG("Compass comparison result: criterion_index = ", criterion_index);
 
 	bool locked;
 	if(!req.criteria.empty() && (criterion_index >= req.criteria.size())){
@@ -117,7 +117,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 }
 
 DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
-	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_string(req.key)));
+	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_hash_of(req.key.data(), req.key.size())));
 	DEBUG_THROW_ASSERT(compass);
 	LOG_CIRCE_DEBUG("Opened compass: ", compass->get_compass_key());
 

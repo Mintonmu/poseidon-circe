@@ -5,9 +5,12 @@
 #include "user_defined_functions.hpp"
 #include "protocol/utilities.hpp"
 
+// TODO: These are for testing only.
 #include "protocol/messages_foyer.hpp"
 #include "singletons/box_acceptor.hpp"
 #include "singletons/websocket_shadow_session_supervisor.hpp"
+#include "protocol/messages_pilot.hpp"
+#include "singletons/pilot_connector.hpp"
 
 namespace Circe {
 namespace Box {
@@ -92,6 +95,20 @@ void UserDefinedFunctions::handle_websocket_message(
 		rit->payload = Poseidon::StreamBuffer(str);
 	}
 	BoxAcceptor::safe_broadcast_notification(ntfy);
+
+	Protocol::Pilot::CompareExchangeRequest q;
+	q.key = "hello";
+	q.criteria.push_back({    "", "foo" });
+	q.criteria.push_back({ "foo", "bar" });
+	q.criteria.push_back({ "bar",  "kk" });
+	q.lock_disposition = Protocol::Pilot::LOCK_TRY_ACQUIRE_EXCLUSIVE;
+	boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > c;
+	PilotConnector::get_all_clients(c);
+	DEBUG_THROW_ASSERT(!c.empty());
+	LOG_CIRCE_FATAL(q);
+	Protocol::Pilot::CompareExchangeResponse r;
+	Common::wait_for_response(r, c.at(0)->send_request(q));
+	LOG_CIRCE_ERROR(r);
 }
 
 void UserDefinedFunctions::handle_websocket_closure(
