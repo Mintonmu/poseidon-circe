@@ -34,24 +34,36 @@ namespace {
 	Poseidon::Mutex g_mutex;
 	boost::weak_ptr<IpContainer> g_weak_ip_container;
 
-	void unlocked_accumulate_and_check_ban(const boost::shared_ptr<IpContainer> &ip_container, const char *ip, unsigned counter_index, boost::uint64_t counter_max_value){
+	void accumulate_and_check_ban(const char *ip, unsigned counter_index, boost::uint64_t counter_value_max){
 		PROFILE_ME;
 
-		const AUTO(now, Poseidon::get_fast_mono_clock());
+		const Poseidon::Mutex::UniqueLock lock(g_mutex);
+		const AUTO(ip_container, g_weak_ip_container.lock());
+		if(!ip_container){
+			LOG_CIRCE_WARNING("IpBanList has not been initialized.");
+			DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("IpBanList has not been initialized"));
+		}
 		// Erase expired elements.
+		const AUTO(now, Poseidon::get_fast_mono_clock());
 		ip_container->erase<1>(ip_container->begin<1>(), ip_container->upper_bound<1>(now));
-		// Find the element for the current ip. Create one if it does not exist.
+		// Find the element for this ip.
 		const Poseidon::IpPort key(ip, 0);
 		AUTO(it, ip_container->find<0>(key));
 		if(it == ip_container->end<0>()){
-			IpElement elem = { key, Poseidon::saturated_add<boost::uint64_t>(now, 60000) };
+			// Create one if it doesn't exist.
+			const AUTO(expiry_time, Poseidon::saturated_add<boost::uint64_t>(now, 60000));
+			IpElement elem = { key, expiry_time };
 			it = ip_container->insert<0>(STD_MOVE(elem)).first;
 		}
-		if(++(it->counters.at(counter_index)) >= counter_max_value){
+		// Increment the counter and check whether it exceeds the maximum value.
+		const AUTO(counter_value_new, Poseidon::checked_add<boost::uint64_t>(it->counters.at(counter_index), 1));
+		it->counters.at(counter_index) = counter_value_new;
+		if(counter_value_new >= counter_value_max){
 			const AUTO(ban_expiry_duration, get_config<boost::uint64_t>("client_generic_auto_ip_ban_expiry_duration", 60000));
-			LOG_CIRCE_WARNING("Banning IP automatically: ip = ", it->ip_port.ip());
-			ip_container->set_key<0, 1>(it, Poseidon::saturated_add(now, ban_expiry_duration));
-			it->ban_expiry_time = it->expiry_time;
+			LOG_CIRCE_WARNING("Banning IP automatically: ip = ", it->ip_port.ip(), ", ban_expiry_duration = ", ban_expiry_duration);
+			const AUTO(expiry_time, Poseidon::saturated_add(now, ban_expiry_duration));
+			ip_container->set_key<0, 1>(it, expiry_time);
+			it->ban_expiry_time = expiry_time;
 			DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Excess flood"));
 		}
 	}
@@ -81,42 +93,70 @@ boost::uint64_t IpBanList::get_ban_time_remaining(const char *ip){
 	const AUTO(now, Poseidon::get_fast_mono_clock());
 	return Poseidon::saturated_sub(it->ban_expiry_time, now);
 }
+void IpBanList::set_ban_time_remaining(const char *ip, boost::uint64_t time_remaining){
+	PROFILE_ME;
+
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
+	const AUTO(ip_container, g_weak_ip_container.lock());
+	if(!ip_container){
+		LOG_CIRCE_WARNING("IpBanList has not been initialized.");
+		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("IpBanList has not been initialized"));
+	}
+	// Find the element for this ip.
+	const Poseidon::IpPort key(ip, 0);
+	AUTO(it, ip_container->find<0>(key));
+	if(it == ip_container->end<0>()){
+		// Create one if it doesn't exist.
+		IpElement elem = { key, 0 };
+		it = ip_container->insert<0>(STD_MOVE(elem)).first;
+	}
+	const AUTO(now, Poseidon::get_fast_mono_clock());
+	const AUTO(expiry_time, Poseidon::saturated_add(now, time_remaining));
+	ip_container->set_key<0, 1>(it, expiry_time);
+	it->ban_expiry_time = expiry_time;
+}
+bool IpBanList::remove_ban(const char *ip) NOEXCEPT {
+	PROFILE_ME;
+
+	const Poseidon::Mutex::UniqueLock lock(g_mutex);
+	const AUTO(ip_container, g_weak_ip_container.lock());
+	if(!ip_container){
+		LOG_CIRCE_WARNING("IpBanList has not been initialized.");
+		return false;
+	}
+	// XXX: Can it be made look better?
+	Poseidon::IpPort key;
+	try {
+		key = Poseidon::IpPort(ip, 0);
+	} catch(std::exception &e){
+		LOG_CIRCE_ERROR("Invalid IP: what = ", e.what());
+		return false;
+	}
+	const AUTO(it, ip_container->find<0>(key));
+	if(it == ip_container->end<0>()){
+		return false;
+	}
+	ip_container->erase<0>(it);
+	return true;
+}
 
 void IpBanList::accumulate_http_request(const char *ip){
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
-	const AUTO(ip_container, g_weak_ip_container.lock());
-	if(!ip_container){
-		LOG_CIRCE_WARNING("IpBanList has not been initialized.");
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("IpBanList has not been initialized"));
-	}
-	const AUTO(counter_max_value, get_config<boost::uint64_t>("client_http_max_requests_per_minute_by_ip", 300));
-	unlocked_accumulate_and_check_ban(ip_container, ip, COUNTER_HTTP_REQUEST, counter_max_value);
+	const AUTO(counter_value_max, get_config<boost::uint64_t>("client_http_max_requests_per_minute_by_ip", 300));
+	accumulate_and_check_ban(ip, COUNTER_HTTP_REQUEST, counter_value_max);
 }
 void IpBanList::accumulate_websocket_request(const char *ip){
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
-	const AUTO(ip_container, g_weak_ip_container.lock());
-	if(!ip_container){
-		LOG_CIRCE_WARNING("IpBanList has not been initialized.");
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("IpBanList has not been initialized"));
-	}
-	const AUTO(counter_max_value, get_config<boost::uint64_t>("client_websocket_max_requests_per_minute_by_ip", 120));
-	unlocked_accumulate_and_check_ban(ip_container, ip, COUNTER_WEBSOCKET_REQUEST, counter_max_value);
+	const AUTO(counter_value_max, get_config<boost::uint64_t>("client_websocket_max_requests_per_minute_by_ip", 120));
+	accumulate_and_check_ban(ip, COUNTER_WEBSOCKET_REQUEST, counter_value_max);
 }
 void IpBanList::accumulate_auth_failure(const char *ip){
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
-	const AUTO(ip_container, g_weak_ip_container.lock());
-	if(!ip_container){
-		LOG_CIRCE_WARNING("IpBanList has not been initialized.");
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("IpBanList has not been initialized"));
-	}
-	const AUTO(counter_max_value, get_config<boost::uint64_t>("client_generic_max_auth_failure_count_per_minute_by_ip", 5));
-	unlocked_accumulate_and_check_ban(ip_container, ip, COUNTER_AUTH_FAILURE, counter_max_value);
+	const AUTO(counter_value_max, get_config<boost::uint64_t>("client_generic_max_auth_failure_count_per_minute_by_ip", 5));
+	accumulate_and_check_ban(ip, COUNTER_AUTH_FAILURE, counter_value_max);
 }
 
 }

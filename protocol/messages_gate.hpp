@@ -49,6 +49,20 @@ namespace Gate {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
+#define MESSAGE_NAME   UnbanIpRequest
+#define MESSAGE_ID     1106
+#define MESSAGE_FIELDS \
+	FIELD_STRING       (client_ip)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
+#define MESSAGE_NAME   UnbanIpResponse
+#define MESSAGE_ID     1107
+#define MESSAGE_FIELDS \
+	FIELD_STRING       (found)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
 }
 }
 }

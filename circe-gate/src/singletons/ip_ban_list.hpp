@@ -15,6 +15,8 @@ private:
 
 public:
 	static boost::uint64_t get_ban_time_remaining(const char *ip);
+	static void set_ban_time_remaining(const char *ip, boost::uint64_t time_remaining);
+	static bool remove_ban(const char *ip) NOEXCEPT;
 
 	static void accumulate_http_request(const char *ip);
 	static void accumulate_websocket_request(const char *ip);

@@ -9,6 +9,7 @@
 #include "protocol/utilities.hpp"
 #include "protocol/messages_gate.hpp"
 #include "singletons/client_http_acceptor.hpp"
+#include "singletons/ip_ban_list.hpp"
 
 #define DEFINE_SERVLET_FOR(...)   CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(::Circe::Gate::ServletContainer::insert_servlet, __VA_ARGS__)
 
@@ -58,6 +59,14 @@ DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedBroadcastNotification, /*conne
 	}
 
 	return Protocol::ERR_SUCCESS;
+}
+
+DEFINE_SERVLET_FOR(Protocol::Gate::UnbanIpRequest, /*connection*/, req){
+	const bool found = IpBanList::remove_ban(req.client_ip.c_str());
+
+	Protocol::Gate::UnbanIpResponse resp;
+	resp.found = found;
+	return resp;
 }
 
 }
