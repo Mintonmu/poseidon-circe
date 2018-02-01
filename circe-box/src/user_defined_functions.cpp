@@ -97,7 +97,7 @@ void UserDefinedFunctions::handle_websocket_message(
 	BoxAcceptor::safe_broadcast_notification(ntfy);
 
 	Protocol::Pilot::CompareExchangeRequest q;
-	q.key = "hello";
+	q.key = (const unsigned char *)"hello";
 	q.criteria.push_back({    "", "foo" });
 	q.criteria.push_back({ "foo", "bar" });
 	q.criteria.push_back({ "bar",  "kk" });
