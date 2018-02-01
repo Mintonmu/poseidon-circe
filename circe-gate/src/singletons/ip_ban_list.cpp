@@ -129,7 +129,7 @@ bool IpBanList::remove_ban(const char *ip) NOEXCEPT {
 	try {
 		key = Poseidon::IpPort(ip, 0);
 	} catch(std::exception &e){
-		LOG_CIRCE_ERROR("Invalid IP: what = ", e.what());
+		LOG_CIRCE_ERROR("Invalid IP address: what = ", e.what());
 		return false;
 	}
 	const AUTO(it, ip_container->find<0>(key));
