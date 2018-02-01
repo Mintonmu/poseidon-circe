@@ -198,7 +198,7 @@ std::size_t InterserverConnector::safe_broadcast_notification(const Poseidon::Cb
 			continue;
 		}
 		try {
-			LOG_CIRCE_DEBUG("Sending notification to interserver client: remote = ", client->layer5_get_remote_info(), ": ", msg);
+			LOG_CIRCE_DEBUG("Broadcasting notification to interserver client: remote = ", client->layer5_get_remote_info(), ": ", msg);
 			client->send_notification(msg);
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
