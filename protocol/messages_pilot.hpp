@@ -36,7 +36,7 @@ enum {
 #define MESSAGE_FIELDS \
 	FIELD_STRING       (value_old)	\
 	FIELD_VUINT        (version_old)	\
-	FIELD_VUINT        (updated)	\
+	FIELD_VUINT        (succeeded)	\
 	FIELD_VUINT        (criterion_index)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
@@ -55,7 +55,7 @@ enum {
 #define MESSAGE_FIELDS \
 	FIELD_STRING       (value_old)	\
 	FIELD_VUINT        (version_old)	\
-	FIELD_VUINT        (updated)	\
+	FIELD_VUINT        (succeeded)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 

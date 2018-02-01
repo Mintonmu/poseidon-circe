@@ -52,7 +52,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 
 	std::string value_old = compass->get_value();
 	unsigned version_old = compass->get_version();
-	bool updated = false;
+	bool succeeded = false;
 	std::size_t criterion_index = 0;
 
 	// Search for the first match.
@@ -77,9 +77,10 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 	// Update the value only if the value has been locked successfully.
 	if(locked){
 		try {
-			// Update the value safely.
-			compass->set_value(STD_MOVE(req.criteria.at(criterion_index).value_new));
-			updated = true;
+			if(criterion_index < req.criteria.size()){
+				// Update the value safely.
+				compass->set_value(STD_MOVE(req.criteria.at(criterion_index).value_new));
+			}
 
 			// If shared locking has been requested, guarantee it.
 			while(shared_lock_disposition < 0){
@@ -105,13 +106,14 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 			connection->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
 			throw;
 		}
+		succeeded = true;
 	}
 	compass->update_last_access_time();
 
 	Protocol::Pilot::CompareExchangeResponse resp;
 	resp.value_old       = STD_MOVE(value_old);
 	resp.version_old     = version_old;
-	resp.updated         = updated;
+	resp.succeeded       = succeeded;
 	resp.criterion_index = criterion_index;
 	return resp;
 }
@@ -153,7 +155,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 
 	std::string value_old = compass->get_value();
 	unsigned version_old = compass->get_version();
-	bool updated = false;
+	bool succeeded = false;
 
 	// Ask for exclusive locking.
 	bool locked = compass->try_lock_exclusive(connection);
@@ -163,7 +165,6 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 		try {
 			// Update the value safely.
 			compass->set_value(STD_MOVE(req.value_new));
-			updated = true;
 
 			// If shared locking has been requested, guarantee it.
 			while(shared_lock_disposition < 0){
@@ -189,13 +190,14 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 			connection->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
 			throw;
 		}
+		succeeded = true;
 	}
 	compass->update_last_access_time();
 
 	Protocol::Pilot::ExchangeResponse resp;
 	resp.value_old   = STD_MOVE(value_old);
 	resp.version_old = version_old;
-	resp.updated     = updated;
+	resp.succeeded   = succeeded;
 	return resp;
 }
 
