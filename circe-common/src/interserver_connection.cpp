@@ -264,8 +264,14 @@ protected:
 				LOG_CIRCE_ERROR("std::exception thrown: mesasge_id = ", m_message_id, ", err_msg = ", e.what());
 				resp = InterserverResponse(Protocol::ERR_INTERNAL_ERROR, e.what());
 			}
+			const long status_code = resp.get_err_code();
 			if(m_send_response){
 				connection->send_response(m_serial, STD_MOVE(resp));
+			}
+			if(status_code < 0){
+				char str[256];
+				std::sprintf(str, "Fatal error %ld", status_code);
+				connection->shutdown(Protocol::ERR_INTERNAL_ERROR, str);
 			}
 			LOG_CIRCE_TRACE("Done dispatching message: message_id = ", m_message_id);
 		} catch(std::exception &e){
