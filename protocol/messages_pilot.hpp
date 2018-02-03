@@ -15,8 +15,17 @@ enum {
 	LOCK_LEAVE_ALONE            =  0,
 	LOCK_TRY_ACQUIRE_SHARED     = 11,
 	LOCK_TRY_ACQUIRE_EXCLUSIVE  = 12,
-	LOCK_RELEASE_SHARED         = 31,
-	LOCK_RELEASE_EXCLUSIVE      = 32,
+	LOCK_RELEASE_SHARED         = 21,
+	LOCK_RELEASE_EXCLUSIVE      = 22,
+};
+
+// Constants for `lock_state`.
+enum {
+	LOCK_FREE_FOR_ACQUISITION   =  0,
+	LOCK_SHARED_BY_ME           = 30,
+	LOCK_SHARED_BY_OTHERS       = 31,
+	LOCK_EXCLUSIVE_BY_ME        = 40,
+	LOCK_EXCLUSIVE_BY_OTHERS    = 41,
 };
 
 #define MESSAGE_NAME   CompareExchangeRequest
@@ -38,6 +47,7 @@ enum {
 	FIELD_VUINT        (version_old)	\
 	FIELD_VUINT        (succeeded)	\
 	FIELD_VUINT        (criterion_index)	\
+	FIELD_VUINT        (lock_state)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
@@ -56,6 +66,7 @@ enum {
 	FIELD_STRING       (value_old)	\
 	FIELD_VUINT        (version_old)	\
 	FIELD_VUINT        (succeeded)	\
+	FIELD_VUINT        (lock_state)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 

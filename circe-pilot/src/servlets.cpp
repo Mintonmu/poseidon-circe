@@ -54,6 +54,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 	unsigned version_old = compass->get_version();
 	bool succeeded = false;
 	std::size_t criterion_index = 0;
+	unsigned lock_state = Protocol::Pilot::LOCK_FREE_FOR_ACQUISITION;
 
 	// Search for the first match.
 	while((criterion_index < req.criteria.size()) && (req.criteria.at(criterion_index).value_cmp != value_old)){
@@ -76,37 +77,38 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 	}
 	// Update the value only if the value has been locked successfully.
 	if(locked){
-		try {
-			if(criterion_index < req.criteria.size()){
-				// Update the value safely.
-				compass->set_value(STD_MOVE(req.criteria.at(criterion_index).value_new));
-			}
-
-			// If shared locking has been requested, guarantee it.
-			while(shared_lock_disposition < 0){
-				compass->release_lock_shared(connection);
-				++shared_lock_disposition;
-			}
-			while(shared_lock_disposition > 0){
-				DEBUG_THROW_ASSERT(compass->try_lock_shared(connection));
-				--shared_lock_disposition;
-			}
-
-			// If exclusive locking has been requested, guarantee it.
-			while(exclusive_lock_disposition < 0){
-				compass->release_lock_exclusive(connection);
-				++exclusive_lock_disposition;
-			}
-			while(exclusive_lock_disposition > 0){
-				DEBUG_THROW_ASSERT(compass->try_lock_exclusive(connection));
-				--exclusive_lock_disposition;
-			}
-		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			connection->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
-			throw;
+		if(criterion_index < req.criteria.size()){
+			// Update the value safely.
+			compass->set_value(STD_MOVE(req.criteria.at(criterion_index).value_new));
 		}
 		succeeded = true;
+		// If shared locking has been requested, guarantee it.
+		while(shared_lock_disposition < 0){
+			compass->release_lock_shared(connection);
+			++shared_lock_disposition;
+		}
+		while(shared_lock_disposition > 0){
+			DEBUG_THROW_ASSERT(compass->try_lock_shared(connection));
+			--shared_lock_disposition;
+		}
+		// If exclusive locking has been requested, guarantee it.
+		while(exclusive_lock_disposition < 0){
+			compass->release_lock_exclusive(connection);
+			++exclusive_lock_disposition;
+		}
+		while(exclusive_lock_disposition > 0){
+			DEBUG_THROW_ASSERT(compass->try_lock_exclusive(connection));
+			--exclusive_lock_disposition;
+		}
+	}
+	if(compass->is_locked_exclusive_by(connection->get_connection_uuid())){
+		lock_state = Protocol::Pilot::LOCK_EXCLUSIVE_BY_ME;
+	} else if(compass->is_locked_exclusive()){
+		lock_state = Protocol::Pilot::LOCK_EXCLUSIVE_BY_OTHERS;
+	} else if(compass->is_locked_shared_by(connection->get_connection_uuid())){
+		lock_state = Protocol::Pilot::LOCK_SHARED_BY_ME;
+	} else if(compass->is_locked_shared()){
+		lock_state = Protocol::Pilot::LOCK_SHARED_BY_OTHERS;
 	}
 	compass->update_last_access_time();
 
@@ -115,6 +117,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 	resp.version_old     = version_old;
 	resp.succeeded       = succeeded;
 	resp.criterion_index = criterion_index;
+	resp.lock_state      = lock_state;
 	return resp;
 }
 
@@ -156,41 +159,43 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 	std::string value_old = compass->get_value();
 	unsigned version_old = compass->get_version();
 	bool succeeded = false;
+	unsigned lock_state = Protocol::Pilot::LOCK_FREE_FOR_ACQUISITION;
 
 	// Ask for exclusive locking.
 	bool locked = compass->try_lock_exclusive(connection);
 	exclusive_lock_disposition -= locked;
 	// Update the value only if the value has been locked successfully.
 	if(locked){
-		try {
-			// Update the value safely.
-			compass->set_value(STD_MOVE(req.value_new));
-
-			// If shared locking has been requested, guarantee it.
-			while(shared_lock_disposition < 0){
-				compass->release_lock_shared(connection);
-				++shared_lock_disposition;
-			}
-			while(shared_lock_disposition > 0){
-				DEBUG_THROW_ASSERT(compass->try_lock_shared(connection));
-				--shared_lock_disposition;
-			}
-
-			// If exclusive locking has been requested, guarantee it.
-			while(exclusive_lock_disposition < 0){
-				compass->release_lock_exclusive(connection);
-				++exclusive_lock_disposition;
-			}
-			while(exclusive_lock_disposition > 0){
-				DEBUG_THROW_ASSERT(compass->try_lock_exclusive(connection));
-				--exclusive_lock_disposition;
-			}
-		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			connection->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
-			throw;
-		}
+		// Update the value safely.
+		compass->set_value(STD_MOVE(req.value_new));
 		succeeded = true;
+		// If shared locking has been requested, guarantee it.
+		while(shared_lock_disposition < 0){
+			compass->release_lock_shared(connection);
+			++shared_lock_disposition;
+		}
+		while(shared_lock_disposition > 0){
+			DEBUG_THROW_ASSERT(compass->try_lock_shared(connection));
+			--shared_lock_disposition;
+		}
+		// If exclusive locking has been requested, guarantee it.
+		while(exclusive_lock_disposition < 0){
+			compass->release_lock_exclusive(connection);
+			++exclusive_lock_disposition;
+		}
+		while(exclusive_lock_disposition > 0){
+			DEBUG_THROW_ASSERT(compass->try_lock_exclusive(connection));
+			--exclusive_lock_disposition;
+		}
+	}
+	if(compass->is_locked_exclusive_by(connection->get_connection_uuid())){
+		lock_state = Protocol::Pilot::LOCK_EXCLUSIVE_BY_ME;
+	} else if(compass->is_locked_exclusive()){
+		lock_state = Protocol::Pilot::LOCK_EXCLUSIVE_BY_OTHERS;
+	} else if(compass->is_locked_shared_by(connection->get_connection_uuid())){
+		lock_state = Protocol::Pilot::LOCK_SHARED_BY_ME;
+	} else if(compass->is_locked_shared()){
+		lock_state = Protocol::Pilot::LOCK_SHARED_BY_OTHERS;
 	}
 	compass->update_last_access_time();
 
@@ -198,6 +203,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 	resp.value_old   = STD_MOVE(value_old);
 	resp.version_old = version_old;
 	resp.succeeded   = succeeded;
+	resp.lock_state  = lock_state;
 	return resp;
 }
 
