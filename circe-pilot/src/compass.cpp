@@ -59,7 +59,7 @@ void Compass::set_value(std::string value_new){
 	m_dao->version = m_dao->version + 1;
 }
 
-bool Compass::is_locked_shared(){
+bool Compass::is_locked_shared() const {
 	return m_lock.is_locked_shared();
 }
 bool Compass::is_locked_shared_by(const Poseidon::Uuid &connection_uuid){
@@ -72,7 +72,7 @@ void Compass::release_lock_shared(const boost::shared_ptr<Common::InterserverCon
 	return m_lock.release_lock_shared(connection);
 }
 
-bool Compass::is_locked_exclusive(){
+bool Compass::is_locked_exclusive() const {
 	return m_lock.is_locked_exclusive();
 }
 bool Compass::is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid){

@@ -15,7 +15,7 @@ CompassLock::~CompassLock(){
 	//
 }
 
-void CompassLock::collect_expired_connections(){
+void CompassLock::collect_expired_connections() const {
 	PROFILE_ME;
 
 	bool erase_it;
@@ -27,7 +27,7 @@ void CompassLock::collect_expired_connections(){
 	}
 }
 
-bool CompassLock::is_locked_shared(){
+bool CompassLock::is_locked_shared() const {
 	PROFILE_ME;
 
 	collect_expired_connections();
@@ -65,7 +65,7 @@ void CompassLock::release_lock_shared(const boost::shared_ptr<Common::Interserve
 	m_readers.erase(it);
 }
 
-bool CompassLock::is_locked_exclusive(){
+bool CompassLock::is_locked_exclusive() const {
 	PROFILE_ME;
 
 	collect_expired_connections();
