@@ -23,17 +23,17 @@ public:
 	~CompassLock();
 
 public:
-	void collect_expired_connections() const;
+	void collect_expired_connections() const NOEXCEPT;
 
-	bool is_locked_shared() const;
-	bool is_locked_shared_by(const Poseidon::Uuid &connection_uuid);
+	bool is_locked_shared() const NOEXCEPT;
+	bool is_locked_shared_by(const Poseidon::Uuid &connection_uuid) NOEXCEPT;
 	bool try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection);
-	void release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection);
+	bool release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection) NOEXCEPT;
 
-	bool is_locked_exclusive() const;
-	bool is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid);
+	bool is_locked_exclusive() const NOEXCEPT;
+	bool is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid) NOEXCEPT;
 	bool try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
-	void release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
+	bool release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection) NOEXCEPT;
 };
 
 }

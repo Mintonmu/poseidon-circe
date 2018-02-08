@@ -8,6 +8,7 @@
 #include <poseidon/uuid.hpp>
 #include "compass_key.hpp"
 #include "compass_lock.hpp"
+#include "compass_watcher_map.hpp"
 
 namespace Circe {
 namespace Pilot {
@@ -20,6 +21,7 @@ private:
 
 	boost::shared_ptr<ORM_Compass> m_dao;
 	CompassLock m_lock;
+	CompassWatcherMap m_watcher_map;
 
 public:
 	explicit Compass(const CompassKey &compass_key);
@@ -43,12 +45,17 @@ public:
 	bool is_locked_shared() const;
 	bool is_locked_shared_by(const Poseidon::Uuid &connection_uuid);
 	bool try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection);
-	void release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection);
+	bool release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection);
 
 	bool is_locked_exclusive() const;
 	bool is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid);
 	bool try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
-	void release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
+	bool release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
+
+	// Watcher observers and modifiers.
+	std::size_t get_watchers(boost::container::vector<std::pair<Poseidon::Uuid, boost::shared_ptr<Common::InterserverConnection> > > &watchers_ret) const;
+	Poseidon::Uuid add_watcher(const boost::shared_ptr<Common::InterserverConnection> &connection);
+	bool remove_watcher(const Poseidon::Uuid &watcher_uuid);
 };
 
 }

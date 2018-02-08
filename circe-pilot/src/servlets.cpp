@@ -47,8 +47,12 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 		LOG_CIRCE_ERROR("Unknown lock_disposition: ", req.lock_disposition);
 		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Unknown lock_disposition"));
 	}
-	DEBUG_THROW_ASSERT(!(shared_lock_disposition < 0) || compass->is_locked_shared_by(connection->get_connection_uuid()));
-	DEBUG_THROW_ASSERT(!(exclusive_lock_disposition < 0) || compass->is_locked_exclusive_by(connection->get_connection_uuid()));
+	if(shared_lock_disposition < 0){
+		DEBUG_THROW_ASSERT(compass->is_locked_shared_by(connection->get_connection_uuid()));
+	}
+	if(exclusive_lock_disposition < 0){
+		DEBUG_THROW_ASSERT(compass->is_locked_exclusive_by(connection->get_connection_uuid()));
+	}
 
 	std::string value_old = compass->get_value();
 	unsigned version_old = compass->get_version();
@@ -84,7 +88,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 		succeeded = true;
 		// If shared locking has been requested, guarantee it.
 		while(shared_lock_disposition < 0){
-			compass->release_lock_shared(connection);
+			DEBUG_THROW_ASSERT(compass->release_lock_shared(connection));
 			++shared_lock_disposition;
 		}
 		while(shared_lock_disposition > 0){
@@ -93,7 +97,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 		}
 		// If exclusive locking has been requested, guarantee it.
 		while(exclusive_lock_disposition < 0){
-			compass->release_lock_exclusive(connection);
+			DEBUG_THROW_ASSERT(compass->release_lock_exclusive(connection));
 			++exclusive_lock_disposition;
 		}
 		while(exclusive_lock_disposition > 0){
@@ -153,8 +157,12 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 		LOG_CIRCE_ERROR("Unknown lock_disposition: ", req.lock_disposition);
 		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Unknown lock_disposition"));
 	}
-	DEBUG_THROW_ASSERT(!(shared_lock_disposition < 0) || compass->is_locked_shared_by(connection->get_connection_uuid()));
-	DEBUG_THROW_ASSERT(!(exclusive_lock_disposition < 0) || compass->is_locked_exclusive_by(connection->get_connection_uuid()));
+	if(shared_lock_disposition < 0){
+		DEBUG_THROW_ASSERT(compass->is_locked_shared_by(connection->get_connection_uuid()));
+	}
+	if(exclusive_lock_disposition < 0){
+		DEBUG_THROW_ASSERT(compass->is_locked_exclusive_by(connection->get_connection_uuid()));
+	}
 
 	std::string value_old = compass->get_value();
 	unsigned version_old = compass->get_version();
@@ -171,7 +179,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 		succeeded = true;
 		// If shared locking has been requested, guarantee it.
 		while(shared_lock_disposition < 0){
-			compass->release_lock_shared(connection);
+			DEBUG_THROW_ASSERT(compass->release_lock_shared(connection));
 			++shared_lock_disposition;
 		}
 		while(shared_lock_disposition > 0){
@@ -180,7 +188,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 		}
 		// If exclusive locking has been requested, guarantee it.
 		while(exclusive_lock_disposition < 0){
-			compass->release_lock_exclusive(connection);
+			DEBUG_THROW_ASSERT(compass->release_lock_exclusive(connection));
 			++exclusive_lock_disposition;
 		}
 		while(exclusive_lock_disposition > 0){
@@ -205,6 +213,29 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 	resp.succeeded   = succeeded;
 	resp.lock_state  = lock_state;
 	return resp;
+}
+
+DEFINE_SERVLET_FOR(Protocol::Pilot::AddWatchRequest, connection, req){
+	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_hash_of(req.key.data(), req.key.size())));
+	DEBUG_THROW_ASSERT(compass);
+	LOG_CIRCE_DEBUG("Opened compass: ", compass->get_compass_key());
+
+	const AUTO(watcher_uuid, compass->add_watcher(connection));
+
+	Protocol::Pilot::AddWatchResponse resp;
+	resp.watcher_uuid = watcher_uuid;
+	return resp;
+}
+
+DEFINE_SERVLET_FOR(Protocol::Pilot::RemoveWatchNotification, /*connection*/, ntfy){
+	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_hash_of(ntfy.key.data(), ntfy.key.size())));
+	DEBUG_THROW_ASSERT(compass);
+	LOG_CIRCE_DEBUG("Opened compass: ", compass->get_compass_key());
+
+	const AUTO(watcher_uuid, Poseidon::Uuid(ntfy.watcher_uuid));
+	compass->remove_watcher(watcher_uuid);
+
+	return Protocol::ERR_SUCCESS;
 }
 
 }

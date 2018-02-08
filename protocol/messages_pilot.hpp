@@ -70,6 +70,36 @@ enum {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
+#define MESSAGE_NAME   AddWatchRequest
+#define MESSAGE_ID     1105
+#define MESSAGE_FIELDS \
+	FIELD_BLOB         (key)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
+#define MESSAGE_NAME   AddWatchResponse
+#define MESSAGE_ID     1106
+#define MESSAGE_FIELDS \
+	FIELD_FIXED        (watcher_uuid, 16)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
+#define MESSAGE_NAME   RemoveWatchNotification
+#define MESSAGE_ID     1107
+#define MESSAGE_FIELDS \
+	FIELD_BLOB         (key)	\
+	FIELD_FIXED        (watcher_uuid, 16)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
+#define MESSAGE_NAME   ValueChangeNotification
+#define MESSAGE_ID     1108
+#define MESSAGE_FIELDS \
+	FIELD_FIXED        (watcher_uuid, 16)	\
+	FIELD_STRING       (value_new)	\
+	//
+#include <poseidon/cbpp/message_generator.hpp>
+
 }
 }
 }
