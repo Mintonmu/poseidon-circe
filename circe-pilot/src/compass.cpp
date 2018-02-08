@@ -11,13 +11,12 @@ namespace Pilot {
 
 Compass::Compass(const CompassKey &compass_key)
 	: m_compass_key(compass_key)
-	, m_dao(Poseidon::MySql::begin_synchronization(boost::make_shared<ORM_Compass>(compass_key.to_string(), 0, std::string(), 0), false)) // Don't have it persist unless modified at all.
 {
 	LOG_CIRCE_DEBUG("Compass constructor (to create): compass_key = ", get_compass_key());
 }
 Compass::Compass(const boost::shared_ptr<ORM_Compass> &dao)
 	: m_compass_key(CompassKey::from_string(dao->compass_key))
-	, m_dao(Poseidon::MySql::begin_synchronization(dao, false))
+	, m_dao(Poseidon::MySql::begin_synchronization(dao, false)), m_lock()
 {
 	LOG_CIRCE_DEBUG("Compass constructor (to open): compass_key = ", get_compass_key());
 }
@@ -26,42 +25,57 @@ Compass::~Compass(){
 }
 
 boost::uint64_t Compass::get_last_access_time() const {
+	if(!m_dao){
+		return 0;
+	}
 	return m_dao->last_access_time;
 }
 void Compass::update_last_access_time(){
+	if(!m_dao){
+		return;
+	}
 	const AUTO(utc_now, Poseidon::get_utc_time());
 	m_dao->last_access_time = utc_now;
 	CompassRepository::update_compass_indices(this);
 }
 
 const std::string &Compass::get_value() const {
+	if(!m_dao){
+		return Poseidon::empty_string();
+	}
 	return m_dao->value;
 }
 boost::uint32_t Compass::get_version() const {
+	if(!m_dao){
+		return 0;
+	}
 	return static_cast<boost::uint32_t>(m_dao->version);
 }
 void Compass::set_value(std::string value_new){
+	if(!m_dao){
+		m_dao = Poseidon::MySql::begin_synchronization(boost::make_shared<ORM_Compass>(m_compass_key.to_string(), 0, std::string(), 0), false);
+	}
 	m_dao->value = STD_MOVE(value_new);
 	m_dao->version = m_dao->version + 1;
 }
 
-bool Compass::is_locked_shared() const {
+bool Compass::is_locked_shared(){
 	return m_lock.is_locked_shared();
 }
-bool Compass::is_locked_shared_by(const Poseidon::Uuid &connection_uuid) const {
+bool Compass::is_locked_shared_by(const Poseidon::Uuid &connection_uuid){
 	return m_lock.is_locked_shared_by(connection_uuid);
 }
-bool Compass::try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection) const {
+bool Compass::try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection){
 	return m_lock.try_lock_shared(connection);
 }
-void Compass::release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection) const {
+void Compass::release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection){
 	return m_lock.release_lock_shared(connection);
 }
 
-bool Compass::is_locked_exclusive() const {
+bool Compass::is_locked_exclusive(){
 	return m_lock.is_locked_exclusive();
 }
-bool Compass::is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid) const {
+bool Compass::is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid){
 	return m_lock.is_locked_exclusive_by(connection_uuid);
 }
 bool Compass::try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection){

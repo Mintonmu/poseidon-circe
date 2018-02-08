@@ -17,8 +17,9 @@ class ORM_Compass;
 class Compass : NONCOPYABLE, public virtual Poseidon::VirtualSharedFromThis {
 private:
 	const CompassKey m_compass_key;
-	const boost::shared_ptr<ORM_Compass> m_dao;
-	mutable CompassLock m_lock;
+
+	boost::shared_ptr<ORM_Compass> m_dao;
+	CompassLock m_lock;
 
 public:
 	explicit Compass(const CompassKey &compass_key);
@@ -39,13 +40,13 @@ public:
 	void set_value(std::string value_new);
 
 	// Interserver lock observers and modifiers.
-	bool is_locked_shared() const;
-	bool is_locked_shared_by(const Poseidon::Uuid &connection_uuid) const;
-	bool try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection) const;
-	void release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection) const;
+	bool is_locked_shared();
+	bool is_locked_shared_by(const Poseidon::Uuid &connection_uuid);
+	bool try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection);
+	void release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection);
 
-	bool is_locked_exclusive() const;
-	bool is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid) const;
+	bool is_locked_exclusive();
+	bool is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid);
 	bool try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
 	void release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
 };
