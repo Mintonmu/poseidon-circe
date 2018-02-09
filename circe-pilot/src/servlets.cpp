@@ -15,6 +15,81 @@
 namespace Circe {
 namespace Pilot {
 
+namespace {
+	void parse_lock_disposition(int *shared_lock_disposition_ret, int *exclusive_lock_disposition_ret, const boost::shared_ptr<Compass> &compass, const boost::shared_ptr<Common::InterserverConnection> &connection, unsigned lock_disposition){
+		PROFILE_ME;
+
+		int shared_lock_disposition;
+		int exclusive_lock_disposition;
+		switch(lock_disposition){
+		case Protocol::Pilot::LOCK_LEAVE_ALONE:
+			shared_lock_disposition = 0;
+			exclusive_lock_disposition = 0;
+			break;
+		case Protocol::Pilot::LOCK_TRY_ACQUIRE_SHARED:
+			shared_lock_disposition = 1;
+			exclusive_lock_disposition = 0;
+			break;
+		case Protocol::Pilot::LOCK_TRY_ACQUIRE_EXCLUSIVE:
+			shared_lock_disposition = 0;
+			exclusive_lock_disposition = 1;
+			break;
+		case Protocol::Pilot::LOCK_RELEASE_SHARED:
+			shared_lock_disposition = -1;
+			exclusive_lock_disposition = 0;
+			break;
+		case Protocol::Pilot::LOCK_RELEASE_EXCLUSIVE:
+			shared_lock_disposition = 0;
+			exclusive_lock_disposition = -1;
+			break;
+		default:
+			LOG_CIRCE_ERROR("Unknown lock_disposition: ", lock_disposition);
+			DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Unknown lock_disposition"));
+		}
+		if(shared_lock_disposition < 0){
+			DEBUG_THROW_ASSERT(compass->is_locked_shared_by(connection->get_connection_uuid()));
+		}
+		if(exclusive_lock_disposition < 0){
+			DEBUG_THROW_ASSERT(compass->is_locked_exclusive_by(connection->get_connection_uuid()));
+		}
+		*shared_lock_disposition_ret = shared_lock_disposition;
+		*exclusive_lock_disposition_ret = exclusive_lock_disposition;
+	}
+	void commit_lock_disposition(const boost::shared_ptr<Compass> &compass, const boost::shared_ptr<Common::InterserverConnection> &connection, int shared_lock_disposition, int exclusive_lock_disposition){
+		PROFILE_ME;
+
+		for(int i = exclusive_lock_disposition; i > 0; --i){
+			DEBUG_THROW_ASSERT(compass->try_lock_exclusive(connection));
+		}
+		for(int i = shared_lock_disposition; i > 0; --i){
+			DEBUG_THROW_ASSERT(compass->try_lock_shared(connection));
+		}
+
+		for(int i = exclusive_lock_disposition; i < 0; ++i){
+			DEBUG_THROW_ASSERT(compass->release_lock_exclusive(connection));
+		}
+		for(int i = shared_lock_disposition; i < 0; ++i){
+			DEBUG_THROW_ASSERT(compass->release_lock_shared(connection));
+		}
+	}
+
+	unsigned get_compass_lock_state(const boost::shared_ptr<Compass> &compass, const boost::shared_ptr<Common::InterserverConnection> &connection){
+		PROFILE_ME;
+
+		if(compass->is_locked_exclusive_by(connection->get_connection_uuid())){
+			return Protocol::Pilot::LOCK_EXCLUSIVE_BY_ME;
+		} else if(compass->is_locked_exclusive()){
+			return Protocol::Pilot::LOCK_EXCLUSIVE_BY_OTHERS;
+		} else if(compass->is_locked_shared_by(connection->get_connection_uuid())){
+			return Protocol::Pilot::LOCK_SHARED_BY_ME;
+		} else if(compass->is_locked_shared()){
+			return Protocol::Pilot::LOCK_SHARED_BY_OTHERS;
+		} else {
+			return Protocol::Pilot::LOCK_FREE_FOR_ACQUISITION;
+		}
+	}
+}
+
 DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_hash_of(req.key.data(), req.key.size())));
 	DEBUG_THROW_ASSERT(compass);
@@ -22,37 +97,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 
 	int shared_lock_disposition;
 	int exclusive_lock_disposition;
-	switch(req.lock_disposition){
-	case Protocol::Pilot::LOCK_LEAVE_ALONE:
-		shared_lock_disposition = 0;
-		exclusive_lock_disposition = 0;
-		break;
-	case Protocol::Pilot::LOCK_TRY_ACQUIRE_SHARED:
-		shared_lock_disposition = 1;
-		exclusive_lock_disposition = 0;
-		break;
-	case Protocol::Pilot::LOCK_TRY_ACQUIRE_EXCLUSIVE:
-		shared_lock_disposition = 0;
-		exclusive_lock_disposition = 1;
-		break;
-	case Protocol::Pilot::LOCK_RELEASE_SHARED:
-		shared_lock_disposition = -1;
-		exclusive_lock_disposition = 0;
-		break;
-	case Protocol::Pilot::LOCK_RELEASE_EXCLUSIVE:
-		shared_lock_disposition = 0;
-		exclusive_lock_disposition = -1;
-		break;
-	default:
-		LOG_CIRCE_ERROR("Unknown lock_disposition: ", req.lock_disposition);
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Unknown lock_disposition"));
-	}
-	if(shared_lock_disposition < 0){
-		DEBUG_THROW_ASSERT(compass->is_locked_shared_by(connection->get_connection_uuid()));
-	}
-	if(exclusive_lock_disposition < 0){
-		DEBUG_THROW_ASSERT(compass->is_locked_exclusive_by(connection->get_connection_uuid()));
-	}
+	parse_lock_disposition(&shared_lock_disposition, &exclusive_lock_disposition, compass, connection, boost::numeric_cast<unsigned>(req.lock_disposition));
 
 	std::string value_old = compass->get_value();
 	unsigned version_old = compass->get_version();
@@ -82,38 +127,12 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 	// Update the value only if the value has been locked successfully.
 	if(locked){
 		if(criterion_index < req.criteria.size()){
-			// Update the value safely.
 			compass->set_value(STD_MOVE(req.criteria.at(criterion_index).value_new));
 		}
+		commit_lock_disposition(compass, connection, shared_lock_disposition, exclusive_lock_disposition);
 		succeeded = true;
-		// If shared locking has been requested, guarantee it.
-		while(shared_lock_disposition < 0){
-			DEBUG_THROW_ASSERT(compass->release_lock_shared(connection));
-			++shared_lock_disposition;
-		}
-		while(shared_lock_disposition > 0){
-			DEBUG_THROW_ASSERT(compass->try_lock_shared(connection));
-			--shared_lock_disposition;
-		}
-		// If exclusive locking has been requested, guarantee it.
-		while(exclusive_lock_disposition < 0){
-			DEBUG_THROW_ASSERT(compass->release_lock_exclusive(connection));
-			++exclusive_lock_disposition;
-		}
-		while(exclusive_lock_disposition > 0){
-			DEBUG_THROW_ASSERT(compass->try_lock_exclusive(connection));
-			--exclusive_lock_disposition;
-		}
 	}
-	if(compass->is_locked_exclusive_by(connection->get_connection_uuid())){
-		lock_state = Protocol::Pilot::LOCK_EXCLUSIVE_BY_ME;
-	} else if(compass->is_locked_exclusive()){
-		lock_state = Protocol::Pilot::LOCK_EXCLUSIVE_BY_OTHERS;
-	} else if(compass->is_locked_shared_by(connection->get_connection_uuid())){
-		lock_state = Protocol::Pilot::LOCK_SHARED_BY_ME;
-	} else if(compass->is_locked_shared()){
-		lock_state = Protocol::Pilot::LOCK_SHARED_BY_OTHERS;
-	}
+	lock_state = get_compass_lock_state(compass, connection);
 	compass->update_last_access_time();
 
 	Protocol::Pilot::CompareExchangeResponse resp;
@@ -132,37 +151,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 
 	int shared_lock_disposition;
 	int exclusive_lock_disposition;
-	switch(req.lock_disposition){
-	case Protocol::Pilot::LOCK_LEAVE_ALONE:
-		shared_lock_disposition = 0;
-		exclusive_lock_disposition = 0;
-		break;
-	case Protocol::Pilot::LOCK_TRY_ACQUIRE_SHARED:
-		shared_lock_disposition = 1;
-		exclusive_lock_disposition = 0;
-		break;
-	case Protocol::Pilot::LOCK_TRY_ACQUIRE_EXCLUSIVE:
-		shared_lock_disposition = 0;
-		exclusive_lock_disposition = 1;
-		break;
-	case Protocol::Pilot::LOCK_RELEASE_SHARED:
-		shared_lock_disposition = -1;
-		exclusive_lock_disposition = 0;
-		break;
-	case Protocol::Pilot::LOCK_RELEASE_EXCLUSIVE:
-		shared_lock_disposition = 0;
-		exclusive_lock_disposition = -1;
-		break;
-	default:
-		LOG_CIRCE_ERROR("Unknown lock_disposition: ", req.lock_disposition);
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Unknown lock_disposition"));
-	}
-	if(shared_lock_disposition < 0){
-		DEBUG_THROW_ASSERT(compass->is_locked_shared_by(connection->get_connection_uuid()));
-	}
-	if(exclusive_lock_disposition < 0){
-		DEBUG_THROW_ASSERT(compass->is_locked_exclusive_by(connection->get_connection_uuid()));
-	}
+	parse_lock_disposition(&shared_lock_disposition, &exclusive_lock_disposition, compass, connection, boost::numeric_cast<unsigned>(req.lock_disposition));
 
 	std::string value_old = compass->get_value();
 	unsigned version_old = compass->get_version();
@@ -176,35 +165,10 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 	if(locked){
 		// Update the value safely.
 		compass->set_value(STD_MOVE(req.value_new));
+		commit_lock_disposition(compass, connection, shared_lock_disposition, exclusive_lock_disposition);
 		succeeded = true;
-		// If shared locking has been requested, guarantee it.
-		while(shared_lock_disposition < 0){
-			DEBUG_THROW_ASSERT(compass->release_lock_shared(connection));
-			++shared_lock_disposition;
-		}
-		while(shared_lock_disposition > 0){
-			DEBUG_THROW_ASSERT(compass->try_lock_shared(connection));
-			--shared_lock_disposition;
-		}
-		// If exclusive locking has been requested, guarantee it.
-		while(exclusive_lock_disposition < 0){
-			DEBUG_THROW_ASSERT(compass->release_lock_exclusive(connection));
-			++exclusive_lock_disposition;
-		}
-		while(exclusive_lock_disposition > 0){
-			DEBUG_THROW_ASSERT(compass->try_lock_exclusive(connection));
-			--exclusive_lock_disposition;
-		}
 	}
-	if(compass->is_locked_exclusive_by(connection->get_connection_uuid())){
-		lock_state = Protocol::Pilot::LOCK_EXCLUSIVE_BY_ME;
-	} else if(compass->is_locked_exclusive()){
-		lock_state = Protocol::Pilot::LOCK_EXCLUSIVE_BY_OTHERS;
-	} else if(compass->is_locked_shared_by(connection->get_connection_uuid())){
-		lock_state = Protocol::Pilot::LOCK_SHARED_BY_ME;
-	} else if(compass->is_locked_shared()){
-		lock_state = Protocol::Pilot::LOCK_SHARED_BY_OTHERS;
-	}
+	lock_state = get_compass_lock_state(compass, connection);
 	compass->update_last_access_time();
 
 	Protocol::Pilot::ExchangeResponse resp;
