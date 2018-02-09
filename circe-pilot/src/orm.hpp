@@ -10,7 +10,7 @@ namespace Circe {
 namespace Pilot {
 
 #define OBJECT_NAME    ORM_Compass
-#define OBJECT_TABLE   "Pilot.Compass"
+#define OBJECT_TABLE   "Pilot::Compass"
 #define OBJECT_FIELDS  \
 	FIELD_STRING       (compass_key)	\
 	FIELD_DATETIME     (last_access_time)	\
