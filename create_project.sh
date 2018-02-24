@@ -23,7 +23,7 @@ fi
 
 echo "Creating empty project in directory '${_full_name}'..."
 cp -RpT "${_prefix}-@@temp-late@@" "${_full_name}"
-sed -i -r -e "s,@@temp(-|_)late@@,$(echo "${_canon_name}" | sed -r "s,-,\\\\1,g;s,\\w,\\l&,g"),g"	\
+sed -i -r -e "s,@@temp(-|_)late@@,$(echo "${_canon_name}" | sed -r "s,-,\\\\1,g"),g"	\
           -e "s,@@Temp(-|_)late@@,$(echo "${_canon_name}" | sed -r "s,-,\\\\1,g;s,\\<\\w,\\u&,g"),g"	\
           -e "s,@@TEMP(-|_)LATE@@,$(echo "${_canon_name}" | sed -r "s,-,\\\\1,g;s,\\w,\\u&,g"),g"	\
 	$(find "${_full_name}" -type f)
