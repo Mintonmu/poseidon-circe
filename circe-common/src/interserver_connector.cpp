@@ -113,9 +113,9 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 			const AUTO(promised_sock_addr, Poseidon::DnsDaemon::enqueue_for_looking_up(*host_it, connector->m_port));
 			lock.unlock();
 			{
-				LOG_CIRCE_INFO("<<< Looking up: ", *host_it);
+				LOG_CIRCE_DEBUG("Looking up: ", *host_it);
 				Poseidon::yield(promised_sock_addr);
-				LOG_CIRCE_INFO(">>> Creating InterserverClient to ", Poseidon::IpPort(promised_sock_addr->get()));
+				LOG_CIRCE_INFO("Resolved server hostname: ", *host_it, ":", connector->m_port, " as ", Poseidon::IpPort(promised_sock_addr->get()));
 			}
 			lock.lock();
 			client = connector->m_weak_clients[*host_it].lock();
