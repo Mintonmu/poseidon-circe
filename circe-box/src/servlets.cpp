@@ -9,7 +9,7 @@
 #include "protocol/messages_box.hpp"
 #include "protocol/utilities.hpp"
 #include "singletons/websocket_shadow_session_supervisor.hpp"
-#include "user_defined_functions.hpp"
+#include "singletons/user_defined_functions.hpp"
 
 #define DEFINE_SERVLET_FOR(...)   CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(::Circe::Box::ServletContainer::insert_servlet, __VA_ARGS__)
 

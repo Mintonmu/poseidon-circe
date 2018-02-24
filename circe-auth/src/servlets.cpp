@@ -8,7 +8,7 @@
 #include "protocol/exception.hpp"
 #include "protocol/messages_auth.hpp"
 #include "protocol/utilities.hpp"
-#include "user_defined_functions.hpp"
+#include "singletons/user_defined_functions.hpp"
 
 #define DEFINE_SERVLET_FOR(...)   CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(::Circe::Auth::ServletContainer::insert_servlet, __VA_ARGS__)
 

@@ -17,8 +17,8 @@ pkginclude_authdir = $(pkgincludedir)/auth
 pkginclude_auth_HEADERS = \
 	circe-auth/src/singletons/servlet_container.hpp	\
 	circe-auth/src/singletons/auth_acceptor.hpp	\
-	circe-auth/src/mmain.hpp	\
-	circe-auth/src/user_defined_functions.hpp
+	circe-auth/src/singletons/user_defined_functions.hpp	\
+	circe-auth/src/mmain.hpp
 
 lib_LTLIBRARIES = \
 	lib/libcirce-auth.la
@@ -26,9 +26,9 @@ lib_LTLIBRARIES = \
 lib_libcirce_auth_la_SOURCES = \
 	circe-auth/src/singletons/servlet_container.cpp	\
 	circe-auth/src/singletons/auth_acceptor.cpp	\
+	circe-auth/src/singletons/user_defined_functions.cpp	\
 	circe-auth/src/mmain.cpp	\
-	circe-auth/src/servlets.cpp	\
-	circe-auth/src/user_defined_functions.cpp
+	circe-auth/src/servlets.cpp
 
 lib_libcirce_auth_la_LDFLAGS = \
 	-module -no-undefined -version-info 0:0:0

@@ -7,10 +7,10 @@
 
 // TODO: These are for testing only.
 #include "protocol/messages_foyer.hpp"
-#include "singletons/box_acceptor.hpp"
-#include "singletons/websocket_shadow_session_supervisor.hpp"
+#include "box_acceptor.hpp"
+#include "websocket_shadow_session_supervisor.hpp"
 #include "protocol/messages_pilot.hpp"
-#include "singletons/pilot_connector.hpp"
+#include "pilot_connector.hpp"
 
 namespace Circe {
 namespace Box {

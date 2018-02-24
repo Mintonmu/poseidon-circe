@@ -1,8 +1,8 @@
 // 这个文件是 Circe 服务器应用程序框架的一部分。
 // Copyleft 2017 - 2018, LH_Mouse. All wrongs reserved.
 
-#ifndef CIRCE_AUTH_USER_DEFINED_FUNCTIONS_HPP_
-#define CIRCE_AUTH_USER_DEFINED_FUNCTIONS_HPP_
+#ifndef CIRCE_AUTH_SINGLETONS_USER_DEFINED_FUNCTIONS_HPP_
+#define CIRCE_AUTH_SINGLETONS_USER_DEFINED_FUNCTIONS_HPP_
 
 #include <poseidon/uuid.hpp>
 #include <poseidon/optional_map.hpp>

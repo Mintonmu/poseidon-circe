@@ -20,8 +20,8 @@ pkginclude_box_HEADERS = \
 	circe-box/src/websocket_shadow_session.hpp	\
 	circe-box/src/singletons/websocket_shadow_session_supervisor.hpp	\
 	circe-box/src/singletons/pilot_connector.hpp	\
-	circe-box/src/mmain.hpp	\
-	circe-box/src/user_defined_functions.hpp
+	circe-box/src/singletons/user_defined_functions.hpp	\
+	circe-box/src/mmain.hpp
 
 lib_LTLIBRARIES = \
 	lib/libcirce-box.la
@@ -32,9 +32,9 @@ lib_libcirce_box_la_SOURCES = \
 	circe-box/src/websocket_shadow_session.cpp	\
 	circe-box/src/singletons/websocket_shadow_session_supervisor.cpp	\
 	circe-box/src/singletons/pilot_connector.cpp	\
+	circe-box/src/singletons/user_defined_functions.cpp	\
 	circe-box/src/mmain.cpp	\
-	circe-box/src/servlets.cpp	\
-	circe-box/src/user_defined_functions.cpp
+	circe-box/src/servlets.cpp
 
 lib_libcirce_box_la_LDFLAGS = \
 	-module -no-undefined -version-info 0:0:0
