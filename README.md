@@ -37,12 +37,11 @@ make -j$(nproc)
 
 使用 WebSocket 访问 ws://server.ip:3809/ 可以测试发送和接收文本消息。
 
-
 ### 定制功能
 
 直接复制并修改 Auth Server（登录认证服务器）和 Box Server（业务服务器）的代码。只需修改以下两个文件，就可自定义 HTTP 和 WebSocket 消息的处理行为：
 
 ```text
-circe-auth/src/user_defined_functions.cpp
-circe-box/src/user_defined_functions.cpp
+circe-auth/src/singletons/user_defined_functions.cpp
+circe-box/src/singletons/user_defined_functions.cpp
 ```
