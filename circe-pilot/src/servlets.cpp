@@ -100,7 +100,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 	parse_lock_disposition(&shared_lock_disposition, &exclusive_lock_disposition, compass, connection, boost::numeric_cast<unsigned>(req.lock_disposition));
 
 	std::string value_old = compass->get_value();
-	unsigned version_old = compass->get_version();
+	boost::uint64_t version_old = compass->get_version();
 	bool succeeded = false;
 	std::size_t criterion_index = 0;
 	unsigned lock_state = Protocol::Pilot::LOCK_FREE_FOR_ACQUISITION;
@@ -154,7 +154,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 	parse_lock_disposition(&shared_lock_disposition, &exclusive_lock_disposition, compass, connection, boost::numeric_cast<unsigned>(req.lock_disposition));
 
 	std::string value_old = compass->get_value();
-	unsigned version_old = compass->get_version();
+	boost::uint64_t version_old = compass->get_version();
 	bool succeeded = false;
 	unsigned lock_state = Protocol::Pilot::LOCK_FREE_FOR_ACQUISITION;
 

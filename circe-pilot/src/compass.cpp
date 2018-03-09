@@ -48,11 +48,11 @@ const std::string &Compass::get_value() const {
 	}
 	return m_dao->value;
 }
-boost::uint32_t Compass::get_version() const {
+boost::uint64_t Compass::get_version() const {
 	if(!m_dao){
 		return 0;
 	}
-	return static_cast<boost::uint32_t>(m_dao->version);
+	return m_dao->version;
 }
 void Compass::set_value(std::string value_new){
 	// Mandate exclusive access.

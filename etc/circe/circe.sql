@@ -8,7 +8,7 @@ CREATE TABLE `Pilot::Compass` (
   `compass_key` char(40) NOT NULL,
   `last_access_time` datetime NOT NULL,
   `value` text NOT NULL,
-  `version` int(10) unsigned NOT NULL,
+  `version` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`compass_key`),
   KEY `last_access_time` (`last_access_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

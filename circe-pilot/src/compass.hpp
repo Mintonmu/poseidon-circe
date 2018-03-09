@@ -38,7 +38,7 @@ public:
 	void update_last_access_time();
 
 	const std::string &get_value() const;
-	boost::uint32_t get_version() const;
+	boost::uint64_t get_version() const;
 	void set_value(std::string value_new);
 
 	// Interserver lock observers and modifiers.
