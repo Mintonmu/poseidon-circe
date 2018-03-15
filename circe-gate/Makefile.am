@@ -1,5 +1,3 @@
-ACLOCAL_AMFLAGS = -I m4
-AUTOMAKE_OPTIONS = foreign subdir-objects
 AM_CPPFLAGS = -Wall -Wextra -Werror -Wconversion -Wsign-conversion -Wno-error=unused-parameter	\
 	-Winvalid-pch -Wno-missing-field-initializers -Wwrite-strings -Wsuggest-attribute=noreturn	\
 	-Wundef -Wshadow -Wstrict-aliasing=2 -Wstrict-overflow=2 -Wno-error=pragmas	\
@@ -7,14 +5,14 @@ AM_CPPFLAGS = -Wall -Wextra -Werror -Wconversion -Wsign-conversion -Wno-error=un
 AM_CXXFLAGS = -Wnon-virtual-dtor
 AM_LIBS =
 
-pkgsysconfdir = $(sysconfdir)/@PACKAGE@
-pkgsysconf_DATA = \
+pkgsysconfdir = ${sysconfdir}/@PACKAGE@
+pkgsysconf_DATA =	\
 	etc/circe/circe-gate-template.conf
 
 pkginclude_HEADERS =
 
-pkginclude_gatedir = $(pkgincludedir)/gate
-pkginclude_gate_HEADERS = \
+pkginclude_gatedir = ${pkgincludedir}/gate
+pkginclude_gate_HEADERS =	\
 	circe-gate/src/singletons/servlet_container.hpp	\
 	circe-gate/src/client_http_session.hpp	\
 	circe-gate/src/client_websocket_session.hpp	\
@@ -24,10 +22,10 @@ pkginclude_gate_HEADERS = \
 	circe-gate/src/singletons/ip_ban_list.hpp	\
 	circe-gate/src/mmain.hpp
 
-lib_LTLIBRARIES = \
+lib_LTLIBRARIES =	\
 	lib/libcirce-gate.la
 
-lib_libcirce_gate_la_SOURCES = \
+lib_libcirce_gate_la_SOURCES =	\
 	circe-gate/src/singletons/servlet_container.cpp	\
 	circe-gate/src/client_http_session.cpp	\
 	circe-gate/src/client_websocket_session.cpp	\
@@ -38,8 +36,8 @@ lib_libcirce_gate_la_SOURCES = \
 	circe-gate/src/mmain.cpp	\
 	circe-gate/src/servlets.cpp
 
-lib_libcirce_gate_la_LDFLAGS = \
+lib_libcirce_gate_la_LDFLAGS =	\
 	-module -no-undefined -version-info 0:0:0
 
-lib_libcirce_gate_la_LIBADD = \
+lib_libcirce_gate_la_LIBADD =	\
 	../circe-common/lib/libcirce-common.la

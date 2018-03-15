@@ -1,7 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
-AUTOMAKE_OPTIONS = foreign subdir-objects
 
-EXTRA_DIST = \
+EXTRA_DIST =	\
 	etc/circe/circe.sql	\
 	etc/circe/main-template.conf	\
 	etc/circe/circe-common-template.conf	\
@@ -12,7 +11,7 @@ EXTRA_DIST = \
 	etc/circe/circe-pilot-template.conf
 ##_INSERT_NEW_CONFIG_FILE_HERE
 
-SUBDIRS = \
+SUBDIRS =	\
 	circe-common	\
 	circe-gate	\
 	circe-foyer	\
