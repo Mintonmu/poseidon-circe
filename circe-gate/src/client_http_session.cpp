@@ -21,6 +21,7 @@
 #include <poseidon/http/exception.hpp>
 #include <poseidon/websocket/handshake.hpp>
 #include <poseidon/websocket/exception.hpp>
+#include <poseidon/singletons/libmagic_daemon.hpp>
 #include <poseidon/zlib.hpp>
 
 namespace Circe {
@@ -289,9 +290,16 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 	resp_headers.headers.set(Poseidon::sslit("Access-Control-Allow-Origin"), "*");
 	resp_headers.headers.set(Poseidon::sslit("Access-Control-Allow-Headers"), "Authorization, Content-Type");
 
+	// Add the type of contents if the response entity is not empty and no explicit type is given.
+	const std::size_t size_original = resp_entity.size();
+	if((size_original != 0) && !resp_headers.headers.has("Content-Type")){
+		const char *const content_type = Poseidon::LibMagicDaemon::guess_mime_type(resp_entity.squash(), resp_entity.size());
+		LOG_CIRCE_TRACE("Guessed Content-Type: ", content_type);
+		resp_headers.headers.set(Poseidon::sslit("Content-Type"), content_type);
+	}
+
 	// Select an encoding for compression if the response entity is not empty and no explicit encoding is given.
 	Poseidon::Http::ContentEncoding resp_encoding;
-	const std::size_t size_original = resp_entity.size();
 	if(size_original == 0){
 		resp_encoding = Poseidon::Http::CE_IDENTITY;
 	} else if(resp_headers.headers.has("Content-Encoding")){
