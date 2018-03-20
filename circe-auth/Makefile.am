@@ -32,4 +32,5 @@ lib_libcirce_auth_la_LDFLAGS =	\
 	-module -no-undefined -version-info 0:0:0
 
 lib_libcirce_auth_la_LIBADD =	\
-	../circe-common/lib/libcirce-common.la
+	../circe-common/lib/libcirce-common.la	\
+	-lposeidon-main

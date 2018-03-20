@@ -25,4 +25,5 @@ lib_libcirce_@@temp_late@@_la_LDFLAGS =	\
 	-module -no-undefined -version-info 0:0:0
 
 lib_libcirce_@@temp_late@@_la_LIBADD =	\
-	../circe-common/lib/libcirce-common.la
+	../circe-common/lib/libcirce-common.la	\
+	-lposeidon-main
