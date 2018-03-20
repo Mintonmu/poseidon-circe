@@ -37,7 +37,7 @@ lib_libcirce_gate_la_SOURCES =	\
 	circe-gate/src/servlets.cpp
 
 lib_libcirce_gate_la_LDFLAGS =	\
-	-module -no-undefined -version-info 0:0:0
+	-Wl,--no-undefined -module -version-info 0:0:0
 
 lib_libcirce_gate_la_LIBADD =	\
 	../circe-common/lib/libcirce-common.la	\

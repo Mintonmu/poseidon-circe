@@ -59,7 +59,7 @@ lib_libcirce_common_la_SOURCES =	\
 	circe-common/src/mmain.cpp
 
 lib_libcirce_common_la_LDFLAGS =	\
-	-module -no-undefined -version-info 0:0:0
+	-Wl,--no-undefined -module -version-info 0:0:0
 
 lib_libcirce_common_la_LIBADD =		\
-	-lposeidon-main
+	-lposeidon-main -lssl -lcrypto
