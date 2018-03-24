@@ -4,12 +4,8 @@
 #ifndef CIRCE_COMMON_DEFINE_INTERSERVER_SERVLET_FOR_HPP_
 #define CIRCE_COMMON_DEFINE_INTERSERVER_SERVLET_FOR_HPP_
 
+#include "precompiled.hpp"
 #include "interserver_servlet_callback.hpp"
-#include "log.hpp"
-#include <poseidon/cbpp/fwd.hpp>
-#include <poseidon/cxx_util.hpp>
-#include <poseidon/profiler.hpp>
-#include <poseidon/module_raii.hpp>
 
 #define CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(how_, Msg_, conn_param_, msg_param_)	\
 	namespace {	\

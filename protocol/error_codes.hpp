@@ -13,29 +13,29 @@ typedef Poseidon::Cbpp::StatusCode ErrorCode;
 
 namespace ErrorCodes {
 	enum {
-		ERR_SUCCESS                              = Poseidon::Cbpp::ST_OK,                    //   0
-		ERR_INTERNAL_ERROR                       = Poseidon::Cbpp::ST_INTERNAL_ERROR,        //  -1
-		ERR_END_OF_STREAM                        = Poseidon::Cbpp::ST_INTERNAL_ERROR,        //  -2
-		ERR_NOT_FOUND                            = Poseidon::Cbpp::ST_NOT_FOUND,             //  -3
-		ERR_REQUEST_TOO_LARGE                    = Poseidon::Cbpp::ST_REQUEST_TOO_LARGE,     //  -4
-		ERR_BAD_REQUEST                          = Poseidon::Cbpp::ST_BAD_REQUEST,           //  -5
-		ERR_JUNK_AFTER_PACKET                    = Poseidon::Cbpp::ST_JUNK_AFTER_PACKET,     //  -6
-		ERR_FORBIDDEN                            = Poseidon::Cbpp::ST_FORBIDDEN,             //  -7
-		ERR_AUTHORIZATION_FAILURE                = Poseidon::Cbpp::ST_AUTHORIZATION_FAILURE, //  -8
-		ERR_LENGTH_ERROR                         = Poseidon::Cbpp::ST_LENGTH_ERROR,          //  -9
-		ERR_UNKNOWN_CONTROL_CODE                 = Poseidon::Cbpp::ST_UNKNOWN_CONTROL_CODE,  // -10
-		ERR_DATA_CORRUPTED                       = Poseidon::Cbpp::ST_DATA_CORRUPTED,        // -11
-		ERR_GONE_AWAY                            = Poseidon::Cbpp::ST_GONE_AWAY,             // -12
-		ERR_INVALID_ARGUMENT                     = Poseidon::Cbpp::ST_INVALID_ARGUMENT,      // -13
-		ERR_UNSUPPORTED                          = Poseidon::Cbpp::ST_UNSUPPORTED,           // -14
-		ERR_RESERVED_RESPONSE_UNINITIALIZED      = -900,
-		ERR_RESERVED_RESPONSE_DESTROYED          = -901,
+		error_success                              = Poseidon::Cbpp::status_ok,                    //   0
+		error_internal_error                       = Poseidon::Cbpp::status_internal_error,        //  -1
+		error_end_of_stream                        = Poseidon::Cbpp::status_internal_error,        //  -2
+		error_not_found                            = Poseidon::Cbpp::status_not_found,             //  -3
+		error_request_too_large                    = Poseidon::Cbpp::status_request_too_large,     //  -4
+		error_bad_request                          = Poseidon::Cbpp::status_bad_request,           //  -5
+		error_junk_after_packet                    = Poseidon::Cbpp::status_junk_after_packet,     //  -6
+		error_forbidden                            = Poseidon::Cbpp::status_forbidden,             //  -7
+		error_authorization_failure                = Poseidon::Cbpp::status_authorization_failure, //  -8
+		error_length_error                         = Poseidon::Cbpp::status_length_error,          //  -9
+		error_unknown_control_code                 = Poseidon::Cbpp::status_unknown_control_code,  // -10
+		error_data_corrupted                       = Poseidon::Cbpp::status_data_corrupted,        // -11
+		error_gone_away                            = Poseidon::Cbpp::status_gone_away,             // -12
+		error_invalid_argument                     = Poseidon::Cbpp::status_invalid_argument,      // -13
+		error_unsupported                          = Poseidon::Cbpp::status_unsupported,           // -14
+		error_reserved_response_uninitialized      = -900,
+		error_reserved_response_destroyed          = -901,
 
-		ERR_GATE_CONNECTION_LOST                 = 50001,
-		ERR_AUTH_CONNECTION_LOST                 = 50002,
-		ERR_FOYER_CONNECTION_LOST                = 50003,
-		ERR_BOX_CONNECTION_LOST                  = 50004,
-		ERR_WEBSOCKET_SHADOW_SESSION_NOT_FOUND   = 50005,
+		error_gate_connection_lost                 = 50001,
+		error_auth_connection_lost                 = 50002,
+		error_foyer_connection_lost                = 50003,
+		error_box_connection_lost                  = 50004,
+		error_websocket_shadow_session_not_found   = 50005,
 	};
 }
 

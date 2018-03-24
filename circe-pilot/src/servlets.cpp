@@ -22,23 +22,23 @@ namespace {
 		int shared_lock_disposition;
 		int exclusive_lock_disposition;
 		switch(lock_disposition){
-		case Protocol::Pilot::LOCK_LEAVE_ALONE:
+		case Protocol::Pilot::lock_leave_alone:
 			shared_lock_disposition = 0;
 			exclusive_lock_disposition = 0;
 			break;
-		case Protocol::Pilot::LOCK_TRY_ACQUIRE_SHARED:
+		case Protocol::Pilot::lock_try_acquire_shared:
 			shared_lock_disposition = 1;
 			exclusive_lock_disposition = 0;
 			break;
-		case Protocol::Pilot::LOCK_TRY_ACQUIRE_EXCLUSIVE:
+		case Protocol::Pilot::lock_try_acquire_exclusive:
 			shared_lock_disposition = 0;
 			exclusive_lock_disposition = 1;
 			break;
-		case Protocol::Pilot::LOCK_RELEASE_SHARED:
+		case Protocol::Pilot::lock_release_shared:
 			shared_lock_disposition = -1;
 			exclusive_lock_disposition = 0;
 			break;
-		case Protocol::Pilot::LOCK_RELEASE_EXCLUSIVE:
+		case Protocol::Pilot::lock_release_exclusive:
 			shared_lock_disposition = 0;
 			exclusive_lock_disposition = -1;
 			break;
@@ -77,15 +77,15 @@ namespace {
 		PROFILE_ME;
 
 		if(compass->is_locked_exclusive_by(connection->get_connection_uuid())){
-			return Protocol::Pilot::LOCK_EXCLUSIVE_BY_ME;
+			return Protocol::Pilot::lock_exclusive_by_me;
 		} else if(compass->is_locked_exclusive()){
-			return Protocol::Pilot::LOCK_EXCLUSIVE_BY_OTHERS;
+			return Protocol::Pilot::lock_exclusive_by_others;
 		} else if(compass->is_locked_shared_by(connection->get_connection_uuid())){
-			return Protocol::Pilot::LOCK_SHARED_BY_ME;
+			return Protocol::Pilot::lock_shared_by_me;
 		} else if(compass->is_locked_shared()){
-			return Protocol::Pilot::LOCK_SHARED_BY_OTHERS;
+			return Protocol::Pilot::lock_shared_by_others;
 		} else {
-			return Protocol::Pilot::LOCK_FREE_FOR_ACQUISITION;
+			return Protocol::Pilot::lock_free_for_acquisition;
 		}
 	}
 }
@@ -103,7 +103,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 	boost::uint64_t version_old = compass->get_version();
 	bool succeeded = false;
 	std::size_t criterion_index = 0;
-	unsigned lock_state = Protocol::Pilot::LOCK_FREE_FOR_ACQUISITION;
+	unsigned lock_state = Protocol::Pilot::lock_free_for_acquisition;
 
 	// Search for the first match.
 	while((criterion_index < req.criteria.size()) && (req.criteria.at(criterion_index).value_cmp != value_old)){
@@ -156,7 +156,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 	std::string value_old = compass->get_value();
 	boost::uint64_t version_old = compass->get_version();
 	bool succeeded = false;
-	unsigned lock_state = Protocol::Pilot::LOCK_FREE_FOR_ACQUISITION;
+	unsigned lock_state = Protocol::Pilot::lock_free_for_acquisition;
 
 	// Ask for exclusive locking.
 	bool locked = compass->try_lock_exclusive(connection);
@@ -199,7 +199,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::RemoveWatchNotification, /*connection*/, ntf
 	const AUTO(watcher_uuid, Poseidon::Uuid(ntfy.watcher_uuid));
 	compass->remove_watcher(watcher_uuid);
 
-	return Protocol::ERR_SUCCESS;
+	return Protocol::error_success;
 }
 
 }

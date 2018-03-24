@@ -23,7 +23,7 @@ namespace {
 			//
 		}
 		~SpecializedAcceptor() OVERRIDE {
-			clear(Poseidon::WebSocket::ST_GOING_AWAY);
+			clear(Poseidon::WebSocket::status_going_away);
 		}
 
 	protected:

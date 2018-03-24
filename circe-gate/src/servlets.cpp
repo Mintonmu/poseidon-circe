@@ -23,7 +23,7 @@ DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketKillNotification, /*connection*/, nt
 		ws_session->shutdown(boost::numeric_cast<Poseidon::WebSocket::StatusCode>(ntfy.status_code), ntfy.reason.c_str());
 	}
 
-	return Protocol::ERR_SUCCESS;
+	return Protocol::error_success;
 }
 
 DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedMessageRequest, /*connection*/, req){
@@ -35,7 +35,7 @@ DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedMessageRequest, /*connection*/
 			}
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			ws_session->shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
+			ws_session->shutdown(Poseidon::WebSocket::status_internal_error, e.what());
 		}
 	}
 
@@ -53,12 +53,12 @@ DEFINE_SERVLET_FOR(Protocol::Gate::WebSocketPackedBroadcastNotification, /*conne
 				}
 			} catch(std::exception &e){
 				LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-				ws_session->shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
+				ws_session->shutdown(Poseidon::WebSocket::status_internal_error, e.what());
 			}
 		}
 	}
 
-	return Protocol::ERR_SUCCESS;
+	return Protocol::error_success;
 }
 
 DEFINE_SERVLET_FOR(Protocol::Gate::UnbanIpRequest, /*connection*/, req){

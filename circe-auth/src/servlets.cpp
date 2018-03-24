@@ -16,7 +16,7 @@ namespace Circe {
 namespace Auth {
 
 DEFINE_SERVLET_FOR(Protocol::Auth::HttpAuthenticationRequest, /*connection*/, req){
-	Poseidon::Http::StatusCode resp_status_code = Poseidon::Http::ST_SERVICE_UNAVAILABLE;
+	Poseidon::Http::StatusCode resp_status_code = Poseidon::Http::status_service_unavailable;
 	Poseidon::OptionalMap resp_headers;
 	std::string auth_token = UserDefinedFunctions::check_http_authentication(resp_status_code, resp_headers,
 		Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), boost::numeric_cast<Poseidon::Http::Verb>(req.verb), STD_MOVE(req.decoded_uri),
@@ -31,7 +31,7 @@ DEFINE_SERVLET_FOR(Protocol::Auth::HttpAuthenticationRequest, /*connection*/, re
 
 DEFINE_SERVLET_FOR(Protocol::Auth::WebSocketAuthenticationRequest, /*connection*/, req){
 	boost::container::deque<std::pair<Poseidon::WebSocket::OpCode, Poseidon::StreamBuffer> > resp_messages;
-	Poseidon::WebSocket::StatusCode resp_status_code = Poseidon::WebSocket::ST_INTERNAL_ERROR;
+	Poseidon::WebSocket::StatusCode resp_status_code = Poseidon::WebSocket::status_internal_error;
 	std::string resp_reason;
 	std::string auth_token = UserDefinedFunctions::check_websocket_authentication(resp_messages, resp_status_code, resp_reason,
 		Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.decoded_uri), Protocol::copy_key_values(STD_MOVE_IDN(req.params)));

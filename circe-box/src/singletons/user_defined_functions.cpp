@@ -65,7 +65,7 @@ void UserDefinedFunctions::handle_websocket_establishment(
 
 void UserDefinedFunctions::handle_websocket_message(
 	const boost::shared_ptr<WebSocketShadowSession> &client_session,  // This is the session cast by the WebSocket connection on the gate server.
-	Poseidon::WebSocket::OpCode opcode,                               // This is the opcode sent by the client. This may be `Poseidon::WebSocket::OP_DATA_TEXT` or `Poseidon::WebSocket::OP_DATA_BINARY`.
+	Poseidon::WebSocket::OpCode opcode,                               // This is the opcode sent by the client. This may be `Poseidon::WebSocket::opcode_data_text` or `Poseidon::WebSocket::opcode_data_binary`.
 	Poseidon::StreamBuffer payload)                                   // This is the payload sent by the client. If the opcode claims a text message, the payload will be a valid UTF-8 string.
 {
 	PROFILE_ME;
@@ -89,7 +89,7 @@ void UserDefinedFunctions::handle_websocket_message(
 	}
 	for(unsigned i = 0; i < 3; ++i){
 		const AUTO(rit, Protocol::emplace_at_end(ntfy.messages));
-		rit->opcode = Poseidon::WebSocket::OP_DATA_TEXT;
+		rit->opcode = Poseidon::WebSocket::opcode_data_text;
 		char str[100];
 		std::sprintf(str, "hello %d", i);
 		rit->payload = Poseidon::StreamBuffer(str);
@@ -101,7 +101,7 @@ void UserDefinedFunctions::handle_websocket_message(
 	q.criteria.push_back({    "", "foo" });
 	q.criteria.push_back({ "foo", "bar" });
 	q.criteria.push_back({ "bar",  "kk" });
-	q.lock_disposition = Protocol::Pilot::LOCK_TRY_ACQUIRE_EXCLUSIVE;
+	q.lock_disposition = Protocol::Pilot::lock_try_acquire_exclusive;
 	boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > c;
 	PilotConnector::get_all_clients(c);
 	DEBUG_THROW_ASSERT(!c.empty());
@@ -113,7 +113,7 @@ void UserDefinedFunctions::handle_websocket_message(
 
 void UserDefinedFunctions::handle_websocket_closure(
 	const boost::shared_ptr<WebSocketShadowSession> &client_session,  // This is the session cast by the WebSocket connection on the gate server.
-	Poseidon::WebSocket::StatusCode status_code,                      // This is the status code in the closure frame received from the client, or `Poseidon::WebSocket::ST_RESERVED_ABNORMAL` if no closure frame was received.
+	Poseidon::WebSocket::StatusCode status_code,                      // This is the status code in the closure frame received from the client, or `Poseidon::WebSocket::status_reserved_abnormal` if no closure frame was received.
 	const char *reason)                                               // This is the payload in the closure frame received from the client, or an unspecified string if no closure frame was received.
 {
 	PROFILE_ME;

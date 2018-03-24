@@ -40,7 +40,7 @@ protected:
 	// Poseidon::Cbpp::LowLevelClient
 	void on_low_level_data_message_header(boost::uint16_t message_id, boost::uint64_t payload_size) FINAL {
 		const std::size_t max_message_size = InterserverConnection::get_max_message_size();
-		CIRCE_PROTOCOL_THROW_UNLESS(payload_size <= max_message_size, Protocol::ERR_REQUEST_TOO_LARGE, Poseidon::sslit("Message is too large"));
+		CIRCE_PROTOCOL_THROW_UNLESS(payload_size <= max_message_size, Protocol::error_request_too_large, Poseidon::sslit("Message is too large"));
 		m_magic_number = message_id;
 		m_deflated_payload.clear();
 	}
@@ -89,11 +89,11 @@ protected:
 		PROFILE_ME;
 
 		const AUTO(connector, m_weak_connector.lock());
-		CIRCE_PROTOCOL_THROW_UNLESS(connector, Protocol::ERR_GONE_AWAY, Poseidon::sslit("The server has been shut down"));
+		CIRCE_PROTOCOL_THROW_UNLESS(connector, Protocol::error_gone_away, Poseidon::sslit("The server has been shut down"));
 
 		LOG_CIRCE_TRACE("Dispatching: typeid(*this).name() = ", typeid(*this).name(), ", message_id = ", message_id);
 		const AUTO(servlet, connector->sync_get_servlet(message_id));
-		CIRCE_PROTOCOL_THROW_UNLESS(servlet, Protocol::ERR_NOT_FOUND, Poseidon::sslit("message_id not handled"));
+		CIRCE_PROTOCOL_THROW_UNLESS(servlet, Protocol::error_not_found, Poseidon::sslit("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<InterserverClient>(), message_id, STD_MOVE(payload));
 	}
 };
@@ -133,7 +133,7 @@ void InterserverConnector::timer_proc(const boost::weak_ptr<InterserverConnector
 			const boost::uint64_t local_now = Poseidon::get_local_time();
 			char str[256];
 			std::size_t len = Poseidon::format_time(str, sizeof(str), local_now, true);
-			client->Poseidon::Cbpp::LowLevelClient::send_control(Poseidon::Cbpp::ST_PING, Poseidon::StreamBuffer(str, len));
+			client->Poseidon::Cbpp::LowLevelClient::send_control(Poseidon::Cbpp::status_ping, Poseidon::StreamBuffer(str, len));
 		}
 	}
 }
@@ -147,7 +147,7 @@ InterserverConnector::InterserverConnector(boost::container::vector<std::string>
 }
 InterserverConnector::~InterserverConnector(){
 	LOG_CIRCE_INFO("InterserverConnector destructor: hosts:port = ", Poseidon::implode(',', m_hosts), ':', m_port);
-	clear(Protocol::ERR_GONE_AWAY);
+	clear(Protocol::error_gone_away);
 }
 
 void InterserverConnector::activate(){
@@ -202,7 +202,7 @@ std::size_t InterserverConnector::safe_broadcast_notification(const Poseidon::Cb
 			client->send_notification(msg);
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			client->layer5_shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+			client->layer5_shutdown(Protocol::error_internal_error, e.what());
 		}
 		++count_notified;
 	}

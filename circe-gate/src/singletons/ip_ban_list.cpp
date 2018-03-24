@@ -12,10 +12,10 @@ namespace Gate {
 
 namespace {
 	enum {
-		COUNTER_HTTP_REQUEST,
-		COUNTER_WEBSOCKET_REQUEST,
-		COUNTER_AUTH_FAILURE,
-		COUNTER_END
+		counter_http_request,
+		counter_websocket_request,
+		counter_auth_failure,
+		counter_end
 	};
 
 	struct IpElement {
@@ -23,7 +23,7 @@ namespace {
 		Poseidon::IpPort ip_port;
 		boost::uint64_t expiry_time;
 		// Variables.
-		mutable boost::array<boost::uint64_t, COUNTER_END> counters;
+		mutable boost::array<boost::uint64_t, counter_end> counters;
 		mutable boost::uint64_t ban_expiry_time;
 	};
 	MULTI_INDEX_MAP(IpContainer, IpElement,
@@ -144,19 +144,19 @@ void IpBanList::accumulate_http_request(const char *ip){
 	PROFILE_ME;
 
 	const AUTO(counter_value_max, get_config<boost::uint64_t>("client_http_max_requests_per_minute_by_ip", 300));
-	accumulate_and_check_ban(ip, COUNTER_HTTP_REQUEST, counter_value_max);
+	accumulate_and_check_ban(ip, counter_http_request, counter_value_max);
 }
 void IpBanList::accumulate_websocket_request(const char *ip){
 	PROFILE_ME;
 
 	const AUTO(counter_value_max, get_config<boost::uint64_t>("client_websocket_max_requests_per_minute_by_ip", 120));
-	accumulate_and_check_ban(ip, COUNTER_WEBSOCKET_REQUEST, counter_value_max);
+	accumulate_and_check_ban(ip, counter_websocket_request, counter_value_max);
 }
 void IpBanList::accumulate_auth_failure(const char *ip){
 	PROFILE_ME;
 
 	const AUTO(counter_value_max, get_config<boost::uint64_t>("client_generic_max_auth_failure_count_per_minute_by_ip", 5));
-	accumulate_and_check_ban(ip, COUNTER_AUTH_FAILURE, counter_value_max);
+	accumulate_and_check_ban(ip, counter_auth_failure, counter_value_max);
 }
 
 }

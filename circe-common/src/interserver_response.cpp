@@ -9,7 +9,7 @@ namespace Circe {
 namespace Common {
 
 InterserverResponse::InterserverResponse()
-	: m_err_code(Protocol::ERR_RESERVED_RESPONSE_UNINITIALIZED), m_err_msg()
+	: m_err_code(Protocol::error_reserved_response_uninitialized), m_err_msg()
 	, m_message_id(0xDEADBEEF), m_payload()
 {
 	//
@@ -21,7 +21,7 @@ InterserverResponse::InterserverResponse(long err_code, std::string err_msg)
 	LOG_CIRCE_TRACE("Constructing InterserverResponse without a payload: err_code = ", get_err_code(), ", err_msg = ", get_err_msg());
 }
 InterserverResponse::InterserverResponse(const Poseidon::Cbpp::MessageBase &msg)
-	: m_err_code(Protocol::ERR_SUCCESS), m_err_msg()
+	: m_err_code(Protocol::error_success), m_err_msg()
 	, m_message_id(msg.get_id()), m_payload(msg)
 {
 	LOG_CIRCE_TRACE("Constructing InterserverResponse from message: msg = ", msg);

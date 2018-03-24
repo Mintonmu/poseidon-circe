@@ -53,7 +53,7 @@ protected:
 			foyer_conn->send_notification(foyer_ntfy);
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			foyer_conn->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+			foyer_conn->shutdown(Protocol::error_internal_error, e.what());
 		}
 	}
 };
@@ -83,7 +83,7 @@ protected:
 
 		try {
 			const AUTO(foyer_conn, BoxAcceptor::get_session(session->m_foyer_uuid));
-			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::ST_GOING_AWAY, Poseidon::sslit("Connection to foyer server was lost"));
+			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::WebSocket::Exception, Poseidon::WebSocket::status_going_away, Poseidon::sslit("Connection to foyer server was lost"));
 
 			Poseidon::Mutex::UniqueLock lock(session->m_delivery_mutex);
 			DEBUG_THROW_ASSERT(session->m_delivery_job_active);
@@ -117,7 +117,7 @@ protected:
 			session->shutdown(e.get_status_code(), e.what());
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			session->shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
+			session->shutdown(Poseidon::WebSocket::status_internal_error, e.what());
 		}
 	}
 };
@@ -133,17 +133,17 @@ WebSocketShadowSession::~WebSocketShadowSession(){
 }
 
 bool WebSocketShadowSession::has_been_shutdown() const {
-	return Poseidon::atomic_load(m_shutdown, Poseidon::memorder_acquire);
+	return Poseidon::atomic_load(m_shutdown, Poseidon::memory_order_acquire);
 }
 void WebSocketShadowSession::mark_shutdown() NOEXCEPT {
-	Poseidon::atomic_store(m_shutdown, true, Poseidon::memorder_release);
+	Poseidon::atomic_store(m_shutdown, true, Poseidon::memory_order_release);
 }
 bool WebSocketShadowSession::shutdown(Poseidon::WebSocket::StatusCode status_code, const char *reason) NOEXCEPT {
 	PROFILE_ME;
 
-	bool was_shutdown = Poseidon::atomic_load(m_shutdown, Poseidon::memorder_acquire);
+	bool was_shutdown = Poseidon::atomic_load(m_shutdown, Poseidon::memory_order_acquire);
 	if(!was_shutdown){
-		was_shutdown = Poseidon::atomic_exchange(m_shutdown, true, Poseidon::memorder_acq_rel);
+		was_shutdown = Poseidon::atomic_exchange(m_shutdown, true, Poseidon::memory_order_acq_rel);
 	}
 	if(was_shutdown){
 		return false;
@@ -154,7 +154,7 @@ bool WebSocketShadowSession::shutdown(Poseidon::WebSocket::StatusCode status_cod
 			Poseidon::enqueue(boost::make_shared<ShutdownJob>(virtual_shared_from_this<WebSocketShadowSession>(), foyer_conn, m_gate_uuid, m_client_uuid, status_code, reason));
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			foyer_conn->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+			foyer_conn->shutdown(Protocol::error_internal_error, e.what());
 		}
 	}
 	return true;

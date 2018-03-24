@@ -87,7 +87,7 @@ namespace {
 				LOG_CIRCE_DEBUG("Disconnecting WebSocketShadowSession: client_ip = ", session->get_client_ip());
 				session->mark_shutdown();
 				try {
-					UserDefinedFunctions::handle_websocket_closure(session, Poseidon::WebSocket::ST_GOING_AWAY, "Connection to gate server was lost");
+					UserDefinedFunctions::handle_websocket_closure(session, Poseidon::WebSocket::status_going_away, "Connection to gate server was lost");
 				} catch(std::exception &e){
 					LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 				}

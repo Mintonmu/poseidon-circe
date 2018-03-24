@@ -31,6 +31,13 @@
 #  include <type_traits>
 #endif
 
-#include "log.hpp"
+#define LOG_CIRCE_EXPLICIT(level_, ...)      LOG_EXPLICIT(0x4000 | (level_), __VA_ARGS__)
+
+#define LOG_CIRCE_FATAL(...)        LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_fatal,   __VA_ARGS__)
+#define LOG_CIRCE_ERROR(...)        LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_error,   __VA_ARGS__)
+#define LOG_CIRCE_WARNING(...)      LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_warning, __VA_ARGS__)
+#define LOG_CIRCE_INFO(...)         LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_info,    __VA_ARGS__)
+#define LOG_CIRCE_DEBUG(...)        LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_debug,   __VA_ARGS__)
+#define LOG_CIRCE_TRACE(...)        LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_trace,   __VA_ARGS__)
 
 #endif

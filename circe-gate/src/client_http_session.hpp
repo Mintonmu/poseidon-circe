@@ -55,7 +55,7 @@ public:
 	}
 
 	bool has_been_shutdown() const NOEXCEPT;
-	bool shutdown(Poseidon::WebSocket::StatusCode status_code = Poseidon::WebSocket::ST_INTERNAL_ERROR, const char *reason = "") NOEXCEPT;
+	bool shutdown(Poseidon::WebSocket::StatusCode status_code = Poseidon::WebSocket::status_internal_error, const char *reason = "") NOEXCEPT;
 
 	bool send(Poseidon::Http::ResponseHeaders response_headers, Poseidon::StreamBuffer entity);
 	bool send_default_and_shutdown(Poseidon::Http::StatusCode status_code, const Poseidon::OptionalMap &headers = Poseidon::OptionalMap()) NOEXCEPT;

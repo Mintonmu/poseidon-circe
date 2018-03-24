@@ -17,7 +17,7 @@ namespace Circe {
 namespace Box {
 
 DEFINE_SERVLET_FOR(Protocol::Box::HttpRequest, /*connection*/, req){
-	Poseidon::Http::StatusCode resp_status_code = Poseidon::Http::ST_SERVICE_UNAVAILABLE;
+	Poseidon::Http::StatusCode resp_status_code = Poseidon::Http::status_service_unavailable;
 	Poseidon::OptionalMap resp_headers;
 	Poseidon::StreamBuffer resp_entity;
 	UserDefinedFunctions::handle_http_request(resp_status_code, resp_headers, resp_entity,
@@ -51,7 +51,7 @@ DEFINE_SERVLET_FOR(Protocol::Box::WebSocketClosureNotification, /*connection*/, 
 		}
 	}
 
-	return Protocol::ERR_SUCCESS;
+	return Protocol::error_success;
 }
 
 DEFINE_SERVLET_FOR(Protocol::Box::WebSocketPackedMessageRequest, /*connection*/, req){
@@ -63,7 +63,7 @@ DEFINE_SERVLET_FOR(Protocol::Box::WebSocketPackedMessageRequest, /*connection*/,
 			}
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			shadow_session->shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
+			shadow_session->shutdown(Poseidon::WebSocket::status_internal_error, e.what());
 		}
 	}
 

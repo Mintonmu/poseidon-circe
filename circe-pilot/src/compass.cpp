@@ -79,7 +79,7 @@ void Compass::set_value(std::string value_new){
 			connection->send_notification(ntfy);
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			connection->shutdown(Protocol::ERR_INTERNAL_ERROR, e.what());
+			connection->shutdown(Protocol::error_internal_error, e.what());
 		}
 	}
 }

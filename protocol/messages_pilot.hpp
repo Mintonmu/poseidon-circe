@@ -12,20 +12,20 @@ namespace Pilot {
 
 // Constants for `lock_disposition`.
 enum {
-	LOCK_LEAVE_ALONE            =  0,
-	LOCK_TRY_ACQUIRE_SHARED     = 11,
-	LOCK_TRY_ACQUIRE_EXCLUSIVE  = 12,
-	LOCK_RELEASE_SHARED         = 21,
-	LOCK_RELEASE_EXCLUSIVE      = 22,
+	lock_leave_alone            =  0,
+	lock_try_acquire_shared     = 11,
+	lock_try_acquire_exclusive  = 12,
+	lock_release_shared         = 21,
+	lock_release_exclusive      = 22,
 };
 
 // Constants for `lock_state`.
 enum {
-	LOCK_FREE_FOR_ACQUISITION   =  0,
-	LOCK_SHARED_BY_ME           = 30,
-	LOCK_SHARED_BY_OTHERS       = 31,
-	LOCK_EXCLUSIVE_BY_ME        = 40,
-	LOCK_EXCLUSIVE_BY_OTHERS    = 41,
+	lock_free_for_acquisition   =  0,
+	lock_shared_by_me           = 30,
+	lock_shared_by_others       = 31,
+	lock_exclusive_by_me        = 40,
+	lock_exclusive_by_others    = 41,
 };
 
 #define MESSAGE_NAME   CompareExchangeRequest

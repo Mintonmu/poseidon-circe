@@ -56,7 +56,7 @@ private:
 		}
 		const AUTO(ws_session, m_weak_ws_session.lock());
 		if(!ws_session){
-			http_session->send_default_and_shutdown(Poseidon::Http::ST_BAD_REQUEST);
+			http_session->send_default_and_shutdown(Poseidon::Http::status_bad_request);
 			return;
 		}
 		LOG_CIRCE_TRACE("Client WebSocket establishment: uri = ", m_req_headers.uri, ", headers = ", m_req_headers.headers);
@@ -66,7 +66,7 @@ private:
 			DEBUG_THROW_ASSERT(http_session->m_decoded_uri);
 
 			AUTO(ws_resp, Poseidon::WebSocket::make_handshake_response(m_req_headers));
-			DEBUG_THROW_UNLESS(ws_resp.status_code == Poseidon::Http::ST_SWITCHING_PROTOCOLS, Poseidon::Http::Exception, ws_resp.status_code, STD_MOVE(ws_resp.headers));
+			DEBUG_THROW_UNLESS(ws_resp.status_code == Poseidon::Http::status_switching_protocols, Poseidon::Http::Exception, ws_resp.status_code, STD_MOVE(ws_resp.headers));
 			http_session->send(STD_MOVE(ws_resp), Poseidon::StreamBuffer());
 		} catch(Poseidon::Http::Exception &e){
 			LOG_CIRCE_WARNING("Http::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
@@ -74,7 +74,7 @@ private:
 			return;
 		} catch(std::exception &e){
 			LOG_CIRCE_WARNING("std::exception thrown: what = ", e.what());
-			http_session->send_default_and_shutdown(Poseidon::Http::ST_INTERNAL_SERVER_ERROR);
+			http_session->send_default_and_shutdown(Poseidon::Http::status_internal_server_error);
 			return;
 		}
 		try {
@@ -86,7 +86,7 @@ private:
 			return;
 		} catch(std::exception &e){
 			LOG_CIRCE_WARNING("std::exception thrown: what = ", e.what());
-			ws_session->shutdown(Poseidon::WebSocket::ST_INTERNAL_ERROR, e.what());
+			ws_session->shutdown(Poseidon::WebSocket::status_internal_error, e.what());
 			return;
 		}
 	}
@@ -109,7 +109,7 @@ void ClientHttpSession::sync_decode_uri(const std::string &uri){
 	std::string decoded_uri;
 	std::istringstream iss(uri);
 	Poseidon::Http::url_decode(iss, decoded_uri);
-	DEBUG_THROW_UNLESS(iss && !decoded_uri.empty(), Poseidon::Http::Exception, Poseidon::Http::ST_BAD_REQUEST);
+	DEBUG_THROW_UNLESS(iss && !decoded_uri.empty(), Poseidon::Http::Exception, Poseidon::Http::status_bad_request);
 	LOG_CIRCE_DEBUG("Decoded URI: ", decoded_uri);
 	m_decoded_uri = STD_MOVE_IDN(decoded_uri);
 }
@@ -118,11 +118,11 @@ try {
 	PROFILE_ME;
 
 	const AUTO(http_enabled, get_config<bool>("client_http_enabled", false));
-	DEBUG_THROW_UNLESS(http_enabled, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE);
+	DEBUG_THROW_UNLESS(http_enabled, Poseidon::Http::Exception, Poseidon::Http::status_service_unavailable);
 
 	boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > servers_avail;
 	AuthConnector::get_all_clients(servers_avail);
-	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
+	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Http::Exception, Poseidon::Http::status_bad_gateway);
 	const AUTO(auth_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
 	DEBUG_THROW_ASSERT(auth_conn);
 
@@ -164,7 +164,7 @@ boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low
 		const AUTO(time_remaining, IpBanList::get_ban_time_remaining(get_remote_info().ip()));
 		if(time_remaining != 0){
 			LOG_CIRCE_WARNING("Client IP is banned: remote = ", get_remote_info(), ", time_remaining = ", time_remaining);
-			Poseidon::Http::Session::send_default_and_shutdown(Poseidon::Http::ST_SERVICE_UNAVAILABLE, make_retry_after_headers(time_remaining));
+			Poseidon::Http::Session::send_default_and_shutdown(Poseidon::Http::status_service_unavailable, make_retry_after_headers(time_remaining));
 			return VAL_INIT;
 		}
 		m_first_request = false;
@@ -180,7 +180,7 @@ boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> ClientHttpSession::on_low
 		return STD_MOVE_IDN(ws_session);
 	} else if(!upgrade_str.empty()){
 		LOG_CIRCE_WARNING("HTTP Upgrade header not handled: remote = ", get_remote_info(), ", upgrade_str = ", upgrade_str);
-		DEBUG_THROW(Poseidon::Http::Exception, Poseidon::Http::ST_NOT_IMPLEMENTED);
+		DEBUG_THROW(Poseidon::Http::Exception, Poseidon::Http::status_not_implemented);
 	}
 
 	const AUTO(exempt_private, get_config<bool>("client_generic_exempt_private_addresses", true));
@@ -197,14 +197,14 @@ void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders req_header
 	PROFILE_ME;
 
 	switch(req_headers.verb){
-	case Poseidon::Http::V_OPTIONS:
+	case Poseidon::Http::verb_options:
 		break;
 
-	case Poseidon::Http::V_GET:
-	case Poseidon::Http::V_PUT:
-	case Poseidon::Http::V_DELETE:
-	case Poseidon::Http::V_HEAD:
-	case Poseidon::Http::V_POST:
+	case Poseidon::Http::verb_get:
+	case Poseidon::Http::verb_put:
+	case Poseidon::Http::verb_delete:
+	case Poseidon::Http::verb_head:
+	case Poseidon::Http::verb_post:
 		sync_decode_uri(req_headers.uri);
 		DEBUG_THROW_ASSERT(m_decoded_uri);
 		sync_authenticate(req_headers.verb, m_decoded_uri.get(), req_headers.get_params, req_headers.headers);
@@ -212,7 +212,7 @@ void ClientHttpSession::on_sync_expect(Poseidon::Http::RequestHeaders req_header
 		break;
 
 	default:
-		DEBUG_THROW(Poseidon::Http::Exception, Poseidon::Http::ST_NOT_IMPLEMENTED);
+		DEBUG_THROW(Poseidon::Http::Exception, Poseidon::Http::status_not_implemented);
 	}
 
 	return Poseidon::Http::Session::on_sync_expect(STD_MOVE(req_headers));
@@ -221,25 +221,25 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 	PROFILE_ME;
 
 	const AUTO(time_remaining, IpBanList::get_ban_time_remaining(get_remote_info().ip()));
-	DEBUG_THROW_UNLESS(time_remaining == 0, Poseidon::Http::Exception, Poseidon::Http::ST_SERVICE_UNAVAILABLE, make_retry_after_headers(time_remaining));
+	DEBUG_THROW_UNLESS(time_remaining == 0, Poseidon::Http::Exception, Poseidon::Http::status_service_unavailable, make_retry_after_headers(time_remaining));
 
 	const AUTO(resp_encoding_preferred, Poseidon::Http::pick_content_encoding(req_headers));
-	DEBUG_THROW_UNLESS(resp_encoding_preferred != Poseidon::Http::CE_NOT_ACCEPTABLE, Poseidon::Http::Exception, Poseidon::Http::ST_NOT_ACCEPTABLE);
+	DEBUG_THROW_UNLESS(resp_encoding_preferred != Poseidon::Http::content_encoding_not_acceptable, Poseidon::Http::Exception, Poseidon::Http::status_not_acceptable);
 
 	Poseidon::Http::ResponseHeaders resp_headers = { 10001 };
 	Poseidon::StreamBuffer resp_entity;
 
 	// Handle the request.
 	switch(req_headers.verb){
-	case Poseidon::Http::V_OPTIONS:
-		resp_headers.status_code = Poseidon::Http::ST_OK;
+	case Poseidon::Http::verb_options:
+		resp_headers.status_code = Poseidon::Http::status_ok;
 		break;
 
-	case Poseidon::Http::V_GET:
-	case Poseidon::Http::V_PUT:
-	case Poseidon::Http::V_DELETE:
-	case Poseidon::Http::V_HEAD:
-	case Poseidon::Http::V_POST: {
+	case Poseidon::Http::verb_get:
+	case Poseidon::Http::verb_put:
+	case Poseidon::Http::verb_delete:
+	case Poseidon::Http::verb_head:
+	case Poseidon::Http::verb_post: {
 		if(!m_decoded_uri){
 			sync_decode_uri(req_headers.uri);
 			DEBUG_THROW_ASSERT(m_decoded_uri);
@@ -251,7 +251,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 
 		boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > servers_avail;
 		FoyerConnector::get_all_clients(servers_avail);
-		DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Http::Exception, Poseidon::Http::ST_BAD_GATEWAY);
+		DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Http::Exception, Poseidon::Http::status_bad_gateway);
 		const AUTO(foyer_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
 		DEBUG_THROW_ASSERT(foyer_conn);
 
@@ -263,7 +263,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		foyer_req.decoded_uri = m_decoded_uri.get();
 		Protocol::copy_key_values(foyer_req.params, STD_MOVE(req_headers.get_params));
 		Protocol::copy_key_values(foyer_req.headers, STD_MOVE(req_headers.headers));
-		if((req_headers.verb == Poseidon::Http::V_PUT) || (req_headers.verb == Poseidon::Http::V_POST)){
+		if((req_headers.verb == Poseidon::Http::verb_put) || (req_headers.verb == Poseidon::Http::verb_post)){
 			foyer_req.entity = STD_MOVE(req_entity);
 		}
 		LOG_CIRCE_TRACE("Sending request: ", foyer_req);
@@ -273,13 +273,13 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 
 		resp_headers.status_code = boost::numeric_cast<Poseidon::Http::StatusCode>(foyer_resp.status_code);
 		resp_headers.headers     = Protocol::copy_key_values(STD_MOVE_IDN(foyer_resp.headers));
-		if(req_headers.verb != Poseidon::Http::V_HEAD){
+		if(req_headers.verb != Poseidon::Http::verb_head){
 			resp_entity = STD_MOVE(foyer_resp.entity);
 		}
 		break; }
 
 	default:
-		DEBUG_THROW(Poseidon::Http::Exception, Poseidon::Http::ST_NOT_IMPLEMENTED);
+		DEBUG_THROW(Poseidon::Http::Exception, Poseidon::Http::status_not_implemented);
 	}
 
 	// Fill in other fields of the response headers.
@@ -301,19 +301,19 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 	// Select an encoding for compression if the response entity is not empty and no explicit encoding is given.
 	Poseidon::Http::ContentEncoding resp_encoding;
 	if(size_original == 0){
-		resp_encoding = Poseidon::Http::CE_IDENTITY;
+		resp_encoding = Poseidon::Http::content_encoding_identity;
 	} else if(resp_headers.headers.has("Content-Encoding")){
-		resp_encoding = Poseidon::Http::CE_IDENTITY;
-	} else if(resp_encoding_preferred == Poseidon::Http::CE_GZIP){
-		resp_encoding = Poseidon::Http::CE_GZIP;
-	} else if(resp_encoding_preferred == Poseidon::Http::CE_DEFLATE){
-		resp_encoding = Poseidon::Http::CE_DEFLATE;
+		resp_encoding = Poseidon::Http::content_encoding_identity;
+	} else if(resp_encoding_preferred == Poseidon::Http::content_encoding_gzip){
+		resp_encoding = Poseidon::Http::content_encoding_gzip;
+	} else if(resp_encoding_preferred == Poseidon::Http::content_encoding_deflate){
+		resp_encoding = Poseidon::Http::content_encoding_deflate;
 	} else {
-		resp_encoding = Poseidon::Http::CE_IDENTITY;
+		resp_encoding = Poseidon::Http::content_encoding_identity;
 	}
 	// Compress it if possible.
 	switch(resp_encoding){
-	case Poseidon::Http::CE_GZIP: {
+	case Poseidon::Http::content_encoding_gzip: {
 		const AUTO(compression_level, get_config<int>("client_http_compression_level", 8));
 		LOG_CIRCE_TRACE("Compressing HTTP response using GZIP: compression_level = ", compression_level);
 		Poseidon::Deflator deflator(true, compression_level);
@@ -323,7 +323,7 @@ void ClientHttpSession::on_sync_request(Poseidon::Http::RequestHeaders req_heade
 		LOG_CIRCE_TRACE("GZIP result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0l / size_original, "%)");
 		resp_headers.headers.set(Poseidon::sslit("Content-Encoding"), "gzip");
 		break; }
-	case Poseidon::Http::CE_DEFLATE: {
+	case Poseidon::Http::content_encoding_deflate: {
 		const AUTO(compression_level, get_config<int>("client_http_compression_level", 8));
 		LOG_CIRCE_TRACE("Compressing HTTP response using DEFLATE: compression_level = ", compression_level);
 		Poseidon::Deflator deflator(false, compression_level);
