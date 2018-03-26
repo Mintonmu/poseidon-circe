@@ -10,13 +10,13 @@
 #include "protocol/messages_pilot.hpp"
 #include "singletons/compass_repository.hpp"
 
-#define DEFINE_SERVLET_FOR(...)   CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(::Circe::Pilot::ServletContainer::insert_servlet, __VA_ARGS__)
+#define DEFINE_SERVLET_FOR(...)   CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(::Circe::Pilot::Servlet_container::insert_servlet, __VA_ARGS__)
 
 namespace Circe {
 namespace Pilot {
 
 namespace {
-	void parse_lock_disposition(int *shared_lock_disposition_ret, int *exclusive_lock_disposition_ret, const boost::shared_ptr<Compass> &compass, const boost::shared_ptr<Common::InterserverConnection> &connection, unsigned lock_disposition){
+	void parse_lock_disposition(int *shared_lock_disposition_ret, int *exclusive_lock_disposition_ret, const boost::shared_ptr<Compass> &compass, const boost::shared_ptr<Common::Interserver_connection> &connection, unsigned lock_disposition){
 		PROFILE_ME;
 
 		int shared_lock_disposition;
@@ -55,7 +55,7 @@ namespace {
 		*shared_lock_disposition_ret = shared_lock_disposition;
 		*exclusive_lock_disposition_ret = exclusive_lock_disposition;
 	}
-	void commit_lock_disposition(const boost::shared_ptr<Compass> &compass, const boost::shared_ptr<Common::InterserverConnection> &connection, int shared_lock_disposition, int exclusive_lock_disposition){
+	void commit_lock_disposition(const boost::shared_ptr<Compass> &compass, const boost::shared_ptr<Common::Interserver_connection> &connection, int shared_lock_disposition, int exclusive_lock_disposition){
 		PROFILE_ME;
 
 		for(int i = exclusive_lock_disposition; i > 0; --i){
@@ -73,7 +73,7 @@ namespace {
 		}
 	}
 
-	unsigned get_compass_lock_state(const boost::shared_ptr<Compass> &compass, const boost::shared_ptr<Common::InterserverConnection> &connection){
+	unsigned get_compass_lock_state(const boost::shared_ptr<Compass> &compass, const boost::shared_ptr<Common::Interserver_connection> &connection){
 		PROFILE_ME;
 
 		if(compass->is_locked_exclusive_by(connection->get_connection_uuid())){
@@ -90,8 +90,8 @@ namespace {
 	}
 }
 
-DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
-	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_hash_of(req.key.data(), req.key.size())));
+DEFINE_SERVLET_FOR(Protocol::Pilot::Compare_exchange_request, connection, req){
+	const AUTO(compass, Compass_repository::open_compass(Compass_key::from_hash_of(req.key.data(), req.key.size())));
 	DEBUG_THROW_ASSERT(compass);
 	LOG_CIRCE_DEBUG("Opened compass: ", compass->get_compass_key());
 
@@ -135,7 +135,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 	lock_state = get_compass_lock_state(compass, connection);
 	compass->update_last_access_time();
 
-	Protocol::Pilot::CompareExchangeResponse resp;
+	Protocol::Pilot::Compare_exchange_response resp;
 	resp.value_old       = STD_MOVE(value_old);
 	resp.version_old     = version_old;
 	resp.succeeded       = succeeded;
@@ -144,8 +144,8 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::CompareExchangeRequest, connection, req){
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
-	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_hash_of(req.key.data(), req.key.size())));
+DEFINE_SERVLET_FOR(Protocol::Pilot::Exchange_request, connection, req){
+	const AUTO(compass, Compass_repository::open_compass(Compass_key::from_hash_of(req.key.data(), req.key.size())));
 	DEBUG_THROW_ASSERT(compass);
 	LOG_CIRCE_DEBUG("Opened compass: ", compass->get_compass_key());
 
@@ -171,7 +171,7 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 	lock_state = get_compass_lock_state(compass, connection);
 	compass->update_last_access_time();
 
-	Protocol::Pilot::ExchangeResponse resp;
+	Protocol::Pilot::Exchange_response resp;
 	resp.value_old   = STD_MOVE(value_old);
 	resp.version_old = version_old;
 	resp.succeeded   = succeeded;
@@ -179,20 +179,20 @@ DEFINE_SERVLET_FOR(Protocol::Pilot::ExchangeRequest, connection, req){
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Pilot::AddWatchRequest, connection, req){
-	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_hash_of(req.key.data(), req.key.size())));
+DEFINE_SERVLET_FOR(Protocol::Pilot::Add_watch_request, connection, req){
+	const AUTO(compass, Compass_repository::open_compass(Compass_key::from_hash_of(req.key.data(), req.key.size())));
 	DEBUG_THROW_ASSERT(compass);
 	LOG_CIRCE_DEBUG("Opened compass: ", compass->get_compass_key());
 
 	const AUTO(watcher_uuid, compass->add_watcher(connection));
 
-	Protocol::Pilot::AddWatchResponse resp;
+	Protocol::Pilot::Add_watch_response resp;
 	resp.watcher_uuid = watcher_uuid;
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Pilot::RemoveWatchNotification, /*connection*/, ntfy){
-	const AUTO(compass, CompassRepository::open_compass(CompassKey::from_hash_of(ntfy.key.data(), ntfy.key.size())));
+DEFINE_SERVLET_FOR(Protocol::Pilot::Remove_watch_notification, /*connection*/, ntfy){
+	const AUTO(compass, Compass_repository::open_compass(Compass_key::from_hash_of(ntfy.key.data(), ntfy.key.size())));
 	DEBUG_THROW_ASSERT(compass);
 	LOG_CIRCE_DEBUG("Opened compass: ", compass->get_compass_key());
 

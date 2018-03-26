@@ -15,21 +15,21 @@ namespace Pilot {
 
 class ORM_Compass;
 
-class Compass : NONCOPYABLE, public virtual Poseidon::VirtualSharedFromThis {
+class Compass : NONCOPYABLE, public virtual Poseidon::Virtual_shared_from_this {
 private:
-	const CompassKey m_compass_key;
+	const Compass_key m_compass_key;
 
 	boost::shared_ptr<ORM_Compass> m_dao;
-	CompassLock m_lock;
-	CompassWatcherMap m_watcher_map;
+	Compass_lock m_lock;
+	Compass_watcher_map m_watcher_map;
 
 public:
-	explicit Compass(const CompassKey &compass_key);
+	explicit Compass(const Compass_key &compass_key);
 	explicit Compass(const boost::shared_ptr<ORM_Compass> &dao);
 	~Compass() OVERRIDE;
 
 public:
-	const CompassKey &get_compass_key() const {
+	const Compass_key &get_compass_key() const {
 		return m_compass_key;
 	}
 
@@ -44,17 +44,17 @@ public:
 	// Interserver lock observers and modifiers.
 	bool is_locked_shared() const;
 	bool is_locked_shared_by(const Poseidon::Uuid &connection_uuid);
-	bool try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection);
-	bool release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection);
+	bool try_lock_shared(const boost::shared_ptr<Common::Interserver_connection> &connection);
+	bool release_lock_shared(const boost::shared_ptr<Common::Interserver_connection> &connection);
 
 	bool is_locked_exclusive() const;
 	bool is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid);
-	bool try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
-	bool release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
+	bool try_lock_exclusive(const boost::shared_ptr<Common::Interserver_connection> &connection);
+	bool release_lock_exclusive(const boost::shared_ptr<Common::Interserver_connection> &connection);
 
 	// Watcher observers and modifiers.
-	std::size_t get_watchers(boost::container::vector<std::pair<Poseidon::Uuid, boost::shared_ptr<Common::InterserverConnection> > > &watchers_ret) const;
-	Poseidon::Uuid add_watcher(const boost::shared_ptr<Common::InterserverConnection> &connection);
+	std::size_t get_watchers(boost::container::vector<std::pair<Poseidon::Uuid, boost::shared_ptr<Common::Interserver_connection> > > &watchers_ret) const;
+	Poseidon::Uuid add_watcher(const boost::shared_ptr<Common::Interserver_connection> &connection);
 	bool remove_watcher(const Poseidon::Uuid &watcher_uuid);
 };
 

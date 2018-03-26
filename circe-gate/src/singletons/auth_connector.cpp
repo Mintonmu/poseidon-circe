@@ -12,75 +12,75 @@ namespace Circe {
 namespace Gate {
 
 namespace {
-	class SpecializedConnector : public Common::InterserverConnector {
+	class Specialized_connector : public Common::Interserver_connector {
 	public:
-		SpecializedConnector(boost::container::vector<std::string> hosts, boost::uint16_t port, std::string application_key)
-			: Common::InterserverConnector(STD_MOVE(hosts), port, STD_MOVE(application_key))
+		Specialized_connector(boost::container::vector<std::string> hosts, boost::uint16_t port, std::string application_key)
+			: Common::Interserver_connector(STD_MOVE(hosts), port, STD_MOVE(application_key))
 		{
 			//
 		}
 
 	protected:
-		boost::shared_ptr<const Common::InterserverServletCallback> sync_get_servlet(boost::uint16_t message_id) const OVERRIDE {
-			return ServletContainer::get_servlet(message_id);
+		boost::shared_ptr<const Common::Interserver_servlet_callback> sync_get_servlet(boost::uint16_t message_id) const OVERRIDE {
+			return Servlet_container::get_servlet(message_id);
 		}
 	};
 
 	Poseidon::Mutex g_mutex;
-	boost::weak_ptr<SpecializedConnector> g_weak_connector;
+	boost::weak_ptr<Specialized_connector> g_weak_connector;
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
+	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(hosts, get_config_all<std::string>("auth_connector_host"));
 	const AUTO(port, get_config<boost::uint16_t>("auth_connector_port"));
 	const AUTO(appkey, get_config<std::string>("auth_connector_appkey"));
-	const AUTO(connector, boost::make_shared<SpecializedConnector>(hosts, port, appkey));
+	const AUTO(connector, boost::make_shared<Specialized_connector>(hosts, port, appkey));
 	connector->activate();
 	handles.push(connector);
 	g_weak_connector = connector;
 }
 
-boost::shared_ptr<Common::InterserverConnection> AuthConnector::get_client(const Poseidon::Uuid &connection_uuid){
+boost::shared_ptr<Common::Interserver_connection> Auth_connector::get_client(const Poseidon::Uuid &connection_uuid){
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
+	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
-		LOG_CIRCE_WARNING("AuthConnector has not been initialized.");
+		LOG_CIRCE_WARNING("Auth_connector has not been initialized.");
 		return VAL_INIT;
 	}
 	return connector->get_client(connection_uuid);
 }
-std::size_t AuthConnector::get_all_clients(boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > &clients_ret){
+std::size_t Auth_connector::get_all_clients(boost::container::vector<boost::shared_ptr<Common::Interserver_connection> > &clients_ret){
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
+	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
-		LOG_CIRCE_WARNING("AuthConnector has not been initialized.");
+		LOG_CIRCE_WARNING("Auth_connector has not been initialized.");
 		return 0;
 	}
 	return connector->get_all_clients(clients_ret);
 }
-std::size_t AuthConnector::safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT {
+std::size_t Auth_connector::safe_broadcast_notification(const Poseidon::Cbpp::Message_base &msg) NOEXCEPT {
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
+	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
-		LOG_CIRCE_WARNING("AuthConnector has not been initialized.");
+		LOG_CIRCE_WARNING("Auth_connector has not been initialized.");
 		return 0;
 	}
 	return connector->safe_broadcast_notification(msg);
 }
-std::size_t AuthConnector::clear(long err_code, const char *err_msg) NOEXCEPT {
+std::size_t Auth_connector::clear(long err_code, const char *err_msg) NOEXCEPT {
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
+	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
-		LOG_CIRCE_WARNING("AuthConnector has not been initialized.");
+		LOG_CIRCE_WARNING("Auth_connector has not been initialized.");
 		return 0;
 	}
 	return connector->clear(err_code, err_msg);

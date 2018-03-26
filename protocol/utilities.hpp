@@ -12,7 +12,7 @@ namespace Circe {
 namespace Protocol {
 
 template<typename DestinationT>
-void copy_key_values(boost::container::vector<DestinationT> &dst, const Poseidon::OptionalMap &src){
+void copy_key_values(boost::container::vector<DestinationT> &dst, const Poseidon::Optional_map &src){
 	dst.reserve(dst.size() + src.size());
 	for(AUTO(it, src.begin()); it != src.end(); ++it){
 		dst.emplace_back();
@@ -22,7 +22,7 @@ void copy_key_values(boost::container::vector<DestinationT> &dst, const Poseidon
 }
 #ifdef POSEIDON_CXX11
 template<typename DestinationT>
-void copy_key_values(boost::container::vector<DestinationT> &dst, Poseidon::OptionalMap &&src){
+void copy_key_values(boost::container::vector<DestinationT> &dst, Poseidon::Optional_map &&src){
 	dst.reserve(dst.size() + src.size());
 	for(AUTO(it, src.begin()); it != src.end(); ++it){
 		dst.emplace_back();
@@ -33,16 +33,16 @@ void copy_key_values(boost::container::vector<DestinationT> &dst, Poseidon::Opti
 #endif
 
 template<typename SourceT>
-void copy_key_values(Poseidon::OptionalMap &dst, const boost::container::vector<SourceT> &src){
+void copy_key_values(Poseidon::Optional_map &dst, const boost::container::vector<SourceT> &src){
 	for(AUTO(it, src.begin()); it != src.end(); ++it){
-		dst.append(Poseidon::SharedNts(it->key), it->value);
+		dst.append(Poseidon::Shared_nts(it->key), it->value);
 	}
 }
 #ifdef POSEIDON_CXX11
 template<typename SourceT>
-void copy_key_values(Poseidon::OptionalMap &dst, boost::container::vector<SourceT> &&src){
+void copy_key_values(Poseidon::Optional_map &dst, boost::container::vector<SourceT> &&src){
 	for(AUTO(it, src.begin()); it != src.end(); ++it){
-		dst.append(Poseidon::SharedNts(it->key), STD_MOVE(it->value));
+		dst.append(Poseidon::Shared_nts(it->key), STD_MOVE(it->value));
 	}
 }
 #endif
@@ -69,15 +69,15 @@ void copy_key_values(boost::container::vector<DestinationT> &dst, boost::contain
 #endif
 
 template<typename SourceT>
-Poseidon::OptionalMap copy_key_values(const boost::container::vector<SourceT> &src){
-	Poseidon::OptionalMap dst;
+Poseidon::Optional_map copy_key_values(const boost::container::vector<SourceT> &src){
+	Poseidon::Optional_map dst;
 	copy_key_values<>(dst, src);
 	return dst;
 }
 #ifdef POSEIDON_CXX11
 template<typename SourceT>
-Poseidon::OptionalMap copy_key_values(boost::container::vector<SourceT> &&src){
-	Poseidon::OptionalMap dst;
+Poseidon::Optional_map copy_key_values(boost::container::vector<SourceT> &&src){
+	Poseidon::Optional_map dst;
 	copy_key_values<>(dst, STD_MOVE(src));
 	return dst;
 }

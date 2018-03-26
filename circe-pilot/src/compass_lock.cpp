@@ -8,14 +8,14 @@
 namespace Circe {
 namespace Pilot {
 
-CompassLock::CompassLock(){
+Compass_lock::Compass_lock(){
 	//
 }
-CompassLock::~CompassLock(){
+Compass_lock::~Compass_lock(){
 	//
 }
 
-void CompassLock::collect_expired_connections() const NOEXCEPT {
+void Compass_lock::collect_expired_connections() const NOEXCEPT {
 	PROFILE_ME;
 
 	bool erase_it;
@@ -27,21 +27,21 @@ void CompassLock::collect_expired_connections() const NOEXCEPT {
 	}
 }
 
-bool CompassLock::is_locked_shared() const NOEXCEPT {
+bool Compass_lock::is_locked_shared() const NOEXCEPT {
 	PROFILE_ME;
 
 	collect_expired_connections();
 	// Return `true` if and only if there is at least a reader and it is not a writer at the same time.
 	return !m_readers.empty() && m_writers.empty();
 }
-bool CompassLock::is_locked_shared_by(const Poseidon::Uuid &connection_uuid) NOEXCEPT {
+bool Compass_lock::is_locked_shared_by(const Poseidon::Uuid &connection_uuid) NOEXCEPT {
 	PROFILE_ME;
 
 	collect_expired_connections();
 	// Return `true` if and only if there is such a reader, regardless of other readers or writers if any.
 	return m_readers.find(connection_uuid) != m_readers.end();
 }
-bool CompassLock::try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection){
+bool Compass_lock::try_lock_shared(const boost::shared_ptr<Common::Interserver_connection> &connection){
 	PROFILE_ME;
 
 	collect_expired_connections();
@@ -55,7 +55,7 @@ bool CompassLock::try_lock_shared(const boost::shared_ptr<Common::InterserverCon
 	m_readers.emplace(connection->get_connection_uuid(), connection);
 	return true;
 }
-bool CompassLock::release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection) NOEXCEPT {
+bool Compass_lock::release_lock_shared(const boost::shared_ptr<Common::Interserver_connection> &connection) NOEXCEPT {
 	PROFILE_ME;
 
 	collect_expired_connections();
@@ -68,21 +68,21 @@ bool CompassLock::release_lock_shared(const boost::shared_ptr<Common::Interserve
 	return true;
 }
 
-bool CompassLock::is_locked_exclusive() const NOEXCEPT {
+bool Compass_lock::is_locked_exclusive() const NOEXCEPT {
 	PROFILE_ME;
 
 	collect_expired_connections();
 	// Return `true` if and only if there is a writer.
 	return !m_writers.empty();
 }
-bool CompassLock::is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid) NOEXCEPT {
+bool Compass_lock::is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid) NOEXCEPT {
 	PROFILE_ME;
 
 	collect_expired_connections();
 	// Return `true` if and only if there is such a writer, regardless of other readers or writers if any.
 	return m_writers.find(connection_uuid) != m_writers.end();
 }
-bool CompassLock::try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection){
+bool Compass_lock::try_lock_exclusive(const boost::shared_ptr<Common::Interserver_connection> &connection){
 	PROFILE_ME;
 
 	collect_expired_connections();
@@ -99,7 +99,7 @@ bool CompassLock::try_lock_exclusive(const boost::shared_ptr<Common::Interserver
 	m_writers.emplace(connection->get_connection_uuid(), connection);
 	return true;
 }
-bool CompassLock::release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection) NOEXCEPT {
+bool Compass_lock::release_lock_exclusive(const boost::shared_ptr<Common::Interserver_connection> &connection) NOEXCEPT {
 	PROFILE_ME;
 
 	collect_expired_connections();

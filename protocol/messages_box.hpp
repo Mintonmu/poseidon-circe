@@ -10,7 +10,7 @@ namespace Circe {
 namespace Protocol {
 namespace Box {
 
-#define MESSAGE_NAME   HttpRequest
+#define MESSAGE_NAME   Http_request
 #define MESSAGE_ID     1901
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
@@ -31,7 +31,7 @@ namespace Box {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   HttpResponse
+#define MESSAGE_NAME   Http_response
 #define MESSAGE_ID     1902
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (status_code)	\
@@ -43,7 +43,7 @@ namespace Box {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketEstablishmentRequest
+#define MESSAGE_NAME   Web_socket_establishment_request
 #define MESSAGE_ID     1903
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
@@ -58,13 +58,13 @@ namespace Box {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketEstablishmentResponse
+#define MESSAGE_NAME   Web_socket_establishment_response
 #define MESSAGE_ID     1904
 #define MESSAGE_FIELDS \
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketClosureNotification
+#define MESSAGE_NAME   Web_socket_closure_notification
 #define MESSAGE_ID     1905
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
@@ -74,7 +74,7 @@ namespace Box {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketPackedMessageRequest
+#define MESSAGE_NAME   Web_socket_packed_message_request
 #define MESSAGE_ID     1906
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
@@ -86,7 +86,7 @@ namespace Box {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketPackedMessageResponse
+#define MESSAGE_NAME   Web_socket_packed_message_response
 #define MESSAGE_ID     1907
 #define MESSAGE_FIELDS \
 	//

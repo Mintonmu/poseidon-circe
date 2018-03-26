@@ -11,13 +11,13 @@
 namespace Circe {
 namespace Common {
 
-class InterserverServletContainer {
+class Interserver_servlet_container {
 private:
-	boost::container::flat_map<boost::uint16_t, boost::weak_ptr<const InterserverServletCallback> > m_servlets;
+	boost::container::flat_map<boost::uint16_t, boost::weak_ptr<const Interserver_servlet_callback> > m_servlets;
 
 public:
-	boost::shared_ptr<const InterserverServletCallback> get_servlet(boost::uint16_t message_id) const;
-	void insert_servlet(boost::uint16_t message_id, const boost::shared_ptr<const InterserverServletCallback> &callback);
+	boost::shared_ptr<const Interserver_servlet_callback> get_servlet(boost::uint16_t message_id) const;
+	void insert_servlet(boost::uint16_t message_id, const boost::shared_ptr<const Interserver_servlet_callback> &callback);
 	bool remove_servlet(boost::uint16_t message_id) NOEXCEPT;
 };
 

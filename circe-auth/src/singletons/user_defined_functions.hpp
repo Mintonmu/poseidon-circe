@@ -18,34 +18,34 @@ namespace Auth {
 
 // See `user_defined_functions.cpp` for comments.
 
-class UserDefinedFunctions {
+class User_defined_functions {
 private:
-	UserDefinedFunctions();
+	User_defined_functions();
 
 public:
 	static std::string check_http_authentication(
 		// Output parameters
-		Poseidon::Http::StatusCode &resp_status_code,
-		Poseidon::OptionalMap &resp_headers,
+		Poseidon::Http::Status_code &resp_status_code,
+		Poseidon::Optional_map &resp_headers,
 		// Input parameters
 		Poseidon::Uuid client_uuid,
 		std::string client_ip,
 		Poseidon::Http::Verb verb,
 		std::string decoded_uri,
-		Poseidon::OptionalMap params,
-		Poseidon::OptionalMap req_headers);
+		Poseidon::Optional_map params,
+		Poseidon::Optional_map req_headers);
 
 	static std::string check_websocket_authentication(
 		// Output parameters
-		boost::container::deque<std::pair<Poseidon::WebSocket::OpCode,
-			Poseidon::StreamBuffer> > &resp_messages,
-		Poseidon::WebSocket::StatusCode &resp_status_code,
+		boost::container::deque<std::pair<Poseidon::Web_socket::Op_code,
+			Poseidon::Stream_buffer> > &resp_messages,
+		Poseidon::Web_socket::Status_code &resp_status_code,
 		std::string &resp_reason,
 		// Input parameters
 		Poseidon::Uuid client_uuid,
 		std::string client_ip,
 		std::string decoded_uri,
-		Poseidon::OptionalMap params);
+		Poseidon::Optional_map params);
 };
 
 }

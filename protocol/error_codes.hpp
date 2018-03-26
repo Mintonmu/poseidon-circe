@@ -9,9 +9,9 @@
 namespace Circe {
 namespace Protocol {
 
-typedef Poseidon::Cbpp::StatusCode ErrorCode;
+typedef Poseidon::Cbpp::Status_code Error_code;
 
-namespace ErrorCodes {
+namespace Error_codes {
 	enum {
 		error_success                              = Poseidon::Cbpp::status_ok,                    //   0
 		error_internal_error                       = Poseidon::Cbpp::status_internal_error,        //  -1
@@ -39,7 +39,7 @@ namespace ErrorCodes {
 	};
 }
 
-using namespace ErrorCodes;
+using namespace Error_codes;
 
 }
 }

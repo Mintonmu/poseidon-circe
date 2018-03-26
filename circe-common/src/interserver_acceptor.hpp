@@ -15,13 +15,13 @@
 namespace Circe {
 namespace Common {
 
-class InterserverConnection;
-class InterserverResponse;
+class Interserver_connection;
+class Interserver_response;
 
-class InterserverAcceptor : public virtual Poseidon::VirtualSharedFromThis {
+class Interserver_acceptor : public virtual Poseidon::Virtual_shared_from_this {
 private:
-	class InterserverSession;
-	class InterserverServer;
+	class Interserver_session;
+	class Interserver_server;
 
 private:
 	const std::string m_bind;
@@ -29,22 +29,22 @@ private:
 	const std::string m_application_key;
 
 	mutable Poseidon::Mutex m_mutex;
-	boost::shared_ptr<InterserverServer> m_server;
-	boost::container::flat_map<Poseidon::Uuid, boost::weak_ptr<InterserverSession> > m_weak_sessions;
+	boost::shared_ptr<Interserver_server> m_server;
+	boost::container::flat_map<Poseidon::Uuid, boost::weak_ptr<Interserver_session> > m_weak_sessions;
 
 public:
-	InterserverAcceptor(std::string bind, boost::uint16_t port, std::string application_key);
-	~InterserverAcceptor() OVERRIDE;
+	Interserver_acceptor(std::string bind, boost::uint16_t port, std::string application_key);
+	~Interserver_acceptor() OVERRIDE;
 
 protected:
-	virtual boost::shared_ptr<const InterserverServletCallback> sync_get_servlet(boost::uint16_t message_id) const = 0;
+	virtual boost::shared_ptr<const Interserver_servlet_callback> sync_get_servlet(boost::uint16_t message_id) const = 0;
 
 public:
 	void activate();
 
-	boost::shared_ptr<InterserverConnection> get_session(const Poseidon::Uuid &connection_uuid) const;
-	std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<InterserverConnection> > &sessions_ret) const;
-	std::size_t safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) const NOEXCEPT;
+	boost::shared_ptr<Interserver_connection> get_session(const Poseidon::Uuid &connection_uuid) const;
+	std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<Interserver_connection> > &sessions_ret) const;
+	std::size_t safe_broadcast_notification(const Poseidon::Cbpp::Message_base &msg) const NOEXCEPT;
 	std::size_t clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 

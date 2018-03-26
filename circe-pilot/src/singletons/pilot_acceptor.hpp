@@ -9,14 +9,14 @@
 namespace Circe {
 namespace Pilot {
 
-class PilotAcceptor {
+class Pilot_acceptor {
 private:
-	PilotAcceptor();
+	Pilot_acceptor();
 
 public:
-	static boost::shared_ptr<Common::InterserverConnection> get_session(const Poseidon::Uuid &connection_uuid);
-	static std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<Common::InterserverConnection> > &sessions_ret);
-	static std::size_t safe_broadcast_notification(const Poseidon::Cbpp::MessageBase &msg) NOEXCEPT;
+	static boost::shared_ptr<Common::Interserver_connection> get_session(const Poseidon::Uuid &connection_uuid);
+	static std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<Common::Interserver_connection> > &sessions_ret);
+	static std::size_t safe_broadcast_notification(const Poseidon::Cbpp::Message_base &msg) NOEXCEPT;
 	static std::size_t clear(long err_code, const char *err_msg = "") NOEXCEPT;
 };
 

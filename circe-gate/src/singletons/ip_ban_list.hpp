@@ -9,9 +9,9 @@
 namespace Circe {
 namespace Gate {
 
-class IpBanList {
+class Ip_ban_list {
 private:
-	IpBanList();
+	Ip_ban_list();
 
 public:
 	static boost::uint64_t get_ban_time_remaining(const char *ip);

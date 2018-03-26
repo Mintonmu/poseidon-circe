@@ -18,39 +18,39 @@ namespace Box {
 
 // See `user_defined_functions.cpp` for comments.
 
-class UserDefinedFunctions {
+class User_defined_functions {
 private:
-	UserDefinedFunctions();
+	User_defined_functions();
 
 public:
 	static void handle_http_request(
 		// Output parameters
-		Poseidon::Http::StatusCode &resp_status_code,
-		Poseidon::OptionalMap &resp_headers,
-		Poseidon::StreamBuffer &resp_entity,
+		Poseidon::Http::Status_code &resp_status_code,
+		Poseidon::Optional_map &resp_headers,
+		Poseidon::Stream_buffer &resp_entity,
 		// Input parameters
 		Poseidon::Uuid client_uuid,
 		std::string client_ip,
 		std::string auth_token,
 		Poseidon::Http::Verb verb,
 		std::string decoded_uri,
-		Poseidon::OptionalMap params,
-		Poseidon::OptionalMap req_headers,
-		Poseidon::StreamBuffer req_entity);
+		Poseidon::Optional_map params,
+		Poseidon::Optional_map req_headers,
+		Poseidon::Stream_buffer req_entity);
 
 	static void handle_websocket_establishment(
-		const boost::shared_ptr<WebSocketShadowSession> &client_session,
+		const boost::shared_ptr<Web_socket_shadow_session> &client_session,
 		std::string decoded_uri,
-		Poseidon::OptionalMap params);
+		Poseidon::Optional_map params);
 
 	static void handle_websocket_message(
-		const boost::shared_ptr<WebSocketShadowSession> &client_session,
-		Poseidon::WebSocket::OpCode opcode,
-		Poseidon::StreamBuffer payload);
+		const boost::shared_ptr<Web_socket_shadow_session> &client_session,
+		Poseidon::Web_socket::Op_code opcode,
+		Poseidon::Stream_buffer payload);
 
 	static void handle_websocket_closure(
-		const boost::shared_ptr<WebSocketShadowSession> &client_session,
-		Poseidon::WebSocket::StatusCode status_code,
+		const boost::shared_ptr<Web_socket_shadow_session> &client_session,
+		Poseidon::Web_socket::Status_code status_code,
 		const char *reason);
 };
 

@@ -12,17 +12,17 @@
 namespace Circe {
 namespace Pilot {
 
-class CompassWatcherMap : NONCOPYABLE {
+class Compass_watcher_map : NONCOPYABLE {
 private:
-	boost::container::flat_map<Poseidon::Uuid, boost::weak_ptr<Common::InterserverConnection> > m_watchers;
+	boost::container::flat_map<Poseidon::Uuid, boost::weak_ptr<Common::Interserver_connection> > m_watchers;
 
 public:
-	CompassWatcherMap();
-	~CompassWatcherMap();
+	Compass_watcher_map();
+	~Compass_watcher_map();
 
 public:
-	std::size_t get_watchers(boost::container::vector<std::pair<Poseidon::Uuid, boost::shared_ptr<Common::InterserverConnection> > > &watchers_ret) const;
-	Poseidon::Uuid add_watcher(const boost::shared_ptr<Common::InterserverConnection> &connection);
+	std::size_t get_watchers(boost::container::vector<std::pair<Poseidon::Uuid, boost::shared_ptr<Common::Interserver_connection> > > &watchers_ret) const;
+	Poseidon::Uuid add_watcher(const boost::shared_ptr<Common::Interserver_connection> &connection);
 	bool remove_watcher(const Poseidon::Uuid &watcher_uuid) NOEXCEPT;
 };
 

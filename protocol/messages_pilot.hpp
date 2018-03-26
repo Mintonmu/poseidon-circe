@@ -28,7 +28,7 @@ enum {
 	lock_exclusive_by_others    = 41,
 };
 
-#define MESSAGE_NAME   CompareExchangeRequest
+#define MESSAGE_NAME   Compare_exchange_request
 #define MESSAGE_ID     1101
 #define MESSAGE_FIELDS \
 	FIELD_BLOB         (key)	\
@@ -40,7 +40,7 @@ enum {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   CompareExchangeResponse
+#define MESSAGE_NAME   Compare_exchange_response
 #define MESSAGE_ID     1102
 #define MESSAGE_FIELDS \
 	FIELD_STRING       (value_old)	\
@@ -51,7 +51,7 @@ enum {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   ExchangeRequest
+#define MESSAGE_NAME   Exchange_request
 #define MESSAGE_ID     1103
 #define MESSAGE_FIELDS \
 	FIELD_BLOB         (key)	\
@@ -60,7 +60,7 @@ enum {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   ExchangeResponse
+#define MESSAGE_NAME   Exchange_response
 #define MESSAGE_ID     1104
 #define MESSAGE_FIELDS \
 	FIELD_STRING       (value_old)	\
@@ -70,21 +70,21 @@ enum {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   AddWatchRequest
+#define MESSAGE_NAME   Add_watch_request
 #define MESSAGE_ID     1105
 #define MESSAGE_FIELDS \
 	FIELD_BLOB         (key)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   AddWatchResponse
+#define MESSAGE_NAME   Add_watch_response
 #define MESSAGE_ID     1106
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (watcher_uuid, 16)	\
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   RemoveWatchNotification
+#define MESSAGE_NAME   Remove_watch_notification
 #define MESSAGE_ID     1107
 #define MESSAGE_FIELDS \
 	FIELD_BLOB         (key)	\
@@ -92,7 +92,7 @@ enum {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   ValueChangeNotification
+#define MESSAGE_NAME   Value_change_notification
 #define MESSAGE_ID     1108
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (watcher_uuid, 16)	\

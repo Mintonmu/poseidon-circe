@@ -13,13 +13,13 @@
 namespace Circe {
 namespace Gate {
 
-class ClientWebSocketSession;
+class Client_web_socket_session;
 
-class ClientHttpSession : public Poseidon::Http::Session {
-	friend ClientWebSocketSession;
+class Client_http_session : public Poseidon::Http::Session {
+	friend Client_web_socket_session;
 
 private:
-	class WebSocketHandshakeJob;
+	class Web_socket_handshake_job;
 
 private:
 	const Poseidon::Uuid m_client_uuid;
@@ -32,22 +32,22 @@ private:
 	boost::optional<std::string> m_auth_token;
 
 public:
-	explicit ClientHttpSession(Poseidon::Move<Poseidon::UniqueFile> socket);
-	~ClientHttpSession() OVERRIDE;
+	explicit Client_http_session(Poseidon::Move<Poseidon::Unique_file> socket);
+	~Client_http_session() OVERRIDE;
 
 private:
 	void sync_decode_uri(const std::string &uri);
-	void sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::OptionalMap &params, const Poseidon::OptionalMap &headers);
+	void sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::Optional_map &params, const Poseidon::Optional_map &headers);
 
-	Poseidon::OptionalMap make_retry_after_headers(boost::uint64_t time_remaining) const;
+	Poseidon::Optional_map make_retry_after_headers(boost::uint64_t time_remaining) const;
 
 protected:
 	// Callbacks run in the epoll thread.
-	boost::shared_ptr<Poseidon::Http::UpgradedSessionBase> on_low_level_request_end(boost::uint64_t content_length, Poseidon::OptionalMap headers) OVERRIDE;
+	boost::shared_ptr<Poseidon::Http::Upgraded_session_base> on_low_level_request_end(boost::uint64_t content_length, Poseidon::Optional_map headers) OVERRIDE;
 
 	// Callbacks run in the primary thread.
-	void on_sync_expect(Poseidon::Http::RequestHeaders req_headers) OVERRIDE;
-	void on_sync_request(Poseidon::Http::RequestHeaders req_headers, Poseidon::StreamBuffer req_entity) OVERRIDE;
+	void on_sync_expect(Poseidon::Http::Request_headers req_headers) OVERRIDE;
+	void on_sync_request(Poseidon::Http::Request_headers req_headers, Poseidon::Stream_buffer req_entity) OVERRIDE;
 
 public:
 	const Poseidon::Uuid &get_client_uuid() const {
@@ -55,10 +55,10 @@ public:
 	}
 
 	bool has_been_shutdown() const NOEXCEPT;
-	bool shutdown(Poseidon::WebSocket::StatusCode status_code = Poseidon::WebSocket::status_internal_error, const char *reason = "") NOEXCEPT;
+	bool shutdown(Poseidon::Web_socket::Status_code status_code = Poseidon::Web_socket::status_internal_error, const char *reason = "") NOEXCEPT;
 
-	bool send(Poseidon::Http::ResponseHeaders response_headers, Poseidon::StreamBuffer entity);
-	bool send_default_and_shutdown(Poseidon::Http::StatusCode status_code, const Poseidon::OptionalMap &headers = Poseidon::OptionalMap()) NOEXCEPT;
+	bool send(Poseidon::Http::Response_headers response_headers, Poseidon::Stream_buffer entity);
+	bool send_default_and_shutdown(Poseidon::Http::Status_code status_code, const Poseidon::Optional_map &headers = Poseidon::Optional_map()) NOEXCEPT;
 };
 
 }

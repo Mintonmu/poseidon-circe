@@ -13,27 +13,27 @@ namespace Circe {
 namespace Pilot {
 
 namespace {
-	struct CompassElement {
+	struct Compass_element {
 		// Invariants.
 		boost::shared_ptr<Compass> compass;
 		// Indices.
 		const volatile Compass *ptr;
-		CompassKey compass_key;
+		Compass_key compass_key;
 		boost::uint64_t last_access_time;
 		// Variables.
 	};
-	CompassElement create_compass_element(const boost::shared_ptr<Compass> &compass){
-		CompassElement elem = { compass, compass.get(), compass->get_compass_key(), compass->get_last_access_time() };
+	Compass_element create_compass_element(const boost::shared_ptr<Compass> &compass){
+		Compass_element elem = { compass, compass.get(), compass->get_compass_key(), compass->get_last_access_time() };
 		return elem;
 	}
-	MULTI_INDEX_MAP(CompassContainer, CompassElement,
+	MULTI_INDEX_MAP(Compass_container, Compass_element,
 		UNIQUE_MEMBER_INDEX(ptr)
 		UNIQUE_MEMBER_INDEX(compass_key)
 		MULTI_MEMBER_INDEX(last_access_time)
 	);
 
 	Poseidon::Mutex g_mutex;
-	boost::weak_ptr<CompassContainer> g_weak_compass_container;
+	boost::weak_ptr<Compass_container> g_weak_compass_container;
 
 	void gc_timer_proc(){
 		PROFILE_ME;
@@ -43,7 +43,7 @@ namespace {
 		const AUTO(expiry_time, Poseidon::saturated_sub(utc_now, expiry_duration));
 		// Delete expired compasses from memory...
 		try {
-			const Poseidon::Mutex::UniqueLock lock(g_mutex);
+			const Poseidon::Mutex::Unique_lock lock(g_mutex);
 			const AUTO(compass_container, g_weak_compass_container.lock());
 			if(compass_container){
 				compass_container->erase<2>(compass_container->begin<2>(), compass_container->upper_bound<2>(expiry_time));
@@ -54,8 +54,8 @@ namespace {
 		// ... and from database.
 		try {
 			Poseidon::Buffer_ostream sql_os;
-			sql_os <<"DELETE FROM `Pilot::Compass` WHERE `last_access_time` <= " <<Poseidon::MySql::DateTimeFormatter(expiry_time);
-			Poseidon::MySqlDaemon::enqueue_for_deleting("Pilot::Compass", sql_os.get_buffer().dump_string());
+			sql_os <<"DELETE FROM `Pilot::Compass` WHERE `last_access_time` <= " <<Poseidon::My_sql::Date_time_formatter(expiry_time);
+			Poseidon::My_sql_daemon::enqueue_for_deleting("Pilot::Compass", sql_os.get_buffer().dump_string());
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
 		}
@@ -63,9 +63,9 @@ namespace {
 }
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_ESSENTIAL){
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
-	const AUTO(mysql_conn, Poseidon::MySqlDaemon::create_connection());
-	const AUTO(compass_container, boost::make_shared<CompassContainer>());
+	const Poseidon::Mutex::Unique_lock lock(g_mutex);
+	const AUTO(mysql_conn, Poseidon::My_sql_daemon::create_connection());
+	const AUTO(compass_container, boost::make_shared<Compass_container>());
 	LOG_CIRCE_INFO("Loading compasses from MySQL master...");
 	mysql_conn->execute_sql("SELECT * FROM `Pilot::Compass`");
 	while(mysql_conn->fetch_row()){
@@ -80,17 +80,17 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_ESSENTIAL){
 
 MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 	const AUTO(gc_timer_interval, get_config<boost::uint64_t>("compass_gc_timer_interval", 60000));
-	const AUTO(timer, Poseidon::TimerDaemon::register_timer(0, gc_timer_interval, std::bind(&gc_timer_proc)));
+	const AUTO(timer, Poseidon::Timer_daemon::register_timer(0, gc_timer_interval, std::bind(&gc_timer_proc)));
 	handles.push(timer);
 }
 
-bool CompassRepository::update_compass_indices(const volatile Compass *ptr) NOEXCEPT {
+bool Compass_repository::update_compass_indices(const volatile Compass *ptr) NOEXCEPT {
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
+	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(compass_container, g_weak_compass_container.lock());
 	if(!compass_container){
-		LOG_CIRCE_WARNING("CompassRepository has not been initialized.");
+		LOG_CIRCE_WARNING("Compass_repository has not been initialized.");
 		return false;
 	}
 	const AUTO(it, compass_container->find<0>(ptr));
@@ -102,13 +102,13 @@ bool CompassRepository::update_compass_indices(const volatile Compass *ptr) NOEX
 	return true;
 }
 
-boost::shared_ptr<Compass> CompassRepository::get_compass(const CompassKey &compass_key){
+boost::shared_ptr<Compass> Compass_repository::get_compass(const Compass_key &compass_key){
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
+	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(compass_container, g_weak_compass_container.lock());
 	if(!compass_container){
-		LOG_CIRCE_WARNING("CompassRepository has not been initialized.");
+		LOG_CIRCE_WARNING("Compass_repository has not been initialized.");
 		return VAL_INIT;
 	}
 	const AUTO(it, compass_container->find<1>(compass_key));
@@ -118,14 +118,14 @@ boost::shared_ptr<Compass> CompassRepository::get_compass(const CompassKey &comp
 	}
 	return it->compass;
 }
-boost::shared_ptr<Compass> CompassRepository::open_compass(const CompassKey &compass_key){
+boost::shared_ptr<Compass> Compass_repository::open_compass(const Compass_key &compass_key){
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
+	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(compass_container, g_weak_compass_container.lock());
 	if(!compass_container){
-		LOG_CIRCE_WARNING("CompassRepository has not been initialized.");
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("CompassRepository has not been initialized"));
+		LOG_CIRCE_WARNING("Compass_repository has not been initialized.");
+		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Compass_repository has not been initialized"));
 	}
 	AUTO(it, compass_container->find<1>(compass_key));
 	if(it == compass_container->end<1>()){
@@ -134,13 +134,13 @@ boost::shared_ptr<Compass> CompassRepository::open_compass(const CompassKey &com
 	}
 	return it->compass;
 }
-bool CompassRepository::remove_compass(const volatile Compass *ptr) NOEXCEPT {
+bool Compass_repository::remove_compass(const volatile Compass *ptr) NOEXCEPT {
 	PROFILE_ME;
 
-	const Poseidon::Mutex::UniqueLock lock(g_mutex);
+	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(compass_container, g_weak_compass_container.lock());
 	if(!compass_container){
-		LOG_CIRCE_WARNING("CompassRepository has not been initialized.");
+		LOG_CIRCE_WARNING("Compass_repository has not been initialized.");
 		return false;
 	}
 	const AUTO(it, compass_container->find<0>(ptr));

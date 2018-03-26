@@ -21,15 +21,15 @@ namespace {
 	}
 }
 
-CompassKey CompassKey::from_string(const std::string &str){
+Compass_key Compass_key::from_string(const std::string &str){
 	PROFILE_ME;
 
 	boost::array<char, 40> chars;
-	DEBUG_THROW_UNLESS(str.copy(chars.data(), chars.size()) == chars.size(), Poseidon::Exception, Poseidon::sslit("Unexpected length of CompassKey string"));
-	DEBUG_THROW_UNLESS(std::find_if(chars.begin(), chars.end(), &is_character_invalid) == chars.end(), Poseidon::Exception, Poseidon::sslit("Invalid character in CompassKey"));
-	return CompassKey(chars);
+	DEBUG_THROW_UNLESS(str.copy(chars.data(), chars.size()) == chars.size(), Poseidon::Exception, Poseidon::sslit("Unexpected length of Compass_key string"));
+	DEBUG_THROW_UNLESS(std::find_if(chars.begin(), chars.end(), &is_character_invalid) == chars.end(), Poseidon::Exception, Poseidon::sslit("Invalid character in Compass_key"));
+	return Compass_key(chars);
 }
-CompassKey CompassKey::from_hash_of(const void *data, std::size_t size){
+Compass_key Compass_key::from_hash_of(const void *data, std::size_t size){
 	PROFILE_ME;
 
 	Poseidon::Sha256_ostream sha256_os;
@@ -47,16 +47,16 @@ CompassKey CompassKey::from_hash_of(const void *data, std::size_t size){
 			word /= 85;
 		}
 	}
-	return CompassKey(chars);
+	return Compass_key(chars);
 }
 
-CompassKey::CompassKey(const boost::array<char, 40> &chars)
+Compass_key::Compass_key(const boost::array<char, 40> &chars)
 	: m_chars(chars)
 {
 	//
 }
 
-std::ostream &operator<<(std::ostream &os, const CompassKey &rhs){
+std::ostream &operator<<(std::ostream &os, const Compass_key &rhs){
 	char str[41];
 	std::copy(rhs.begin(), rhs.end(), str)[0] = 0;
 	return os <<str;

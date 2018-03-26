@@ -13,11 +13,11 @@
 namespace Circe {
 namespace Common {
 
-class InterserverConnection;
+class Interserver_connection;
 
 typedef boost::function<
-	InterserverResponse (const boost::shared_ptr<InterserverConnection> &connection, boost::uint16_t message_id, Poseidon::StreamBuffer payload)
-	> InterserverServletCallback;
+	Interserver_response (const boost::shared_ptr<Interserver_connection> &connection, boost::uint16_t message_id, Poseidon::Stream_buffer payload)
+	> Interserver_servlet_callback;
 
 }
 }

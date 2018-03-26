@@ -10,11 +10,11 @@
 #define CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(how_, Msg_, conn_param_, msg_param_)	\
 	namespace {	\
 		/* Define the servlet wrapper. We need some local definitions inside it. */	\
-		struct TOKEN_CAT2(InterserverServletWrapper_, __LINE__) {	\
+		struct TOKEN_CAT2(Interserver_servlet_wrapper_, __LINE__) {	\
 			/* Declare the user-defined callback. */	\
-			static ::Circe::Common::InterserverResponse unwrapped_callback_(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> &, Msg_);	\
-			/* This is the callback that matches `InterserverServletCallback`. */	\
-			static ::Circe::Common::InterserverResponse callback_(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> &conn_, ::boost::uint16_t message_id_, ::Poseidon::StreamBuffer payload_){	\
+			static ::Circe::Common::Interserver_response unwrapped_callback_(const ::boost::shared_ptr< ::Circe::Common::Interserver_connection> &, Msg_);	\
+			/* This is the callback that matches `Interserver_servlet_callback`. */	\
+			static ::Circe::Common::Interserver_response callback_(const ::boost::shared_ptr< ::Circe::Common::Interserver_connection> &conn_, ::boost::uint16_t message_id_, ::Poseidon::Stream_buffer payload_){	\
 				PROFILE_ME;	\
 				DEBUG_THROW_ASSERT(message_id_ == Msg_::ID);	\
 				AUTO(msg_, static_cast<Msg_>(STD_MOVE(payload_)));	\
@@ -25,12 +25,12 @@
 		/* Register the wrapped callback upon module load. */	\
 		MODULE_RAII_PRIORITY(handles_, INIT_PRIORITY_LOW){	\
 			LOG_CIRCE_INFO("Registering interserver servlet: ", #Msg_);	\
-			const AUTO(servlet_, ::boost::make_shared< ::Circe::Common::InterserverServletCallback>(&TOKEN_CAT2(InterserverServletWrapper_, __LINE__)::callback_));	\
+			const AUTO(servlet_, ::boost::make_shared< ::Circe::Common::Interserver_servlet_callback>(&TOKEN_CAT2(Interserver_servlet_wrapper_, __LINE__)::callback_));	\
 			handles_.push(servlet_);	\
 			static_cast<void>(how_(Msg_::ID, servlet_));	\
 		}	\
 	}	\
 	/* The user is responsible for its definition, hence there is no brace after this prototype. */	\
-	::Circe::Common::InterserverResponse TOKEN_CAT2(InterserverServletWrapper_, __LINE__)::unwrapped_callback_(const ::boost::shared_ptr< ::Circe::Common::InterserverConnection> & conn_param_, Msg_ msg_param_)
+	::Circe::Common::Interserver_response TOKEN_CAT2(Interserver_servlet_wrapper_, __LINE__)::unwrapped_callback_(const ::boost::shared_ptr< ::Circe::Common::Interserver_connection> & conn_param_, Msg_ msg_param_)
 
 #endif

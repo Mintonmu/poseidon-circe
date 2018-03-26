@@ -13,16 +13,16 @@
 namespace Circe {
 namespace Pilot {
 
-class CompassKey {
+class Compass_key {
 public:
-	static CompassKey from_string(const std::string &str);
-	static CompassKey from_hash_of(const void *data, std::size_t size);
+	static Compass_key from_string(const std::string &str);
+	static Compass_key from_hash_of(const void *data, std::size_t size);
 
 private:
 	boost::array<char, 40> m_chars;
 
 private:
-	explicit CompassKey(const boost::array<char, 40> &chars);
+	explicit Compass_key(const boost::array<char, 40> &chars);
 
 public:
 	const char *begin() const {
@@ -43,26 +43,26 @@ public:
 	}
 };
 
-inline bool operator==(const CompassKey &lhs, const CompassKey &rhs){
+inline bool operator==(const Compass_key &lhs, const Compass_key &rhs){
 	return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
 }
-inline bool operator!=(const CompassKey &lhs, const CompassKey &rhs){
+inline bool operator!=(const Compass_key &lhs, const Compass_key &rhs){
 	return std::memcmp(lhs.data(), rhs.data(), lhs.size()) != 0;
 }
-inline bool operator<(const CompassKey &lhs, const CompassKey &rhs){
+inline bool operator<(const Compass_key &lhs, const Compass_key &rhs){
 	return std::memcmp(lhs.data(), rhs.data(), lhs.size()) < 0;
 }
-inline bool operator>(const CompassKey &lhs, const CompassKey &rhs){
+inline bool operator>(const Compass_key &lhs, const Compass_key &rhs){
 	return std::memcmp(lhs.data(), rhs.data(), lhs.size()) > 0;
 }
-inline bool operator<=(const CompassKey &lhs, const CompassKey &rhs){
+inline bool operator<=(const Compass_key &lhs, const Compass_key &rhs){
 	return std::memcmp(lhs.data(), rhs.data(), lhs.size()) <= 0;
 }
-inline bool operator>=(const CompassKey &lhs, const CompassKey &rhs){
+inline bool operator>=(const Compass_key &lhs, const Compass_key &rhs){
 	return std::memcmp(lhs.data(), rhs.data(), lhs.size()) >= 0;
 }
 
-extern std::ostream &operator<<(std::ostream &os, const CompassKey &rhs);
+extern std::ostream &operator<<(std::ostream &os, const Compass_key &rhs);
 
 }
 }

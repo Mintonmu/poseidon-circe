@@ -9,13 +9,13 @@
 namespace Circe {
 namespace Auth {
 
-class ServletContainer {
+class Servlet_container {
 private:
-	ServletContainer();
+	Servlet_container();
 
 public:
-	static boost::shared_ptr<const Common::InterserverServletCallback> get_servlet(boost::uint16_t message_id);
-	static void insert_servlet(boost::uint16_t message_id, const boost::shared_ptr<Common::InterserverServletCallback> &servlet);
+	static boost::shared_ptr<const Common::Interserver_servlet_callback> get_servlet(boost::uint16_t message_id);
+	static void insert_servlet(boost::uint16_t message_id, const boost::shared_ptr<Common::Interserver_servlet_callback> &servlet);
 	static bool remove_servlet(boost::uint16_t message_id) NOEXCEPT;
 };
 

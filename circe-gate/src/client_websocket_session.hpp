@@ -15,46 +15,46 @@
 namespace Circe {
 namespace Gate {
 
-class ClientHttpSession;
+class Client_http_session;
 
-class ClientWebSocketSession : public Poseidon::WebSocket::Session {
-	friend ClientHttpSession;
+class Client_web_socket_session : public Poseidon::Web_socket::Session {
+	friend Client_http_session;
 
 private:
-	class DeliveryJob;
+	class Delivery_job;
 
 private:
 	const Poseidon::Uuid m_client_uuid;
 
 	// These are accessed only by the primary thread.
-	boost::weak_ptr<Common::InterserverConnection> m_weak_foyer_conn;
+	boost::weak_ptr<Common::Interserver_connection> m_weak_foyer_conn;
 	boost::optional<Poseidon::Uuid> m_box_uuid;
-	boost::optional<std::pair<Poseidon::WebSocket::StatusCode, std::string> > m_closure_reason;
+	boost::optional<std::pair<Poseidon::Web_socket::Status_code, std::string> > m_closure_reason;
 
 	boost::optional<std::string> m_auth_token;
 
 	mutable Poseidon::Mutex m_delivery_mutex;
-	boost::shared_ptr<DeliveryJob> m_delivery_job_spare;
+	boost::shared_ptr<Delivery_job> m_delivery_job_spare;
 	bool m_delivery_job_active;
-	boost::container::deque<std::pair<Poseidon::WebSocket::OpCode, Poseidon::StreamBuffer> > m_messages_pending;
+	boost::container::deque<std::pair<Poseidon::Web_socket::Op_code, Poseidon::Stream_buffer> > m_messages_pending;
 
 public:
-	explicit ClientWebSocketSession(const boost::shared_ptr<ClientHttpSession> &parent);
-	~ClientWebSocketSession() OVERRIDE;
+	explicit Client_web_socket_session(const boost::shared_ptr<Client_http_session> &parent);
+	~Client_web_socket_session() OVERRIDE;
 
 private:
 	// This function should be only called by the destructor.
 	void notify_foyer_about_closure() const NOEXCEPT;
 
-	void sync_authenticate(const std::string &decoded_uri, const Poseidon::OptionalMap &params);
+	void sync_authenticate(const std::string &decoded_uri, const Poseidon::Optional_map &params);
 
 protected:
 	// Callbacks run in the epoll thread.
 	bool on_low_level_message_end(boost::uint64_t whole_size) OVERRIDE;
 
 	// Callbacks run in the primary thread.
-	void on_sync_data_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload) OVERRIDE;
-	void on_sync_control_message(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload) OVERRIDE;
+	void on_sync_data_message(Poseidon::Web_socket::Op_code opcode, Poseidon::Stream_buffer payload) OVERRIDE;
+	void on_sync_control_message(Poseidon::Web_socket::Op_code opcode, Poseidon::Stream_buffer payload) OVERRIDE;
 
 public:
 	const Poseidon::Uuid &get_client_uuid() const NOEXCEPT {
@@ -62,9 +62,9 @@ public:
 	}
 
 	bool has_been_shutdown() const NOEXCEPT;
-	bool shutdown(Poseidon::WebSocket::StatusCode status_code, const char *reason = "") NOEXCEPT;
+	bool shutdown(Poseidon::Web_socket::Status_code status_code, const char *reason = "") NOEXCEPT;
 
-	bool send(Poseidon::WebSocket::OpCode opcode, Poseidon::StreamBuffer payload);
+	bool send(Poseidon::Web_socket::Op_code opcode, Poseidon::Stream_buffer payload);
 };
 
 }

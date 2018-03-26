@@ -12,14 +12,14 @@
 namespace Circe {
 namespace Pilot {
 
-Compass::Compass(const CompassKey &compass_key)
+Compass::Compass(const Compass_key &compass_key)
 	: m_compass_key(compass_key)
 {
 	LOG_CIRCE_DEBUG("Compass constructor (to create): compass_key = ", get_compass_key());
 }
 Compass::Compass(const boost::shared_ptr<ORM_Compass> &dao)
-	: m_compass_key(CompassKey::from_string(dao->compass_key))
-	, m_dao(Poseidon::MySql::begin_synchronization(dao, false)), m_lock(), m_watcher_map()
+	: m_compass_key(Compass_key::from_string(dao->compass_key))
+	, m_dao(Poseidon::My_sql::begin_synchronization(dao, false)), m_lock(), m_watcher_map()
 {
 	LOG_CIRCE_DEBUG("Compass constructor (to open): compass_key = ", get_compass_key());
 }
@@ -39,7 +39,7 @@ void Compass::update_last_access_time(){
 	}
 	const AUTO(utc_now, Poseidon::get_utc_time());
 	m_dao->last_access_time = utc_now;
-	CompassRepository::update_compass_indices(this);
+	Compass_repository::update_compass_indices(this);
 }
 
 const std::string &Compass::get_value() const {
@@ -58,12 +58,12 @@ void Compass::set_value(std::string value_new){
 	// Mandate exclusive access.
 	DEBUG_THROW_UNLESS(m_lock.is_locked_exclusive(), Poseidon::Exception, Poseidon::sslit("Exclusive access is required to alter the value of a compass"));
 	// Collect watchers before modifying the value.
-	boost::container::vector<std::pair<Poseidon::Uuid, boost::shared_ptr<Common::InterserverConnection> > > watchers;
+	boost::container::vector<std::pair<Poseidon::Uuid, boost::shared_ptr<Common::Interserver_connection> > > watchers;
 	m_watcher_map.get_watchers(watchers);
 
 	// Modify the value now.
 	if(!m_dao){
-		m_dao = Poseidon::MySql::begin_synchronization(boost::make_shared<ORM_Compass>(m_compass_key.to_string(), 0, std::string(), 0), false);
+		m_dao = Poseidon::My_sql::begin_synchronization(boost::make_shared<ORM_Compass>(m_compass_key.to_string(), 0, std::string(), 0), false);
 	}
 	m_dao->value = STD_MOVE(value_new);
 	m_dao->version = m_dao->version + 1;
@@ -73,7 +73,7 @@ void Compass::set_value(std::string value_new){
 		const AUTO_REF(watcher_uuid, it->first);
 		const AUTO_REF(connection, it->second);
 		try {
-			Protocol::Pilot::ValueChangeNotification ntfy;
+			Protocol::Pilot::Value_change_notification ntfy;
 			ntfy.watcher_uuid = watcher_uuid;
 			ntfy.value_new    = m_dao->value;
 			connection->send_notification(ntfy);
@@ -90,10 +90,10 @@ bool Compass::is_locked_shared() const {
 bool Compass::is_locked_shared_by(const Poseidon::Uuid &connection_uuid){
 	return m_lock.is_locked_shared_by(connection_uuid);
 }
-bool Compass::try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection){
+bool Compass::try_lock_shared(const boost::shared_ptr<Common::Interserver_connection> &connection){
 	return m_lock.try_lock_shared(connection);
 }
-bool Compass::release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection){
+bool Compass::release_lock_shared(const boost::shared_ptr<Common::Interserver_connection> &connection){
 	return m_lock.release_lock_shared(connection);
 }
 
@@ -103,17 +103,17 @@ bool Compass::is_locked_exclusive() const {
 bool Compass::is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid){
 	return m_lock.is_locked_exclusive_by(connection_uuid);
 }
-bool Compass::try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection){
+bool Compass::try_lock_exclusive(const boost::shared_ptr<Common::Interserver_connection> &connection){
 	return m_lock.try_lock_exclusive(connection);
 }
-bool Compass::release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection){
+bool Compass::release_lock_exclusive(const boost::shared_ptr<Common::Interserver_connection> &connection){
 	return m_lock.release_lock_exclusive(connection);
 }
 
-std::size_t Compass::get_watchers(boost::container::vector<std::pair<Poseidon::Uuid, boost::shared_ptr<Common::InterserverConnection> > > &watchers_ret) const {
+std::size_t Compass::get_watchers(boost::container::vector<std::pair<Poseidon::Uuid, boost::shared_ptr<Common::Interserver_connection> > > &watchers_ret) const {
 	return m_watcher_map.get_watchers(watchers_ret);
 }
-Poseidon::Uuid Compass::add_watcher(const boost::shared_ptr<Common::InterserverConnection> &connection){
+Poseidon::Uuid Compass::add_watcher(const boost::shared_ptr<Common::Interserver_connection> &connection){
 	return m_watcher_map.add_watcher(connection);
 }
 bool Compass::remove_watcher(const Poseidon::Uuid &watcher_uuid){

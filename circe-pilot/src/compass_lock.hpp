@@ -12,28 +12,28 @@
 namespace Circe {
 namespace Pilot {
 
-class CompassLock : NONCOPYABLE {
+class Compass_lock : NONCOPYABLE {
 private:
 	// These members have to be `mutable` because of lazy deletion.
-	mutable boost::container::flat_multimap<Poseidon::Uuid, boost::weak_ptr<Common::InterserverConnection> > m_readers;
-	mutable boost::container::flat_multimap<Poseidon::Uuid, boost::weak_ptr<Common::InterserverConnection> > m_writers;
+	mutable boost::container::flat_multimap<Poseidon::Uuid, boost::weak_ptr<Common::Interserver_connection> > m_readers;
+	mutable boost::container::flat_multimap<Poseidon::Uuid, boost::weak_ptr<Common::Interserver_connection> > m_writers;
 
 public:
-	CompassLock();
-	~CompassLock();
+	Compass_lock();
+	~Compass_lock();
 
 public:
 	void collect_expired_connections() const NOEXCEPT;
 
 	bool is_locked_shared() const NOEXCEPT;
 	bool is_locked_shared_by(const Poseidon::Uuid &connection_uuid) NOEXCEPT;
-	bool try_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection);
-	bool release_lock_shared(const boost::shared_ptr<Common::InterserverConnection> &connection) NOEXCEPT;
+	bool try_lock_shared(const boost::shared_ptr<Common::Interserver_connection> &connection);
+	bool release_lock_shared(const boost::shared_ptr<Common::Interserver_connection> &connection) NOEXCEPT;
 
 	bool is_locked_exclusive() const NOEXCEPT;
 	bool is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid) NOEXCEPT;
-	bool try_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection);
-	bool release_lock_exclusive(const boost::shared_ptr<Common::InterserverConnection> &connection) NOEXCEPT;
+	bool try_lock_exclusive(const boost::shared_ptr<Common::Interserver_connection> &connection);
+	bool release_lock_exclusive(const boost::shared_ptr<Common::Interserver_connection> &connection) NOEXCEPT;
 };
 
 }

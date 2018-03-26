@@ -10,7 +10,7 @@ namespace Circe {
 namespace Protocol {
 namespace Auth {
 
-#define MESSAGE_NAME   HttpAuthenticationRequest
+#define MESSAGE_NAME   Http_authentication_request
 #define MESSAGE_ID     1801
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
@@ -28,7 +28,7 @@ namespace Auth {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   HttpAuthenticationResponse
+#define MESSAGE_NAME   Http_authentication_response
 #define MESSAGE_ID     1802
 #define MESSAGE_FIELDS \
 	FIELD_STRING       (auth_token)	\
@@ -40,7 +40,7 @@ namespace Auth {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketAuthenticationRequest
+#define MESSAGE_NAME   Web_socket_authentication_request
 #define MESSAGE_ID     1803
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
@@ -53,7 +53,7 @@ namespace Auth {
 	//
 #include <poseidon/cbpp/message_generator.hpp>
 
-#define MESSAGE_NAME   WebSocketAuthenticationResponse
+#define MESSAGE_NAME   Web_socket_authentication_response
 #define MESSAGE_ID     1804
 #define MESSAGE_FIELDS \
 	FIELD_LIST         (messages,	\

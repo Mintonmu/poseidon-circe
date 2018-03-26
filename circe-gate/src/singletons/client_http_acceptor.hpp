@@ -10,16 +10,16 @@
 namespace Circe {
 namespace Gate {
 
-class ClientHttpAcceptor {
+class Client_http_acceptor {
 private:
-	ClientHttpAcceptor();
+	Client_http_acceptor();
 
 public:
-	static boost::shared_ptr<ClientHttpSession> get_session(const Poseidon::Uuid &client_uuid);
-	static std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<ClientHttpSession> > &sessions_ret);
-	static boost::shared_ptr<ClientWebSocketSession> get_websocket_session(const Poseidon::Uuid &client_uuid);
-	static std::size_t get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<ClientWebSocketSession> > &sessions_ret);
-	static std::size_t clear(Poseidon::WebSocket::StatusCode status_code, const char *reason = "") NOEXCEPT;
+	static boost::shared_ptr<Client_http_session> get_session(const Poseidon::Uuid &client_uuid);
+	static std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<Client_http_session> > &sessions_ret);
+	static boost::shared_ptr<Client_web_socket_session> get_websocket_session(const Poseidon::Uuid &client_uuid);
+	static std::size_t get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<Client_web_socket_session> > &sessions_ret);
+	static std::size_t clear(Poseidon::Web_socket::Status_code status_code, const char *reason = "") NOEXCEPT;
 };
 
 }

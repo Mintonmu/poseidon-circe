@@ -7,11 +7,11 @@
 namespace Circe {
 namespace Common {
 
-class InterserverResponse;
-class InterserverConnection;
-class InterserverServletContainer;
-class InterserverConnector;
-class InterserverAcceptor;
+class Interserver_response;
+class Interserver_connection;
+class Interserver_servlet_container;
+class Interserver_connector;
+class Interserver_acceptor;
 
 }
 }

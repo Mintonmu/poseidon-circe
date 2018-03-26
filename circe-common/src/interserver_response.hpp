@@ -12,23 +12,23 @@
 namespace Circe {
 namespace Common {
 
-class InterserverConnection;
+class Interserver_connection;
 
-class InterserverResponse {
-	friend InterserverConnection;
+class Interserver_response {
+	friend Interserver_connection;
 
 private:
 	long m_err_code;
 	std::string m_err_msg;
 
 	boost::uint64_t m_message_id;
-	Poseidon::StreamBuffer m_payload;
+	Poseidon::Stream_buffer m_payload;
 
 public:
-	InterserverResponse();
-	InterserverResponse(long err_code, std::string err_msg = std::string());
-	InterserverResponse(const Poseidon::Cbpp::MessageBase &msg);
-	~InterserverResponse();
+	Interserver_response();
+	Interserver_response(long err_code, std::string err_msg = std::string());
+	Interserver_response(const Poseidon::Cbpp::Message_base &msg);
+	~Interserver_response();
 
 public:
 	long get_err_code() const NOEXCEPT {
@@ -53,17 +53,17 @@ public:
 	void set_message_id(boost::uint64_t message_id){
 		m_message_id = message_id;
 	}
-	const Poseidon::StreamBuffer &get_payload() const NOEXCEPT {
+	const Poseidon::Stream_buffer &get_payload() const NOEXCEPT {
 		return m_payload;
 	}
-	Poseidon::StreamBuffer &get_payload() NOEXCEPT {
+	Poseidon::Stream_buffer &get_payload() NOEXCEPT {
 		return m_payload;
 	}
-	void set_payload(Poseidon::StreamBuffer payload){
+	void set_payload(Poseidon::Stream_buffer payload){
 		m_payload = STD_MOVE(payload);
 	}
 
-	void swap(InterserverResponse &rhs) NOEXCEPT {
+	void swap(Interserver_response &rhs) NOEXCEPT {
 		using std::swap;
 		swap(m_err_code,   rhs.m_err_code);
 		swap(m_err_msg,    rhs.m_err_msg);
@@ -72,11 +72,11 @@ public:
 	}
 };
 
-inline void swap(InterserverResponse &lhs, InterserverResponse &rhs) NOEXCEPT {
+inline void swap(Interserver_response &lhs, Interserver_response &rhs) NOEXCEPT {
 	lhs.swap(rhs);
 }
 
-extern std::ostream &operator<<(std::ostream &os, const InterserverResponse &rhs);
+extern std::ostream &operator<<(std::ostream &os, const Interserver_response &rhs);
 
 }
 }

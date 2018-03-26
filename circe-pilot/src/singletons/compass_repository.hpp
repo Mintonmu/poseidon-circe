@@ -9,18 +9,18 @@
 namespace Circe {
 namespace Pilot {
 
-class CompassRepository {
+class Compass_repository {
 	friend Compass;
 
 private:
-	CompassRepository();
+	Compass_repository();
 
 private:
 	static bool update_compass_indices(const volatile Compass *ptr) NOEXCEPT;
 
 public:
-	static boost::shared_ptr<Compass> get_compass(const CompassKey &compass_key);
-	static boost::shared_ptr<Compass> open_compass(const CompassKey &compass_key);
+	static boost::shared_ptr<Compass> get_compass(const Compass_key &compass_key);
+	static boost::shared_ptr<Compass> open_compass(const Compass_key &compass_key);
 	static bool remove_compass(const volatile Compass *ptr) NOEXCEPT;
 };
 
