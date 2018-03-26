@@ -19,7 +19,7 @@ Compass::Compass(const Compass_key &compass_key)
 }
 Compass::Compass(const boost::shared_ptr<ORM_Compass> &dao)
 	: m_compass_key(Compass_key::from_string(dao->compass_key))
-	, m_dao(Poseidon::My_sql::begin_synchronization(dao, false)), m_lock(), m_watcher_map()
+	, m_dao(Poseidon::Mysql::begin_synchronization(dao, false)), m_lock(), m_watcher_map()
 {
 	LOG_CIRCE_DEBUG("Compass constructor (to open): compass_key = ", get_compass_key());
 }
@@ -63,7 +63,7 @@ void Compass::set_value(std::string value_new){
 
 	// Modify the value now.
 	if(!m_dao){
-		m_dao = Poseidon::My_sql::begin_synchronization(boost::make_shared<ORM_Compass>(m_compass_key.to_string(), 0, std::string(), 0), false);
+		m_dao = Poseidon::Mysql::begin_synchronization(boost::make_shared<ORM_Compass>(m_compass_key.to_string(), 0, std::string(), 0), false);
 	}
 	m_dao->value = STD_MOVE(value_new);
 	m_dao->version = m_dao->version + 1;
