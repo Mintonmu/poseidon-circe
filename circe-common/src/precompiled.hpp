@@ -25,12 +25,6 @@
 #include <poseidon/mutex.hpp>
 #include <poseidon/recursive_mutex.hpp>
 
-#ifdef POSEIDON_CXX11
-#  include <cstdint>
-#  include <array>
-#  include <type_traits>
-#endif
-
 #define LOG_CIRCE_EXPLICIT(level_, ...)      LOG_EXPLICIT(0x4000 | (level_), __VA_ARGS__)
 
 #define LOG_CIRCE_FATAL(...)        LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_fatal,   __VA_ARGS__)
