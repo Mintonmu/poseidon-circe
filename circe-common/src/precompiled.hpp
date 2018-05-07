@@ -34,4 +34,8 @@
 #define LOG_CIRCE_DEBUG(...)        LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_debug,   __VA_ARGS__)
 #define LOG_CIRCE_TRACE(...)        LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_trace,   __VA_ARGS__)
 
+namespace Circe {
+	//
+}
+
 #endif
