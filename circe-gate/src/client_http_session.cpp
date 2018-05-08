@@ -140,7 +140,7 @@ try {
 	DEBUG_THROW_UNLESS(!auth_resp.auth_token.empty(), Poseidon::Http::Exception, boost::numeric_cast<Poseidon::Http::Status_code>(auth_resp.status_code), Protocol::copy_key_values(STD_MOVE_IDN(auth_resp.headers)));
 	LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 
-	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("Connection has been shut down"));
+	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::Rcnts::view("Connection has been shut down"));
 	LOG_CIRCE_TRACE("Got authentication token: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 	m_auth_token = STD_MOVE_IDN(auth_resp.auth_token);
 } catch(...){
@@ -152,7 +152,7 @@ Poseidon::Optional_map Client_http_session::make_retry_after_headers(boost::uint
 	PROFILE_ME;
 
 	Poseidon::Optional_map headers;
-	headers.set(Poseidon::sslit("Retry-After"), boost::lexical_cast<std::string>(time_remaining / 1000));
+	headers.set(Poseidon::Rcnts::view("Retry-After"), boost::lexical_cast<std::string>(time_remaining / 1000));
 	return headers;
 }
 
@@ -286,16 +286,16 @@ void Client_http_session::on_sync_request(Poseidon::Http::Request_headers req_he
 	const AUTO(desc, Poseidon::Http::get_status_code_desc(resp_headers.status_code));
 	resp_headers.reason = desc.desc_short;
 	const AUTO(keep_alive, Poseidon::Http::is_keep_alive_enabled(req_headers) && (resp_headers.status_code / 100 <= 3));
-	resp_headers.headers.set(Poseidon::sslit("Connection"), keep_alive ? "Keep-Alive" : "Close");
-	resp_headers.headers.set(Poseidon::sslit("Access-Control-Allow-Origin"), "*");
-	resp_headers.headers.set(Poseidon::sslit("Access-Control-Allow-Headers"), "Authorization, Content-Type");
+	resp_headers.headers.set(Poseidon::Rcnts::view("Connection"), keep_alive ? "Keep-Alive" : "Close");
+	resp_headers.headers.set(Poseidon::Rcnts::view("Access-Control-Allow-Origin"), "*");
+	resp_headers.headers.set(Poseidon::Rcnts::view("Access-Control-Allow-Headers"), "Authorization, Content-Type");
 
 	// Add the type of contents if the response entity is not empty and no explicit type is given.
 	const std::size_t size_original = resp_entity.size();
 	if((size_original != 0) && !resp_headers.headers.has("Content-Type")){
 		const char *const content_type = Poseidon::Magic_daemon::guess_mime_type(resp_entity.squash(), resp_entity.size());
 		LOG_CIRCE_TRACE("Guessed Content-Type: ", content_type);
-		resp_headers.headers.set(Poseidon::sslit("Content-Type"), content_type);
+		resp_headers.headers.set(Poseidon::Rcnts::view("Content-Type"), content_type);
 	}
 
 	// Select an encoding for compression if the response entity is not empty and no explicit encoding is given.
@@ -321,7 +321,7 @@ void Client_http_session::on_sync_request(Poseidon::Http::Request_headers req_he
 		resp_entity = deflator.finalize();
 		const std::size_t size_deflated = resp_entity.size();
 		LOG_CIRCE_TRACE("GZIP result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0l / size_original, "%)");
-		resp_headers.headers.set(Poseidon::sslit("Content-Encoding"), "gzip");
+		resp_headers.headers.set(Poseidon::Rcnts::view("Content-Encoding"), "gzip");
 		break; }
 	case Poseidon::Http::content_encoding_deflate: {
 		const AUTO(compression_level, get_config<int>("client_http_compression_level", 8));
@@ -331,7 +331,7 @@ void Client_http_session::on_sync_request(Poseidon::Http::Request_headers req_he
 		resp_entity = deflator.finalize();
 		const std::size_t size_deflated = resp_entity.size();
 		LOG_CIRCE_TRACE("DEFLATE result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), size_deflated * 100.0l / size_original, "%)");
-		resp_headers.headers.set(Poseidon::sslit("Content-Encoding"), "deflate");
+		resp_headers.headers.set(Poseidon::Rcnts::view("Content-Encoding"), "deflate");
 		break; }
 	default:
 		break;

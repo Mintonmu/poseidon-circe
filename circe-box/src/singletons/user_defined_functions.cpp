@@ -42,7 +42,7 @@ void User_defined_functions::handle_http_request(
 	}
 
 	resp_status_code = 200;
-	resp_headers.set(Poseidon::sslit("Content-Type"), "text/html");
+	resp_headers.set(Poseidon::Rcnts::view("Content-Type"), "text/html");
 	resp_entity.put("<html>");
 	resp_entity.put("  <head>");
 	resp_entity.put("    <title>Hello World!</title>");

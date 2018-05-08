@@ -41,7 +41,7 @@ namespace {
 		const AUTO(ip_container, g_weak_ip_container.lock());
 		if(!ip_container){
 			LOG_CIRCE_WARNING("Ip_ban_list has not been initialized.");
-			DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Ip_ban_list has not been initialized"));
+			DEBUG_THROW(Poseidon::Exception, Poseidon::Rcnts::view("Ip_ban_list has not been initialized"));
 		}
 		// Erase expired elements.
 		const AUTO(now, Poseidon::get_fast_mono_clock());
@@ -64,7 +64,7 @@ namespace {
 			const AUTO(expiry_time, Poseidon::saturated_add(now, ban_expiry_duration));
 			ip_container->set_key<0, 1>(it, expiry_time);
 			it->ban_expiry_time = expiry_time;
-			DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Excess flood"));
+			DEBUG_THROW(Poseidon::Exception, Poseidon::Rcnts::view("Excess flood"));
 		}
 	}
 }
@@ -100,7 +100,7 @@ void Ip_ban_list::set_ban_time_remaining(const char *ip, boost::uint64_t time_re
 	const AUTO(ip_container, g_weak_ip_container.lock());
 	if(!ip_container){
 		LOG_CIRCE_WARNING("Ip_ban_list has not been initialized.");
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Ip_ban_list has not been initialized"));
+		DEBUG_THROW(Poseidon::Exception, Poseidon::Rcnts::view("Ip_ban_list has not been initialized"));
 	}
 	// Find the element for this ip.
 	const Poseidon::Ip_port key(ip, 0);

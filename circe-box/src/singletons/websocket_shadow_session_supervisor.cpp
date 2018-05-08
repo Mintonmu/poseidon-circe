@@ -53,7 +53,7 @@ namespace {
 			LOG_CIRCE_DEBUG("Checking gate: foyer_uuid = ", foyer_uuid, ", gate_uuid = ", gate_uuid);
 			try {
 				const AUTO(foyer_conn, Box_acceptor::get_session(foyer_uuid));
-				DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Exception, Poseidon::sslit("Connection to foyer server was lost"));
+				DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Exception, Poseidon::Rcnts::view("Connection to foyer server was lost"));
 				{
 					Protocol::Foyer::Check_gate_request foyer_req;
 					foyer_req.gate_uuid = gate_uuid;
@@ -150,11 +150,11 @@ void Web_socket_shadow_session_supervisor::attach_session(const boost::shared_pt
 	const AUTO(session_container, g_weak_session_container.lock());
 	if(!session_container){
 		LOG_CIRCE_WARNING("Web_socket_shadow_session_supervisor has not been initialized.");
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Web_socket_shadow_session_supervisor has not been initialized"));
+		DEBUG_THROW(Poseidon::Exception, Poseidon::Rcnts::view("Web_socket_shadow_session_supervisor has not been initialized"));
 	}
 	Session_element elem = { session, session->get_client_uuid(), std::make_pair(session->get_foyer_uuid(), session->get_gate_uuid()) };
 	const AUTO(pair, session_container->insert(STD_MOVE(elem)));
-	DEBUG_THROW_UNLESS(pair.second, Poseidon::Exception, Poseidon::sslit("Duplicate Web_socket_shadow_session UUID"));
+	DEBUG_THROW_UNLESS(pair.second, Poseidon::Exception, Poseidon::Rcnts::view("Duplicate Web_socket_shadow_session UUID"));
 }
 boost::shared_ptr<Web_socket_shadow_session> Web_socket_shadow_session_supervisor::detach_session(const Poseidon::Uuid &client_uuid) NOEXCEPT {
 	PROFILE_ME;

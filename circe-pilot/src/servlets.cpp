@@ -44,7 +44,7 @@ namespace {
 			break;
 		default:
 			LOG_CIRCE_ERROR("Unknown lock_disposition: ", lock_disposition);
-			DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Unknown lock_disposition"));
+			DEBUG_THROW(Poseidon::Exception, Poseidon::Rcnts::view("Unknown lock_disposition"));
 		}
 		if(shared_lock_disposition < 0){
 			DEBUG_THROW_ASSERT(compass->is_locked_shared_by(connection->get_connection_uuid()));

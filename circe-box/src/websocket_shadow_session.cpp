@@ -83,7 +83,7 @@ protected:
 
 		try {
 			const AUTO(foyer_conn, Box_acceptor::get_session(session->m_foyer_uuid));
-			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Web_socket::Exception, Poseidon::Web_socket::status_going_away, Poseidon::sslit("Connection to foyer server was lost"));
+			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Web_socket::Exception, Poseidon::Web_socket::status_going_away, Poseidon::Rcnts::view("Connection to foyer server was lost"));
 
 			Poseidon::Mutex::Unique_lock lock(session->m_delivery_mutex);
 			DEBUG_THROW_ASSERT(session->m_delivery_job_active);

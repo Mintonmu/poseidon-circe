@@ -125,7 +125,7 @@ boost::shared_ptr<Compass> Compass_repository::open_compass(const Compass_key &c
 	const AUTO(compass_container, g_weak_compass_container.lock());
 	if(!compass_container){
 		LOG_CIRCE_WARNING("Compass_repository has not been initialized.");
-		DEBUG_THROW(Poseidon::Exception, Poseidon::sslit("Compass_repository has not been initialized"));
+		DEBUG_THROW(Poseidon::Exception, Poseidon::Rcnts::view("Compass_repository has not been initialized"));
 	}
 	AUTO(it, compass_container->find<1>(compass_key));
 	if(it == compass_container->end<1>()){

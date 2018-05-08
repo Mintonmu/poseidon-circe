@@ -56,7 +56,7 @@ boost::uint64_t Compass::get_version() const {
 }
 void Compass::set_value(std::string value_new){
 	// Mandate exclusive access.
-	DEBUG_THROW_UNLESS(m_lock.is_locked_exclusive(), Poseidon::Exception, Poseidon::sslit("Exclusive access is required to alter the value of a compass"));
+	DEBUG_THROW_UNLESS(m_lock.is_locked_exclusive(), Poseidon::Exception, Poseidon::Rcnts::view("Exclusive access is required to alter the value of a compass"));
 	// Collect watchers before modifying the value.
 	boost::container::vector<std::pair<Poseidon::Uuid, boost::shared_ptr<Common::Interserver_connection> > > watchers;
 	m_watcher_map.get_watchers(watchers);

@@ -25,8 +25,8 @@ Compass_key Compass_key::from_string(const std::string &str){
 	PROFILE_ME;
 
 	boost::array<char, 40> chars;
-	DEBUG_THROW_UNLESS(str.copy(chars.data(), chars.size()) == chars.size(), Poseidon::Exception, Poseidon::sslit("Unexpected length of Compass_key string"));
-	DEBUG_THROW_UNLESS(std::find_if(chars.begin(), chars.end(), &is_character_invalid) == chars.end(), Poseidon::Exception, Poseidon::sslit("Invalid character in Compass_key"));
+	DEBUG_THROW_UNLESS(str.copy(chars.data(), chars.size()) == chars.size(), Poseidon::Exception, Poseidon::Rcnts::view("Unexpected length of Compass_key string"));
+	DEBUG_THROW_UNLESS(std::find_if(chars.begin(), chars.end(), &is_character_invalid) == chars.end(), Poseidon::Exception, Poseidon::Rcnts::view("Invalid character in Compass_key"));
 	return Compass_key(chars);
 }
 Compass_key Compass_key::from_hash_of(const void *data, std::size_t size){

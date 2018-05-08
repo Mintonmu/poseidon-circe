@@ -40,7 +40,7 @@ protected:
 	// Poseidon::Cbpp::Low_level_client
 	void on_low_level_data_message_header(boost::uint16_t message_id, boost::uint64_t payload_size) FINAL {
 		const std::size_t max_message_size = Interserver_connection::get_max_message_size();
-		CIRCE_PROTOCOL_THROW_UNLESS(payload_size <= max_message_size, Protocol::error_request_too_large, Poseidon::sslit("Message is too large"));
+		CIRCE_PROTOCOL_THROW_UNLESS(payload_size <= max_message_size, Protocol::error_request_too_large, Poseidon::Rcnts::view("Message is too large"));
 		m_magic_number = message_id;
 		m_deflated_payload.clear();
 	}
@@ -89,11 +89,11 @@ protected:
 		PROFILE_ME;
 
 		const AUTO(connector, m_weak_connector.lock());
-		CIRCE_PROTOCOL_THROW_UNLESS(connector, Protocol::error_gone_away, Poseidon::sslit("The server has been shut down"));
+		CIRCE_PROTOCOL_THROW_UNLESS(connector, Protocol::error_gone_away, Poseidon::Rcnts::view("The server has been shut down"));
 
 		LOG_CIRCE_TRACE("Dispatching: typeid(*this).name() = ", typeid(*this).name(), ", message_id = ", message_id);
 		const AUTO(servlet, connector->sync_get_servlet(message_id));
-		CIRCE_PROTOCOL_THROW_UNLESS(servlet, Protocol::error_not_found, Poseidon::sslit("message_id not handled"));
+		CIRCE_PROTOCOL_THROW_UNLESS(servlet, Protocol::error_not_found, Poseidon::Rcnts::view("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<Interserver_client>(), message_id, STD_MOVE(payload));
 	}
 };
@@ -141,8 +141,8 @@ void Interserver_connector::timer_proc(const boost::weak_ptr<Interserver_connect
 Interserver_connector::Interserver_connector(boost::container::vector<std::string> hosts, boost::uint16_t port, std::string application_key)
 	: m_hosts(STD_MOVE(hosts)), m_port(port), m_application_key(STD_MOVE(application_key))
 {
-	DEBUG_THROW_UNLESS(!m_hosts.empty(), Poseidon::Exception, Poseidon::sslit("No host to connect to"));
-	DEBUG_THROW_UNLESS(m_port != 0, Poseidon::Exception, Poseidon::sslit("Port number is zero"));
+	DEBUG_THROW_UNLESS(!m_hosts.empty(), Poseidon::Exception, Poseidon::Rcnts::view("No host to connect to"));
+	DEBUG_THROW_UNLESS(m_port != 0, Poseidon::Exception, Poseidon::Rcnts::view("Port number is zero"));
 	LOG_CIRCE_INFO("Interserver_connector constructor: hosts:port = ", Poseidon::implode(',', m_hosts), ':', m_port);
 }
 Interserver_connector::~Interserver_connector(){
@@ -154,7 +154,7 @@ void Interserver_connector::activate(){
 	PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!m_timer, Poseidon::Exception, Poseidon::sslit("Interserver_connector is already activated"));
+	DEBUG_THROW_UNLESS(!m_timer, Poseidon::Exception, Poseidon::Rcnts::view("Interserver_connector is already activated"));
 	const AUTO(timer, Poseidon::Timer_daemon::register_timer(0, 5000, boost::bind(&timer_proc, virtual_weak_from_this<Interserver_connector>())));
 	m_timer = timer;
 }

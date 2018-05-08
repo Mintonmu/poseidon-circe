@@ -312,7 +312,7 @@ void Interserver_connection::server_accept_hello(const Poseidon::Uuid &connectio
 	LOG_CIRCE_INFO("Accepted client HELLO from ", get_remote_info(), " with options ", options_resp);
 
 	const Poseidon::Recursive_mutex::Unique_lock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("server_accept_hello() shall be called exactly once by the server and must not be called by the client"));
+	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::Rcnts::view("server_accept_hello() shall be called exactly once by the server and must not be called by the client"));
 	const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, connection_uuid, timestamp));
 	{
 		Server_hello msg;
@@ -331,7 +331,7 @@ void Interserver_connection::client_accept_hello(Poseidon::Optional_map options_
 	LOG_CIRCE_INFO("Accepted server HELLO from ", get_remote_info(), " with options ", options_resp);
 
 	const Poseidon::Recursive_mutex::Unique_lock lock(m_mutex);
-	DEBUG_THROW_UNLESS(m_connection_uuid, Poseidon::Exception, Poseidon::sslit("client_accept_hello() shall be called exactly once by the client and must not be called by the server"));
+	DEBUG_THROW_UNLESS(m_connection_uuid, Poseidon::Exception, Poseidon::Rcnts::view("client_accept_hello() shall be called exactly once by the client and must not be called by the server"));
 	m_options         = STD_MOVE(options_resp);
 	layer7_post_set_connection_uuid();
 }
@@ -339,7 +339,7 @@ void Interserver_connection::send_response(boost::uint64_t serial, Interserver_r
 	PROFILE_ME;
 
 	const boost::uint64_t message_id = resp.get_message_id();
-	DEBUG_THROW_UNLESS((message_id == 0) || is_message_id_valid(resp.get_message_id()), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
+	DEBUG_THROW_UNLESS((message_id == 0) || is_message_id_valid(resp.get_message_id()), Poseidon::Exception, Poseidon::Rcnts::view("message_id out of range"));
 
 	boost::uint16_t magic_number = boost::numeric_cast<boost::uint16_t>(message_id);
 	Poseidon::add_flags(magic_number, magic_flag_is_response);
@@ -389,7 +389,7 @@ try {
 		Client_hello msg(STD_MOVE(encoded_payload));
 		LOG_CIRCE_TRACE("Received client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, Poseidon::Uuid(msg.connection_uuid), msg.timestamp));
-		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_req == checksum_req, Protocol::error_authorization_failure, Poseidon::sslit("Request checksum failed verification"));
+		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_req == checksum_req, Protocol::error_authorization_failure, Poseidon::Rcnts::view("Request checksum failed verification"));
 		server_accept_hello(Poseidon::Uuid(msg.connection_uuid), msg.timestamp, Protocol::copy_key_values(STD_MOVE_IDN(msg.options_req)));
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		const AUTO(checksum_seedx, calculate_checksum(m_application_key, SALT_NORMAL_DATA, m_connection_uuid, m_timestamp));
@@ -401,12 +401,12 @@ try {
 		Server_hello msg(STD_MOVE(encoded_payload));
 		LOG_CIRCE_TRACE("Received server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, m_connection_uuid, m_timestamp));
-		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_resp == checksum_resp, Protocol::error_authorization_failure, Poseidon::sslit("Response checksum failed verification"));
+		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_resp == checksum_resp, Protocol::error_authorization_failure, Poseidon::Rcnts::view("Response checksum failed verification"));
 		client_accept_hello(Protocol::copy_key_values(STD_MOVE_IDN(msg.options_resp)));
 		Poseidon::atomic_store(m_authenticated, true, Poseidon::memory_order_release);
 		return; }
 	}
-	CIRCE_PROTOCOL_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, magic_flag_predefined | magic_flag_reserved), Protocol::error_invalid_argument, Poseidon::sslit("Reserved bits set"));
+	CIRCE_PROTOCOL_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, magic_flag_predefined | magic_flag_reserved), Protocol::error_invalid_argument, Poseidon::Rcnts::view("Reserved bits set"));
 
 	const std::size_t size_deflated = encoded_payload.size();
 	Poseidon::Stream_buffer magic_payload = require_message_filter()->decode(STD_MOVE(encoded_payload));
@@ -480,7 +480,7 @@ try {
 		layer5_send_data(magic_number, STD_MOVE(magic_payload));
 		return; }
 	}
-	CIRCE_PROTOCOL_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, magic_flag_predefined | magic_flag_reserved), Protocol::error_invalid_argument, Poseidon::sslit("Reserved bits set"));
+	CIRCE_PROTOCOL_THROW_UNLESS(Poseidon::has_none_flags_of(magic_number, magic_flag_predefined | magic_flag_reserved), Protocol::error_invalid_argument, Poseidon::Rcnts::view("Reserved bits set"));
 
 	const std::size_t size_original = magic_payload.size();
 	Poseidon::Stream_buffer encoded_payload = require_message_filter()->encode(STD_MOVE(magic_payload));
@@ -549,7 +549,7 @@ void Interserver_connection::layer7_client_say_hello(Poseidon::Optional_map opti
 	LOG_CIRCE_INFO("Sending client HELLO to ", get_remote_info(), " with options ", options_req);
 
 	const Poseidon::Recursive_mutex::Unique_lock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::sslit("layer7_client_say_hello() shall be called exactly once by the client and must not be called by the server"));
+	DEBUG_THROW_UNLESS(!m_connection_uuid, Poseidon::Exception, Poseidon::Rcnts::view("layer7_client_say_hello() shall be called exactly once by the client and must not be called by the server"));
 	const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, connection_uuid, timestamp));
 	{
 		Client_hello msg;
@@ -568,11 +568,11 @@ bool Interserver_connection::has_authenticated() const {
 	return Poseidon::atomic_load(m_authenticated, Poseidon::memory_order_consume);
 }
 const Poseidon::Uuid &Interserver_connection::get_connection_uuid() const {
-	DEBUG_THROW_UNLESS(is_connection_uuid_set(), Poseidon::Exception, Poseidon::sslit("Interserver_connection has not been fully established"));
+	DEBUG_THROW_UNLESS(is_connection_uuid_set(), Poseidon::Exception, Poseidon::Rcnts::view("Interserver_connection has not been fully established"));
 	return m_connection_uuid;
 }
 const std::string &Interserver_connection::get_option(const char *key) const {
-	DEBUG_THROW_UNLESS(is_connection_uuid_set(), Poseidon::Exception, Poseidon::sslit("Interserver_connection has not been fully established"));
+	DEBUG_THROW_UNLESS(is_connection_uuid_set(), Poseidon::Exception, Poseidon::Rcnts::view("Interserver_connection has not been fully established"));
 	return m_options.get(key);
 }
 
@@ -581,10 +581,10 @@ boost::shared_ptr<const Promised_response> Interserver_connection::send_request(
 
 	LOG_CIRCE_TRACE("Sending user-defined request: remote = ", get_remote_info(), ", msg = ", msg);
 	const boost::uint64_t message_id = msg.get_id();
-	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
+	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::Rcnts::view("message_id out of range"));
 
 	const Poseidon::Recursive_mutex::Unique_lock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("Interserver_connection was lost"));
+	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::Rcnts::view("Interserver_connection was lost"));
 	const boost::uint64_t serial = ++m_next_serial;
 	AUTO(promise, boost::make_shared<Promised_response>());
 	const AUTO(it, m_weak_promises.emplace(serial, promise));
@@ -610,10 +610,10 @@ void Interserver_connection::send_notification(const Poseidon::Cbpp::Message_bas
 
 	LOG_CIRCE_TRACE("Sending user-defined notification: remote = ", get_remote_info(), ", msg = ", msg);
 	const boost::uint64_t message_id = msg.get_id();
-	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::sslit("message_id out of range"));
+	DEBUG_THROW_UNLESS(is_message_id_valid(message_id), Poseidon::Exception, Poseidon::Rcnts::view("message_id out of range"));
 
 	const Poseidon::Recursive_mutex::Unique_lock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("Interserver_connection was lost"));
+	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::Rcnts::view("Interserver_connection was lost"));
 	boost::uint16_t magic_number = boost::numeric_cast<boost::uint16_t>(message_id);
 	launch_deflate_and_send(magic_number, msg);
 }
@@ -628,9 +628,9 @@ void wait_for_response(Poseidon::Cbpp::Message_base &msg, const boost::shared_pt
 	resp.swap(promise->get());
 	LOG_CIRCE_TRACE("Response: ", resp);
 
-	CIRCE_PROTOCOL_THROW_UNLESS(resp.get_err_code() == 0, resp.get_err_code(), Poseidon::Shared_nts(resp.get_err_msg()));
-	DEBUG_THROW_UNLESS(resp.get_message_id() != 0, Poseidon::Exception, Poseidon::sslit("No message payload but status code returned"));
-	DEBUG_THROW_UNLESS(resp.get_message_id() == msg.get_id(), Poseidon::Exception, Poseidon::sslit("Unexpected response message ID"));
+	CIRCE_PROTOCOL_THROW_UNLESS(resp.get_err_code() == 0, resp.get_err_code(), Poseidon::Rcnts(resp.get_err_msg()));
+	DEBUG_THROW_UNLESS(resp.get_message_id() != 0, Poseidon::Exception, Poseidon::Rcnts::view("No message payload but status code returned"));
+	DEBUG_THROW_UNLESS(resp.get_message_id() == msg.get_id(), Poseidon::Exception, Poseidon::Rcnts::view("Unexpected response message ID"));
 	msg.deserialize(resp.get_payload());
 	if(!resp.get_payload().empty()){
 		LOG_CIRCE_WARNING("Ignoring ", resp.get_payload().size(), " redundant byte(s) after message ", msg);

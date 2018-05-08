@@ -35,14 +35,14 @@ void copy_key_values(boost::container::vector<DestinationT> &dst, Poseidon::Opti
 template<typename SourceT>
 void copy_key_values(Poseidon::Optional_map &dst, const boost::container::vector<SourceT> &src){
 	for(AUTO(it, src.begin()); it != src.end(); ++it){
-		dst.append(Poseidon::Shared_nts(it->key), it->value);
+		dst.append(Poseidon::Rcnts(it->key), it->value);
 	}
 }
 #ifdef POSEIDON_CXX11
 template<typename SourceT>
 void copy_key_values(Poseidon::Optional_map &dst, boost::container::vector<SourceT> &&src){
 	for(AUTO(it, src.begin()); it != src.end(); ++it){
-		dst.append(Poseidon::Shared_nts(it->key), STD_MOVE(it->value));
+		dst.append(Poseidon::Rcnts(it->key), STD_MOVE(it->value));
 	}
 }
 #endif

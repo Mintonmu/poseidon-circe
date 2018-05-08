@@ -39,7 +39,7 @@ protected:
 	// Poseidon::Cbpp::Low_level_session
 	void on_low_level_data_message_header(boost::uint16_t message_id, boost::uint64_t payload_size) FINAL {
 		const std::size_t max_message_size = Interserver_connection::get_max_message_size();
-		CIRCE_PROTOCOL_THROW_UNLESS(payload_size <= max_message_size, Protocol::error_request_too_large, Poseidon::sslit("Message is too large"));
+		CIRCE_PROTOCOL_THROW_UNLESS(payload_size <= max_message_size, Protocol::error_request_too_large, Poseidon::Rcnts::view("Message is too large"));
 		m_magic_number = message_id;
 		m_deflated_payload.clear();
 	}
@@ -86,7 +86,7 @@ protected:
 		PROFILE_ME;
 
 		const AUTO(acceptor, m_weak_acceptor.lock());
-		CIRCE_PROTOCOL_THROW_UNLESS(acceptor, Protocol::error_gone_away, Poseidon::sslit("The server has been shut down"));
+		CIRCE_PROTOCOL_THROW_UNLESS(acceptor, Protocol::error_gone_away, Poseidon::Rcnts::view("The server has been shut down"));
 
 		const Poseidon::Mutex::Unique_lock lock(acceptor->m_mutex);
 		bool erase_it;
@@ -94,17 +94,17 @@ protected:
 			erase_it = it->second.expired();
 		}
 		const AUTO(pair, acceptor->m_weak_sessions.emplace(get_connection_uuid(), virtual_shared_from_this<Interserver_session>()));
-		DEBUG_THROW_UNLESS(pair.second, Poseidon::Exception, Poseidon::sslit("Duplicate Interserver_session UUID"));
+		DEBUG_THROW_UNLESS(pair.second, Poseidon::Exception, Poseidon::Rcnts::view("Duplicate Interserver_session UUID"));
 	}
 	Interserver_response layer7_on_sync_message(boost::uint16_t message_id, Poseidon::Stream_buffer payload) FINAL {
 		PROFILE_ME;
 
 		const AUTO(acceptor, m_weak_acceptor.lock());
-		CIRCE_PROTOCOL_THROW_UNLESS(acceptor, Protocol::error_gone_away, Poseidon::sslit("The server has been shut down"));
+		CIRCE_PROTOCOL_THROW_UNLESS(acceptor, Protocol::error_gone_away, Poseidon::Rcnts::view("The server has been shut down"));
 
 		LOG_CIRCE_TRACE("Dispatching: typeid(*this).name() = ", typeid(*this).name(), ", message_id = ", message_id);
 		const AUTO(servlet, acceptor->sync_get_servlet(message_id));
-		CIRCE_PROTOCOL_THROW_UNLESS(servlet, Protocol::error_not_found, Poseidon::sslit("message_id not handled"));
+		CIRCE_PROTOCOL_THROW_UNLESS(servlet, Protocol::error_not_found, Poseidon::Rcnts::view("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<Interserver_session>(), message_id, STD_MOVE(payload));
 	}
 };
@@ -131,7 +131,7 @@ protected:
 		PROFILE_ME;
 
 		const AUTO(acceptor, m_weak_acceptor.lock());
-		DEBUG_THROW_UNLESS(acceptor, Poseidon::Exception, Poseidon::sslit("The server has been shut down"));
+		DEBUG_THROW_UNLESS(acceptor, Poseidon::Exception, Poseidon::Rcnts::view("The server has been shut down"));
 
 		const Poseidon::Mutex::Unique_lock lock(acceptor->m_mutex);
 		AUTO(session, boost::make_shared<Interserver_session>(STD_MOVE(socket), acceptor));
@@ -143,8 +143,8 @@ protected:
 Interserver_acceptor::Interserver_acceptor(std::string bind, boost::uint16_t port, std::string application_key)
 	: m_bind(STD_MOVE(bind)), m_port(port), m_application_key(STD_MOVE(application_key))
 {
-	DEBUG_THROW_UNLESS(!m_bind.empty(), Poseidon::Exception, Poseidon::sslit("No bind address specified"));
-	DEBUG_THROW_UNLESS(m_port != 0, Poseidon::Exception, Poseidon::sslit("Port number is zero"));
+	DEBUG_THROW_UNLESS(!m_bind.empty(), Poseidon::Exception, Poseidon::Rcnts::view("No bind address specified"));
+	DEBUG_THROW_UNLESS(m_port != 0, Poseidon::Exception, Poseidon::Rcnts::view("Port number is zero"));
 	LOG_CIRCE_INFO("Interserver_acceptor constructor: bind:port = ", m_bind, ':', m_port);
 }
 Interserver_acceptor::~Interserver_acceptor(){
@@ -156,7 +156,7 @@ void Interserver_acceptor::activate(){
 	PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!m_server, Poseidon::Exception, Poseidon::sslit("Interserver_acceptor is already activated"));
+	DEBUG_THROW_UNLESS(!m_server, Poseidon::Exception, Poseidon::Rcnts::view("Interserver_acceptor is already activated"));
 	const AUTO(server, boost::make_shared<Interserver_server>(m_bind.c_str(), m_port, virtual_shared_from_this<Interserver_acceptor>()));
 	m_server = server;
 	Poseidon::Epoll_daemon::add_socket(server, false);

@@ -46,7 +46,7 @@ protected:
 
 		try {
 			const AUTO(foyer_conn, ws_session->m_weak_foyer_conn.lock());
-			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Web_socket::Exception, Poseidon::Web_socket::status_going_away, Poseidon::sslit("Connection to foyer server was lost"));
+			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Web_socket::Exception, Poseidon::Web_socket::status_going_away, Poseidon::Rcnts::view("Connection to foyer server was lost"));
 
 			Poseidon::Mutex::Unique_lock lock(ws_session->m_delivery_mutex);
 			DEBUG_THROW_ASSERT(ws_session->m_delivery_job_active);
@@ -123,11 +123,11 @@ try {
 	PROFILE_ME;
 
 	const AUTO(websocket_enabled, get_config<bool>("client_websocket_enabled", false));
-	DEBUG_THROW_UNLESS(websocket_enabled, Poseidon::Web_socket::Exception, Poseidon::Web_socket::status_going_away, Poseidon::sslit("Web_socket is not enabled"));
+	DEBUG_THROW_UNLESS(websocket_enabled, Poseidon::Web_socket::Exception, Poseidon::Web_socket::status_going_away, Poseidon::Rcnts::view("Web_socket is not enabled"));
 
 	boost::container::vector<boost::shared_ptr<Common::Interserver_connection> > servers_avail;
 	Auth_connector::get_all_clients(servers_avail);
-	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Web_socket::Exception, Poseidon::Web_socket::status_going_away, Poseidon::sslit("No auth server is available"));
+	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Web_socket::Exception, Poseidon::Web_socket::status_going_away, Poseidon::Rcnts::view("No auth server is available"));
 	const AUTO(auth_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
 	DEBUG_THROW_ASSERT(auth_conn);
 
@@ -143,12 +143,12 @@ try {
 	for(AUTO(qmit, auth_resp.messages.begin()); qmit != auth_resp.messages.end(); ++qmit){
 		send(boost::numeric_cast<Poseidon::Web_socket::Op_code>(qmit->opcode), STD_MOVE(qmit->payload));
 	}
-	DEBUG_THROW_UNLESS(!auth_resp.auth_token.empty(), Poseidon::Web_socket::Exception, boost::numeric_cast<Poseidon::Web_socket::Status_code>(auth_resp.status_code), Poseidon::Shared_nts(auth_resp.reason));
+	DEBUG_THROW_UNLESS(!auth_resp.auth_token.empty(), Poseidon::Web_socket::Exception, boost::numeric_cast<Poseidon::Web_socket::Status_code>(auth_resp.status_code), Poseidon::Rcnts(auth_resp.reason));
 	LOG_CIRCE_DEBUG("Auth server has allowed Web_socket client: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 
 	servers_avail.clear();
 	Foyer_connector::get_all_clients(servers_avail);
-	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Web_socket::Exception, Poseidon::Web_socket::status_going_away, Poseidon::sslit("No foyer server is available"));
+	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Web_socket::Exception, Poseidon::Web_socket::status_going_away, Poseidon::Rcnts::view("No foyer server is available"));
 	const AUTO(foyer_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
 	DEBUG_THROW_ASSERT(foyer_conn);
 
@@ -165,7 +165,7 @@ try {
 	m_weak_foyer_conn = foyer_conn;
 	m_box_uuid        = Poseidon::Uuid(foyer_resp.box_uuid);
 
-	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::sslit("Connection has been shut down"));
+	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::Rcnts::view("Connection has been shut down"));
 	LOG_CIRCE_DEBUG("Established Web_socket_connection: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 	m_auth_token = STD_MOVE_IDN(auth_resp.auth_token);
 } catch(...){
@@ -201,7 +201,7 @@ void Client_web_socket_session::on_sync_data_message(Poseidon::Web_socket::Op_co
 	}
 	// Enqueue the message if the new fiber has been created successfully.
 	const AUTO(max_requests_pending, get_config<boost::uint64_t>("client_websocket_max_requests_pending", 100));
-	DEBUG_THROW_UNLESS(m_messages_pending.size() < max_requests_pending, Poseidon::Web_socket::Exception, Poseidon::Web_socket::status_going_away, Poseidon::sslit("Max number of requests pending exceeded"));
+	DEBUG_THROW_UNLESS(m_messages_pending.size() < max_requests_pending, Poseidon::Web_socket::Exception, Poseidon::Web_socket::status_going_away, Poseidon::Rcnts::view("Max number of requests pending exceeded"));
 	LOG_CIRCE_TRACE("Enqueueing message: opcode = ", opcode, ", payload.size() = ", payload.size());
 	m_messages_pending.emplace_back(opcode, STD_MOVE(payload));
 }
