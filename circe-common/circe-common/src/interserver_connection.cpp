@@ -47,7 +47,7 @@ enum {
 	  FIELD_STRING       (value)	\
 	)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Server_hello
 #define MESSAGE_ID     magic_flag_predefined + 2
@@ -58,14 +58,14 @@ enum {
 	  FIELD_STRING       (value)	\
 	)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   User_request_header
 #define MESSAGE_ID     0
 #define MESSAGE_FIELDS \
 	FIELD_VUINT        (serial)	\
 	// payload
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   User_response_header
 #define MESSAGE_ID     0
@@ -74,7 +74,7 @@ enum {
 	FIELD_VINT         (err_code)	\
 	FIELD_STRING       (err_msg)	\
 	// payload
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #pragma GCC diagnostic pop
 #undef CBPP_MESSAGE_EMIT_EXTERNAL_DEFINITIONS

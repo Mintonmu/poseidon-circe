@@ -29,7 +29,7 @@ namespace Box {
 	)	\
 	FIELD_FLEXIBLE     (entity)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Http_response
 #define MESSAGE_ID     1902
@@ -41,7 +41,7 @@ namespace Box {
 	)	\
 	FIELD_FLEXIBLE     (entity)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_establishment_request
 #define MESSAGE_ID     1903
@@ -56,13 +56,13 @@ namespace Box {
 	  FIELD_STRING       (value)	\
 	)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_establishment_response
 #define MESSAGE_ID     1904
 #define MESSAGE_FIELDS \
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_closure_notification
 #define MESSAGE_ID     1905
@@ -72,7 +72,7 @@ namespace Box {
 	FIELD_VUINT        (status_code)	\
 	FIELD_STRING       (reason)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_packed_message_request
 #define MESSAGE_ID     1906
@@ -84,13 +84,13 @@ namespace Box {
 	  FIELD_FLEXIBLE     (payload)	\
 	)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_packed_message_response
 #define MESSAGE_ID     1907
 #define MESSAGE_FIELDS \
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 }
 }

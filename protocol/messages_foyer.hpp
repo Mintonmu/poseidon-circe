@@ -28,7 +28,7 @@ namespace Foyer {
 	)	\
 	FIELD_FLEXIBLE     (entity)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Http_response_from_box
 #define MESSAGE_ID     1202
@@ -41,7 +41,7 @@ namespace Foyer {
 	)	\
 	FIELD_FLEXIBLE     (entity)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_establishment_request_to_box
 #define MESSAGE_ID     1203
@@ -55,14 +55,14 @@ namespace Foyer {
 	  FIELD_STRING       (value)	\
 	)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_establishment_response_from_box
 #define MESSAGE_ID     1204
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (box_uuid, 16)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_closure_notification_to_box
 #define MESSAGE_ID     1205
@@ -72,7 +72,7 @@ namespace Foyer {
 	FIELD_VUINT        (status_code)	\
 	FIELD_STRING       (reason)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_kill_notification_to_gate
 #define MESSAGE_ID     1206
@@ -82,7 +82,7 @@ namespace Foyer {
 	FIELD_VUINT        (status_code)	\
 	FIELD_STRING       (reason)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_packed_message_request_to_box
 #define MESSAGE_ID     1208
@@ -94,13 +94,13 @@ namespace Foyer {
 	  FIELD_FLEXIBLE     (payload)	\
 	)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_packed_message_response_from_box
 #define MESSAGE_ID     1209
 #define MESSAGE_FIELDS \
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_packed_message_request_to_gate
 #define MESSAGE_ID     1210
@@ -112,26 +112,26 @@ namespace Foyer {
 	  FIELD_FLEXIBLE     (payload)	\
 	)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_packed_message_response_from_gate
 #define MESSAGE_ID     1211
 #define MESSAGE_FIELDS \
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Check_gate_request
 #define MESSAGE_ID     1212
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Check_gate_response
 #define MESSAGE_ID     1213
 #define MESSAGE_FIELDS \
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_packed_broadcast_notification_to_gate
 #define MESSAGE_ID     1214
@@ -145,7 +145,7 @@ namespace Foyer {
 	  FIELD_FLEXIBLE     (payload)	\
 	)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 }
 }

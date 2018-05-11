@@ -17,7 +17,7 @@ namespace Pilot {
 	FIELD_STRING       (value)	\
 	FIELD_UNSIGNED     (version)	\
 	//
-#include <poseidon/mysql/object_generator.hpp>
+#include <poseidon/mysql/object_generator.inl>
 
 }
 }

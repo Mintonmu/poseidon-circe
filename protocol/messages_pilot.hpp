@@ -38,7 +38,7 @@ enum {
 	)	\
 	FIELD_VUINT        (lock_disposition)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Compare_exchange_response
 #define MESSAGE_ID     1102
@@ -49,7 +49,7 @@ enum {
 	FIELD_VUINT        (criterion_index)	\
 	FIELD_VUINT        (lock_state)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Exchange_request
 #define MESSAGE_ID     1103
@@ -58,7 +58,7 @@ enum {
 	FIELD_STRING       (value_new)	\
 	FIELD_VUINT        (lock_disposition)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Exchange_response
 #define MESSAGE_ID     1104
@@ -68,21 +68,21 @@ enum {
 	FIELD_VUINT        (succeeded)	\
 	FIELD_VUINT        (lock_state)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Add_watch_request
 #define MESSAGE_ID     1105
 #define MESSAGE_FIELDS \
 	FIELD_BLOB         (key)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Add_watch_response
 #define MESSAGE_ID     1106
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (watcher_uuid, 16)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Remove_watch_notification
 #define MESSAGE_ID     1107
@@ -90,7 +90,7 @@ enum {
 	FIELD_BLOB         (key)	\
 	FIELD_FIXED        (watcher_uuid, 16)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Value_change_notification
 #define MESSAGE_ID     1108
@@ -98,7 +98,7 @@ enum {
 	FIELD_FIXED        (watcher_uuid, 16)	\
 	FIELD_STRING       (value_new)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 }
 }

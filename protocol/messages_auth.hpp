@@ -26,7 +26,7 @@ namespace Auth {
 	  FIELD_STRING       (value)	\
 	)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Http_authentication_response
 #define MESSAGE_ID     1802
@@ -38,7 +38,7 @@ namespace Auth {
 	  FIELD_STRING       (value)	\
 	)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_authentication_request
 #define MESSAGE_ID     1803
@@ -51,7 +51,7 @@ namespace Auth {
 	  FIELD_STRING       (value)	\
 	)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 #define MESSAGE_NAME   Web_socket_authentication_response
 #define MESSAGE_ID     1804
@@ -64,7 +64,7 @@ namespace Auth {
 	FIELD_VUINT        (status_code)	\
 	FIELD_STRING       (reason)	\
 	//
-#include <poseidon/cbpp/message_generator.hpp>
+#include <poseidon/cbpp/message_generator.inl>
 
 }
 }
