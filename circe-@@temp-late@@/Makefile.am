@@ -3,7 +3,6 @@ AM_CPPFLAGS = -Wall -Wextra -Werror -Wconversion -Wsign-conversion -Wno-error=un
 	-Wundef -Wshadow -Wstrict-aliasing=2 -Wstrict-overflow=2 -Wno-error=pragmas	\
 	-pipe -fPIC -DPIC -pthread
 AM_CXXFLAGS = -Wnon-virtual-dtor
-AM_LIBS =
 
 pkgsysconfdir = ${sysconfdir}/@PACKAGE@
 pkgsysconf_DATA =	\
@@ -22,7 +21,7 @@ lib_libcirce_@@temp_late@@_la_SOURCES =	\
 	circe-@@temp-late@@/src/mmain.cpp
 
 lib_libcirce_@@temp_late@@_la_LDFLAGS =	\
-	-Wl,--no-undefined -module -version-info 0:0:0
+	-Wl,--no-undefined -module -no-undefined -version-info 0:0:0
 
 lib_libcirce_@@temp_late@@_la_LIBADD =	\
 	../circe-common/lib/libcirce-common.la	\
