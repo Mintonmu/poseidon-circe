@@ -15,7 +15,7 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/array.hpp>
 #include "interserver_response.hpp"
-#include "poseidon/optional_map.hpp"
+#include "poseidon/option_map.hpp"
 
 extern template class Poseidon::Promise_container<Circe::Common::Interserver_response>;
 
@@ -58,7 +58,7 @@ private:
 	mutable Poseidon::Recursive_mutex m_mutex;
 	Poseidon::Uuid m_connection_uuid;
 	boost::uint64_t m_timestamp;
-	Poseidon::Optional_map m_options;
+	Poseidon::Option_map m_options;
 	boost::uint64_t m_next_serial;
 	boost::container::flat_multimap<boost::uint64_t, boost::weak_ptr<Promised_response> > m_weak_promises;
 
@@ -68,8 +68,8 @@ public:
 
 private:
 	bool is_connection_uuid_set() const NOEXCEPT;
-	void server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp, Poseidon::Optional_map options_resp);
-	void client_accept_hello(Poseidon::Optional_map options_resp);
+	void server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp, Poseidon::Option_map options_resp);
+	void client_accept_hello(Poseidon::Option_map options_resp);
 	void send_response(boost::uint64_t serial, Interserver_response resp);
 
 	Message_filter *require_message_filter();
@@ -93,7 +93,7 @@ protected:
 
 	// The client shall call this function before sending anything else.
 	// The server shall not call this function.
-	void layer7_client_say_hello(Poseidon::Optional_map options_req);
+	void layer7_client_say_hello(Poseidon::Option_map options_req);
 
 	virtual void layer7_post_set_connection_uuid() = 0;
 	virtual Interserver_response layer7_on_sync_message(boost::uint16_t message_id, Poseidon::Stream_buffer payload) = 0;

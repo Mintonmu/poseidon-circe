@@ -5,7 +5,7 @@
 #define CIRCE_AUTH_SINGLETONS_USER_DEFINED_FUNCTIONS_HPP_
 
 #include <poseidon/uuid.hpp>
-#include <poseidon/optional_map.hpp>
+#include <poseidon/option_map.hpp>
 #include <poseidon/stream_buffer.hpp>
 #include <poseidon/http/verbs.hpp>
 #include <poseidon/http/status_codes.hpp>
@@ -26,14 +26,14 @@ public:
 	static std::string check_http_authentication(
 		// Output parameters
 		Poseidon::Http::Status_code &resp_status_code,
-		Poseidon::Optional_map &resp_headers,
+		Poseidon::Option_map &resp_headers,
 		// Input parameters
 		Poseidon::Uuid client_uuid,
 		std::string client_ip,
 		Poseidon::Http::Verb verb,
 		std::string decoded_uri,
-		Poseidon::Optional_map params,
-		Poseidon::Optional_map req_headers);
+		Poseidon::Option_map params,
+		Poseidon::Option_map req_headers);
 
 	static std::string check_websocket_authentication(
 		// Output parameters
@@ -45,7 +45,7 @@ public:
 		Poseidon::Uuid client_uuid,
 		std::string client_ip,
 		std::string decoded_uri,
-		Poseidon::Optional_map params);
+		Poseidon::Option_map params);
 };
 
 }

@@ -17,7 +17,7 @@ namespace Auth {
 
 DEFINE_SERVLET_FOR(Protocol::Auth::Http_authentication_request, /*connection*/, req){
 	Poseidon::Http::Status_code resp_status_code = Poseidon::Http::status_service_unavailable;
-	Poseidon::Optional_map resp_headers;
+	Poseidon::Option_map resp_headers;
 	std::string auth_token = User_defined_functions::check_http_authentication(resp_status_code, resp_headers,
 		Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), boost::numeric_cast<Poseidon::Http::Verb>(req.verb), STD_MOVE(req.decoded_uri),
 		Protocol::copy_key_values(STD_MOVE_IDN(req.params)), Protocol::copy_key_values(STD_MOVE_IDN(req.headers)));

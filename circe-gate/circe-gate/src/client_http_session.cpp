@@ -113,7 +113,7 @@ void Client_http_session::sync_decode_uri(const std::string &uri){
 	LOG_CIRCE_DEBUG("Decoded URI: ", decoded_uri);
 	m_decoded_uri = STD_MOVE_IDN(decoded_uri);
 }
-void Client_http_session::sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::Optional_map &params, const Poseidon::Optional_map &headers)
+void Client_http_session::sync_authenticate(Poseidon::Http::Verb verb, const std::string &decoded_uri, const Poseidon::Option_map &params, const Poseidon::Option_map &headers)
 try {
 	PROFILE_ME;
 
@@ -148,15 +148,15 @@ try {
 	throw;
 }
 
-Poseidon::Optional_map Client_http_session::make_retry_after_headers(boost::uint64_t time_remaining) const {
+Poseidon::Option_map Client_http_session::make_retry_after_headers(boost::uint64_t time_remaining) const {
 	PROFILE_ME;
 
-	Poseidon::Optional_map headers;
+	Poseidon::Option_map headers;
 	headers.set(Poseidon::Rcnts::view("Retry-After"), boost::lexical_cast<std::string>(time_remaining / 1000));
 	return headers;
 }
 
-boost::shared_ptr<Poseidon::Http::Upgraded_session_base> Client_http_session::on_low_level_request_end(boost::uint64_t content_length, Poseidon::Optional_map headers){
+boost::shared_ptr<Poseidon::Http::Upgraded_session_base> Client_http_session::on_low_level_request_end(boost::uint64_t content_length, Poseidon::Option_map headers){
 	PROFILE_ME;
 
 	// Find and kill malicious clients early.
@@ -372,7 +372,7 @@ bool Client_http_session::send(Poseidon::Http::Response_headers resp_headers, Po
 	LOG_CIRCE_DEBUG("Sending HTTP response to ", get_remote_info(), "\n", resp_headers.status_code, " ", resp_headers.reason, "\n", resp_headers.headers);
 	return Poseidon::Http::Session::send(STD_MOVE(resp_headers), STD_MOVE(entity));
 }
-bool Client_http_session::send_default_and_shutdown(Poseidon::Http::Status_code status_code, const Poseidon::Optional_map &headers) NOEXCEPT {
+bool Client_http_session::send_default_and_shutdown(Poseidon::Http::Status_code status_code, const Poseidon::Option_map &headers) NOEXCEPT {
 	PROFILE_ME;
 
 	LOG_CIRCE_TRACE("Sending HTTP message: remote = ", get_remote_info(), ", status_code = ", status_code, ", headers = ", headers);

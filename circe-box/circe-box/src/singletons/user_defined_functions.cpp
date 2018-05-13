@@ -18,7 +18,7 @@ namespace Box {
 void User_defined_functions::handle_http_request(
 	// Output parameters
 	Poseidon::Http::Status_code &resp_status_code,  // This status code is sent to the client intactly.
-	Poseidon::Optional_map &resp_headers,           // These HTTP headers are sent to the client.
+	Poseidon::Option_map &resp_headers,             // These HTTP headers are sent to the client.
 	                                                // The 'Content-Length', 'Connection' and 'Access-Control-*' headers are set by the gate server and shall not be specified here.
 	                                                // The gate server compresses HTTP responses as needed. Setting 'Content-Encoding' to 'identity' explicitly suppresses HTTP compression.
 	Poseidon::Stream_buffer &resp_entity,           // These data are sent to the client as the response entity.
@@ -28,8 +28,8 @@ void User_defined_functions::handle_http_request(
 	std::string auth_token,                         // This is the authentication token for this client returned by the auth server.
 	Poseidon::Http::Verb verb,                      // This is the verb sent by the client.
 	std::string decoded_uri,                        // This is the request URI sent by the client. GET parameters have been stripped.
-	Poseidon::Optional_map params,                  // These are GET parameters sent by the client (as part of the URI).
-	Poseidon::Optional_map req_headers,             // These are HTTP headers sent by the client.
+	Poseidon::Option_map params,                    // These are GET parameters sent by the client (as part of the URI).
+	Poseidon::Option_map req_headers,               // These are HTTP headers sent by the client.
 	Poseidon::Stream_buffer req_entity)             // This is the request entity sent by the client.
 {
 	PROFILE_ME;
@@ -68,7 +68,7 @@ void User_defined_functions::handle_http_request(
 void User_defined_functions::handle_websocket_establishment(
 	const boost::shared_ptr<Web_socket_shadow_session> &client_session,  // This is the session cast by the Web_socket connection on the gate server.
 	std::string decoded_uri,                                             // This is the request URI sent by the client. GET parameters have been stripped.
-	Poseidon::Optional_map params)                                       // These are GET parameters sent by the client (as part of the URI).
+	Poseidon::Option_map params)                                         // These are GET parameters sent by the client (as part of the URI).
 {
 	PROFILE_ME;
 

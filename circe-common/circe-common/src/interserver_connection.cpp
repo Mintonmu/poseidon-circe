@@ -307,7 +307,7 @@ bool Interserver_connection::is_connection_uuid_set() const NOEXCEPT {
 	const Poseidon::Recursive_mutex::Unique_lock lock(m_mutex);
 	return !!m_connection_uuid;
 }
-void Interserver_connection::server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp, Poseidon::Optional_map options_resp){
+void Interserver_connection::server_accept_hello(const Poseidon::Uuid &connection_uuid, boost::uint64_t timestamp, Poseidon::Option_map options_resp){
 	PROFILE_ME;
 	LOG_CIRCE_INFO("Accepted client HELLO from ", get_remote_info(), " with options ", options_resp);
 
@@ -326,7 +326,7 @@ void Interserver_connection::server_accept_hello(const Poseidon::Uuid &connectio
 	m_options         = STD_MOVE(options_resp);
 	layer7_post_set_connection_uuid();
 }
-void Interserver_connection::client_accept_hello(Poseidon::Optional_map options_resp){
+void Interserver_connection::client_accept_hello(Poseidon::Option_map options_resp){
 	PROFILE_ME;
 	LOG_CIRCE_INFO("Accepted server HELLO from ", get_remote_info(), " with options ", options_resp);
 
@@ -541,7 +541,7 @@ void Interserver_connection::layer4_on_close(){
 	}
 }
 
-void Interserver_connection::layer7_client_say_hello(Poseidon::Optional_map options_req){
+void Interserver_connection::layer7_client_say_hello(Poseidon::Option_map options_req){
 	PROFILE_ME;
 
 	const AUTO(connection_uuid, Poseidon::Uuid::random());

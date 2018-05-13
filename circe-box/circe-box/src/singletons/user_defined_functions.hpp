@@ -5,7 +5,7 @@
 #define CIRCE_BOX_SINGLETONS_USER_DEFINED_FUNCTIONS_HPP_
 
 #include <poseidon/uuid.hpp>
-#include <poseidon/optional_map.hpp>
+#include <poseidon/option_map.hpp>
 #include <poseidon/stream_buffer.hpp>
 #include <poseidon/http/verbs.hpp>
 #include <poseidon/http/status_codes.hpp>
@@ -26,7 +26,7 @@ public:
 	static void handle_http_request(
 		// Output parameters
 		Poseidon::Http::Status_code &resp_status_code,
-		Poseidon::Optional_map &resp_headers,
+		Poseidon::Option_map &resp_headers,
 		Poseidon::Stream_buffer &resp_entity,
 		// Input parameters
 		Poseidon::Uuid client_uuid,
@@ -34,14 +34,14 @@ public:
 		std::string auth_token,
 		Poseidon::Http::Verb verb,
 		std::string decoded_uri,
-		Poseidon::Optional_map params,
-		Poseidon::Optional_map req_headers,
+		Poseidon::Option_map params,
+		Poseidon::Option_map req_headers,
 		Poseidon::Stream_buffer req_entity);
 
 	static void handle_websocket_establishment(
 		const boost::shared_ptr<Web_socket_shadow_session> &client_session,
 		std::string decoded_uri,
-		Poseidon::Optional_map params);
+		Poseidon::Option_map params);
 
 	static void handle_websocket_message(
 		const boost::shared_ptr<Web_socket_shadow_session> &client_session,

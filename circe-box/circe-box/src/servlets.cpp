@@ -18,7 +18,7 @@ namespace Box {
 
 DEFINE_SERVLET_FOR(Protocol::Box::Http_request, /*connection*/, req){
 	Poseidon::Http::Status_code resp_status_code = Poseidon::Http::status_service_unavailable;
-	Poseidon::Optional_map resp_headers;
+	Poseidon::Option_map resp_headers;
 	Poseidon::Stream_buffer resp_entity;
 	User_defined_functions::handle_http_request(resp_status_code, resp_headers, resp_entity,
 		Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip), STD_MOVE(req.auth_token), boost::numeric_cast<Poseidon::Http::Verb>(req.verb), STD_MOVE(req.decoded_uri),

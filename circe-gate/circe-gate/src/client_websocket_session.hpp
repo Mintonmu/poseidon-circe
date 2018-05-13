@@ -46,7 +46,7 @@ private:
 	// This function should be only called by the destructor.
 	void notify_foyer_about_closure() const NOEXCEPT;
 
-	void sync_authenticate(const std::string &decoded_uri, const Poseidon::Optional_map &params);
+	void sync_authenticate(const std::string &decoded_uri, const Poseidon::Option_map &params);
 
 protected:
 	// Callbacks run in the epoll thread.

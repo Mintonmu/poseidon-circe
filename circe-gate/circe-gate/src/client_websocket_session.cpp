@@ -118,7 +118,7 @@ void Client_web_socket_session::notify_foyer_about_closure() const NOEXCEPT {
 	}
 }
 
-void Client_web_socket_session::sync_authenticate(const std::string &decoded_uri, const Poseidon::Optional_map &params)
+void Client_web_socket_session::sync_authenticate(const std::string &decoded_uri, const Poseidon::Option_map &params)
 try {
 	PROFILE_ME;
 
