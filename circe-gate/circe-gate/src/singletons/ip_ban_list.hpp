@@ -4,6 +4,7 @@
 #ifndef CIRCE_GATE_SINGLETONS_IP_BAN_LIST_HPP_
 #define CIRCE_GATE_SINGLETONS_IP_BAN_LIST_HPP_
 
+#include <poseidon/cxx_ver.hpp>
 #include <boost/cstdint.hpp>
 
 namespace Circe {

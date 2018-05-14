@@ -5,8 +5,10 @@
 #define CIRCE_PILOT_COMPASS_WATCHER_MAP_HPP_
 
 #include <poseidon/cxx_util.hpp>
+#include <poseidon/uuid.hpp>
 #include <boost/container/flat_map.hpp>
 #include <boost/container/vector.hpp>
+#include <boost/shared_ptr.hpp>
 #include "common/fwd.hpp"
 
 namespace Circe {

@@ -7,6 +7,7 @@
 #include <poseidon/cxx_util.hpp>
 #include <poseidon/uuid.hpp>
 #include <boost/container/flat_map.hpp>
+#include <boost/shared_ptr.hpp>
 #include "common/fwd.hpp"
 
 namespace Circe {

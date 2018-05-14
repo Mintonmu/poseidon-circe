@@ -14,6 +14,7 @@
 #include <poseidon/promise.hpp>
 #include <boost/container/flat_map.hpp>
 #include <boost/array.hpp>
+#include <boost/scoped_ptr.hpp>
 #include "interserver_response.hpp"
 #include "poseidon/option_map.hpp"
 
