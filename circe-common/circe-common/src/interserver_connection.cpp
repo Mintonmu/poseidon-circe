@@ -413,7 +413,7 @@ try {
 	const std::size_t size_original = magic_payload.size();
 	LOG_CIRCE_TRACE("Inflate result: ", size_deflated, " / ", size_original, " (", std::fixed, std::setprecision(3), (size_original != 0) ? size_deflated * 100.0l / size_original : 0.0l, "%)");
 
-	boost::uint16_t message_id = magic_number & MESSAGE_ID_MAX;
+	boost::uint16_t message_id = magic_number & message_id_max;
 	if(Poseidon::has_any_flags_of(magic_number, magic_flag_is_response)){
 		User_response_header hdr;
 		hdr.deserialize(magic_payload);

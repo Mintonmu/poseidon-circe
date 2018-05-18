@@ -90,7 +90,7 @@ void User_defined_functions::handle_websocket_message(
 //	for(unsigned i = 0; i < 3; ++i){
 //		char str[100];
 //		std::sprintf(str, "hello %d", i);
-//		client_session->send(Poseidon::Web_socket::OP_DATA_TEXT, Poseidon::Stream_buffer(str));
+//		client_session->send(Poseidon::Web_socket::op_data_text, Poseidon::Stream_buffer(str));
 //	}
 
 	boost::container::vector<boost::shared_ptr<Web_socket_shadow_session> > clients;

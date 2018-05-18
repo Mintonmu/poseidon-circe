@@ -33,14 +33,14 @@ private:
 
 public:
 	enum {
-		MESSAGE_ID_MIN  = 0x0001,
-		MESSAGE_ID_MAX  = 0x0FFF,
+		message_id_min  = 0x0001,
+		message_id_max  = 0x0FFF,
 	};
-	BOOST_STATIC_ASSERT((MESSAGE_ID_MAX & (MESSAGE_ID_MAX + 1)) == 0);
+	BOOST_STATIC_ASSERT((message_id_max & (message_id_max + 1)) == 0);
 
 public:
 	static CONSTEXPR bool is_message_id_valid(boost::uint64_t message_id){
-		return (MESSAGE_ID_MIN <= message_id) && (message_id <= MESSAGE_ID_MAX);
+		return (message_id_min <= message_id) && (message_id <= message_id_max);
 	}
 
 	static std::size_t get_max_message_size();
