@@ -385,7 +385,7 @@ try {
 	LOG_CIRCE_TRACE("Inflate and dispatch: connection = ", (void *)this);
 
 	switch(magic_number){
-	case Client_hello::ID: {
+	case Client_hello::id: {
 		Client_hello msg(STD_MOVE(encoded_payload));
 		LOG_CIRCE_TRACE("Received client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, Poseidon::Uuid(msg.connection_uuid), msg.timestamp));
@@ -396,7 +396,7 @@ try {
 		require_message_filter()->reseed_decoder_prng(checksum_seedx);
 		Poseidon::atomic_store(m_authenticated, true, Poseidon::memory_order_release);
 		return; }
-	case Server_hello::ID: {
+	case Server_hello::id: {
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		Server_hello msg(STD_MOVE(encoded_payload));
 		LOG_CIRCE_TRACE("Received server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
@@ -469,13 +469,13 @@ try {
 	LOG_CIRCE_TRACE("Deflate and send: connection = ", (void *)this);
 
 	switch(magic_number){
-	case Client_hello::ID: {
+	case Client_hello::id: {
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		layer5_send_data(magic_number, STD_MOVE(magic_payload));
 		const AUTO(checksum_seedx, calculate_checksum(m_application_key, SALT_NORMAL_DATA, m_connection_uuid, m_timestamp));
 		require_message_filter()->reseed_encoder_prng(checksum_seedx);
 		return; }
-	case Server_hello::ID: {
+	case Server_hello::id: {
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		layer5_send_data(magic_number, STD_MOVE(magic_payload));
 		return; }

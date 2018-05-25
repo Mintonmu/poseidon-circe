@@ -16,7 +16,7 @@
 			/* This is the callback that matches `Interserver_servlet_callback`. */	\
 			static ::Circe::Common::Interserver_response callback_(const ::boost::shared_ptr< ::Circe::Common::Interserver_connection> &conn_, ::boost::uint16_t message_id_, ::Poseidon::Stream_buffer payload_){	\
 				PROFILE_ME;	\
-				DEBUG_THROW_ASSERT(message_id_ == Msg_::ID);	\
+				DEBUG_THROW_ASSERT(message_id_ == Msg_::id);	\
 				AUTO(msg_, static_cast<Msg_>(STD_MOVE(payload_)));	\
 				LOG_CIRCE_TRACE("Received request from ", conn_->get_remote_info(), ": ", msg_);	\
 				return unwrapped_callback_(conn_, STD_MOVE(msg_));	\
@@ -27,7 +27,7 @@
 			LOG_CIRCE_INFO("Registering interserver servlet: ", #Msg_);	\
 			const AUTO(servlet_, ::boost::make_shared< ::Circe::Common::Interserver_servlet_callback>(&TOKEN_CAT2(Interserver_servlet_wrapper_, __LINE__)::callback_));	\
 			handles_.push(servlet_);	\
-			static_cast<void>(how_(Msg_::ID, servlet_));	\
+			static_cast<void>(how_(Msg_::id, servlet_));	\
 		}	\
 	}	\
 	/* The user is responsible for its definition, hence there is no brace after this prototype. */	\
