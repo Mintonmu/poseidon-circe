@@ -3,7 +3,6 @@
 
 #include "precompiled.hpp"
 #include "user_defined_functions.hpp"
-#include "protocol/utilities.hpp"
 
 // TODO: These are for testing only.
 #include "protocol/messages_foyer.hpp"
@@ -66,48 +65,48 @@ void User_defined_functions::handle_http_request(
 }
 
 void User_defined_functions::handle_websocket_establishment(
-	const boost::shared_ptr<Web_socket_shadow_session> &client_session,  // This is the session cast by the Web_socket connection on the gate server.
-	std::string decoded_uri,                                             // This is the request URI sent by the client. GET parameters have been stripped.
-	Poseidon::Option_map params)                                         // These are GET parameters sent by the client (as part of the URI).
+	const boost::shared_ptr<Websocket_shadow_session> &client_session,  // This is the session cast by the WebSocket connection on the gate server.
+	std::string decoded_uri,                                            // This is the request URI sent by the client. GET parameters have been stripped.
+	Poseidon::Option_map params)                                        // These are GET parameters sent by the client (as part of the URI).
 {
 	PROFILE_ME;
 
-	LOG_CIRCE_FATAL("TODO: Handle Web_socket establishment: ", decoded_uri, "\n", params);
+	LOG_CIRCE_FATAL("TODO: Handle WebSocket establishment: ", decoded_uri, "\n", params);
 	(void)client_session;
 	(void)decoded_uri;
 	(void)params;
 }
 
 void User_defined_functions::handle_websocket_message(
-	const boost::shared_ptr<Web_socket_shadow_session> &client_session,  // This is the session cast by the Web_socket connection on the gate server.
-	Poseidon::Web_socket::Op_code opcode,                                // This is the opcode sent by the client. This may be `Poseidon::Web_socket::opcode_data_text` or `Poseidon::Web_socket::opcode_data_binary`.
-	Poseidon::Stream_buffer payload)                                     // This is the payload sent by the client. If the opcode claims a text message, the payload will be a valid UTF-8 string.
+	const boost::shared_ptr<Websocket_shadow_session> &client_session,  // This is the session cast by the WebSocket connection on the gate server.
+	Poseidon::Websocket::Op_code opcode,                                // This is the opcode sent by the client. This may be `Poseidon::Websocket::opcode_data_text` or `Poseidon::Websocket::opcode_data_binary`.
+	Poseidon::Stream_buffer payload)                                    // This is the payload sent by the client. If the opcode claims a text message, the payload will be a valid UTF-8 string.
 {
 	PROFILE_ME;
 
-	LOG_CIRCE_FATAL("TODO: Handle Web_socket message: ", opcode, ": ", payload);
+	LOG_CIRCE_FATAL("TODO: Handle WebSocket message: ", opcode, ": ", payload);
 
 //	for(unsigned i = 0; i < 3; ++i){
 //		char str[100];
 //		std::sprintf(str, "hello %d", i);
-//		client_session->send(Poseidon::Web_socket::op_data_text, Poseidon::Stream_buffer(str));
+//		client_session->send(Poseidon::Websocket::op_data_text, Poseidon::Stream_buffer(str));
 //	}
 
-	boost::container::vector<boost::shared_ptr<Web_socket_shadow_session> > clients;
-	Web_socket_shadow_session_supervisor::get_all_sessions(clients);
+	boost::container::vector<boost::shared_ptr<Websocket_shadow_session> > clients;
+	Websocket_shadow_session_supervisor::get_all_sessions(clients);
 
-	Protocol::Foyer::Web_socket_packed_broadcast_notification_to_gate ntfy;
+	Protocol::Foyer::Websocket_packed_broadcast_notification_to_gate ntfy;
 	for(AUTO(rit, clients.begin()); rit != clients.end(); ++rit){
-		const AUTO(wit, Protocol::emplace_at_end(ntfy.clients));
-		wit->gate_uuid = (*rit)->get_gate_uuid();
-		wit->client_uuid = (*rit)->get_client_uuid();
+		ntfy.clients.emplace_back();
+		ntfy.clients.back().gate_uuid = (*rit)->get_gate_uuid();
+		ntfy.clients.back().client_uuid = (*rit)->get_client_uuid();
 	}
 	for(unsigned i = 0; i < 3; ++i){
-		const AUTO(rit, Protocol::emplace_at_end(ntfy.messages));
-		rit->opcode = Poseidon::Web_socket::opcode_data_text;
 		char str[100];
 		std::sprintf(str, "hello %d", i);
-		rit->payload = Poseidon::Stream_buffer(str);
+		ntfy.messages.emplace_back();
+		ntfy.messages.back().opcode = Poseidon::Websocket::opcode_data_text;
+		ntfy.messages.back().payload = Poseidon::Stream_buffer(str);
 	}
 	Box_acceptor::safe_broadcast_notification(ntfy);
 
@@ -131,13 +130,13 @@ void User_defined_functions::handle_websocket_message(
 }
 
 void User_defined_functions::handle_websocket_closure(
-	const boost::shared_ptr<Web_socket_shadow_session> &client_session,  // This is the session cast by the Web_socket connection on the gate server.
-	Poseidon::Web_socket::Status_code status_code,                       // This is the status code in the closure frame received from the client, or `Poseidon::Web_socket::status_reserved_abnormal` if no closure frame was received.
-	const char *reason)                                                  // This is the payload in the closure frame received from the client, or an unspecified string if no closure frame was received.
+	const boost::shared_ptr<Websocket_shadow_session> &client_session,  // This is the session cast by the WebSocket connection on the gate server.
+	Poseidon::Websocket::Status_code status_code,                       // This is the status code in the closure frame received from the client, or `Poseidon::Websocket::status_reserved_abnormal` if no closure frame was received.
+	const char *reason)                                                 // This is the payload in the closure frame received from the client, or an unspecified string if no closure frame was received.
 {
 	PROFILE_ME;
 
-	LOG_CIRCE_FATAL("TODO: Handle Web_socket closure: ", status_code, ": ", reason);
+	LOG_CIRCE_FATAL("TODO: Handle WebSocket closure: ", status_code, ": ", reason);
 	(void)client_session;
 	(void)status_code;
 	(void)reason;

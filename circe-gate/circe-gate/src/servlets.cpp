@@ -6,7 +6,6 @@
 #include "common/interserver_connection.hpp"
 #include "common/define_interserver_servlet_for.hpp"
 #include "protocol/exception.hpp"
-#include "protocol/utilities.hpp"
 #include "protocol/messages_gate.hpp"
 #include "singletons/client_http_acceptor.hpp"
 #include "singletons/ip_ban_list.hpp"
@@ -16,44 +15,44 @@
 namespace Circe {
 namespace Gate {
 
-DEFINE_SERVLET_FOR(Protocol::Gate::Web_socket_kill_notification, /*connection*/, ntfy){
+DEFINE_SERVLET_FOR(Protocol::Gate::Websocket_kill_notification, /*connection*/, ntfy){
 	const AUTO(ws_session, Client_http_acceptor::get_websocket_session(Poseidon::Uuid(ntfy.client_uuid)));
 	if(ws_session){
-		LOG_CIRCE_INFO("Killing client Web_socket session: remote = ", ws_session->get_remote_info(), ", ntfy = ", ntfy);
-		ws_session->shutdown(boost::numeric_cast<Poseidon::Web_socket::Status_code>(ntfy.status_code), ntfy.reason.c_str());
+		LOG_CIRCE_INFO("Killing client WebSocket session: remote = ", ws_session->get_remote_info(), ", ntfy = ", ntfy);
+		ws_session->shutdown(boost::numeric_cast<Poseidon::Websocket::Status_code>(ntfy.status_code), ntfy.reason.c_str());
 	}
 
 	return Protocol::error_success;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Gate::Web_socket_packed_message_request, /*connection*/, req){
+DEFINE_SERVLET_FOR(Protocol::Gate::Websocket_packed_message_request, /*connection*/, req){
 	const AUTO(ws_session, Client_http_acceptor::get_websocket_session(Poseidon::Uuid(req.client_uuid)));
 	if(ws_session){
 		try {
-			for(AUTO(qmit, req.messages.begin()); qmit != req.messages.end(); ++qmit){
-				ws_session->send(boost::numeric_cast<Poseidon::Web_socket::Op_code>(qmit->opcode), STD_MOVE(qmit->payload));
+			for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
+				ws_session->send(boost::numeric_cast<Poseidon::Websocket::Op_code>(it->opcode), STD_MOVE(it->payload));
 			}
 		} catch(std::exception &e){
 			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-			ws_session->shutdown(Poseidon::Web_socket::status_internal_error, e.what());
+			ws_session->shutdown(Poseidon::Websocket::status_internal_error, e.what());
 		}
 	}
 
-	Protocol::Gate::Web_socket_packed_message_response resp;
+	Protocol::Gate::Websocket_packed_message_response resp;
 	return resp;
 }
 
-DEFINE_SERVLET_FOR(Protocol::Gate::Web_socket_packed_broadcast_notification, /*connection*/, req){
+DEFINE_SERVLET_FOR(Protocol::Gate::Websocket_packed_broadcast_notification, /*connection*/, req){
 	for(AUTO(qcit, req.clients.begin()); qcit != req.clients.end(); ++qcit){
 		const AUTO(ws_session, Client_http_acceptor::get_websocket_session(Poseidon::Uuid(qcit->client_uuid)));
 		if(ws_session){
 			try {
-				for(AUTO(qmit, req.messages.begin()); qmit != req.messages.end(); ++qmit){
-					ws_session->send(boost::numeric_cast<Poseidon::Web_socket::Op_code>(qmit->opcode), qmit->payload);
+				for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
+					ws_session->send(boost::numeric_cast<Poseidon::Websocket::Op_code>(it->opcode), it->payload);
 				}
 			} catch(std::exception &e){
 				LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
-				ws_session->shutdown(Poseidon::Web_socket::status_internal_error, e.what());
+				ws_session->shutdown(Poseidon::Websocket::status_internal_error, e.what());
 			}
 		}
 	}

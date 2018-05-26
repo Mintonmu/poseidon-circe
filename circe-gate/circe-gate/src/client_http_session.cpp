@@ -11,7 +11,6 @@
 #include "protocol/error_codes.hpp"
 #include "protocol/messages_auth.hpp"
 #include "protocol/messages_foyer.hpp"
-#include "protocol/utilities.hpp"
 #include "singletons/ip_ban_list.hpp"
 #include <poseidon/job_base.hpp>
 #include <poseidon/sock_addr.hpp>
@@ -27,16 +26,16 @@
 namespace Circe {
 namespace Gate {
 
-class Client_http_session::Web_socket_handshake_job : public Poseidon::Job_base {
+class Client_http_session::Websocket_handshake_job : public Poseidon::Job_base {
 private:
 	const Poseidon::Socket_base::Delayed_shutdown_guard m_guard;
 	const boost::weak_ptr<Client_http_session> m_weak_http_session;
 
 	Poseidon::Http::Request_headers m_req_headers;
-	boost::weak_ptr<Client_web_socket_session> m_weak_ws_session;
+	boost::weak_ptr<Client_websocket_session> m_weak_ws_session;
 
 public:
-	Web_socket_handshake_job(const boost::shared_ptr<Client_http_session> &http_session, Poseidon::Http::Request_headers req_headers, const boost::shared_ptr<Client_web_socket_session> &ws_session)
+	Websocket_handshake_job(const boost::shared_ptr<Client_http_session> &http_session, Poseidon::Http::Request_headers req_headers, const boost::shared_ptr<Client_websocket_session> &ws_session)
 		: m_guard(http_session), m_weak_http_session(http_session)
 		, m_req_headers(STD_MOVE(req_headers)), m_weak_ws_session(ws_session)
 	{
@@ -59,13 +58,13 @@ private:
 			http_session->send_default_and_shutdown(Poseidon::Http::status_bad_request);
 			return;
 		}
-		LOG_CIRCE_TRACE("Client Web_socket establishment: uri = ", m_req_headers.uri, ", headers = ", m_req_headers.headers);
+		LOG_CIRCE_TRACE("Client WebSocket establishment: uri = ", m_req_headers.uri, ", headers = ", m_req_headers.headers);
 
 		try {
 			http_session->sync_decode_uri(m_req_headers.uri);
 			DEBUG_THROW_ASSERT(http_session->m_decoded_uri);
 
-			AUTO(ws_resp, Poseidon::Web_socket::make_handshake_response(m_req_headers));
+			AUTO(ws_resp, Poseidon::Websocket::make_handshake_response(m_req_headers));
 			DEBUG_THROW_UNLESS(ws_resp.status_code == Poseidon::Http::status_switching_protocols, Poseidon::Http::Exception, ws_resp.status_code, STD_MOVE(ws_resp.headers));
 			http_session->send(STD_MOVE(ws_resp), Poseidon::Stream_buffer());
 		} catch(Poseidon::Http::Exception &e){
@@ -80,13 +79,13 @@ private:
 		try {
 			ws_session->sync_authenticate(http_session->m_decoded_uri.get(), m_req_headers.get_params);
 			DEBUG_THROW_ASSERT(ws_session->m_auth_token);
-		} catch(Poseidon::Web_socket::Exception &e){
-			LOG_CIRCE_WARNING("Poseidon::Web_socket::Exception thrown: code = ", e.get_status_code(), ", what = ", e.what());
+		} catch(Poseidon::Websocket::Exception &e){
+			LOG_CIRCE_WARNING("Poseidon::Websocket::Exception thrown: code = ", e.get_status_code(), ", what = ", e.what());
 			ws_session->shutdown(e.get_status_code(), e.what());
 			return;
 		} catch(std::exception &e){
 			LOG_CIRCE_WARNING("std::exception thrown: what = ", e.what());
-			ws_session->shutdown(Poseidon::Web_socket::status_internal_error, e.what());
+			ws_session->shutdown(Poseidon::Websocket::status_internal_error, e.what());
 			return;
 		}
 	}
@@ -131,13 +130,29 @@ try {
 	auth_req.client_ip   = get_remote_info().ip();
 	auth_req.verb        = verb;
 	auth_req.decoded_uri = decoded_uri;
-	Protocol::copy_key_values(auth_req.params, params);
-	Protocol::copy_key_values(auth_req.headers, headers);
+	for(AUTO(it, params.begin()); it != params.end(); ++it){
+		Protocol::Common_key_value option;
+		option.key   = it->first.get();
+		option.value = STD_MOVE(it->second);
+		auth_req.params.push_back(STD_MOVE(option));
+	}
+	for(AUTO(it, headers.begin()); it != headers.end(); ++it){
+		Protocol::Common_key_value option;
+		option.key   = it->first.get();
+		option.value = STD_MOVE(it->second);
+		auth_req.headers.push_back(STD_MOVE(option));
+	}
 	LOG_CIRCE_TRACE("Sending request: ", auth_req);
 	Protocol::Auth::Http_authentication_response auth_resp;
 	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 	LOG_CIRCE_TRACE("Received response: ", auth_resp);
-	DEBUG_THROW_UNLESS(!auth_resp.auth_token.empty(), Poseidon::Http::Exception, boost::numeric_cast<Poseidon::Http::Status_code>(auth_resp.status_code), Protocol::copy_key_values(STD_MOVE_IDN(auth_resp.headers)));
+	if(auth_resp.auth_token.empty()){
+		Poseidon::Option_map auth_headers;
+		for(AUTO(it, auth_resp.headers.begin()); it != auth_resp.headers.end(); ++it){
+			auth_headers.set(Poseidon::Rcnts(it->key), STD_MOVE(it->value));
+		}
+		DEBUG_THROW(Poseidon::Http::Exception, boost::numeric_cast<Poseidon::Http::Status_code>(auth_resp.status_code), STD_MOVE(auth_headers));
+	}
 	LOG_CIRCE_DEBUG("Auth server has allowed HTTP client: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 
 	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::Rcnts::view("Connection has been shut down"));
@@ -175,8 +190,8 @@ boost::shared_ptr<Poseidon::Http::Upgraded_session_base> Client_http_session::on
 
 	const AUTO_REF(upgrade_str, req_headers.headers.get("Upgrade"));
 	if(::strcasecmp(upgrade_str.c_str(), "websocket") == 0){
-		AUTO(ws_session, boost::make_shared<Client_web_socket_session>(virtual_shared_from_this<Client_http_session>()));
-		Poseidon::enqueue(boost::make_shared<Web_socket_handshake_job>(virtual_shared_from_this<Client_http_session>(), req_headers, ws_session));
+		AUTO(ws_session, boost::make_shared<Client_websocket_session>(virtual_shared_from_this<Client_http_session>()));
+		Poseidon::enqueue(boost::make_shared<Websocket_handshake_job>(virtual_shared_from_this<Client_http_session>(), req_headers, ws_session));
 		return STD_MOVE_IDN(ws_session);
 	} else if(!upgrade_str.empty()){
 		LOG_CIRCE_WARNING("HTTP Upgrade header not handled: remote = ", get_remote_info(), ", upgrade_str = ", upgrade_str);
@@ -261,8 +276,18 @@ void Client_http_session::on_sync_request(Poseidon::Http::Request_headers req_he
 		foyer_req.auth_token  = m_auth_token.get();
 		foyer_req.verb        = req_headers.verb;
 		foyer_req.decoded_uri = m_decoded_uri.get();
-		Protocol::copy_key_values(foyer_req.params, STD_MOVE(req_headers.get_params));
-		Protocol::copy_key_values(foyer_req.headers, STD_MOVE(req_headers.headers));
+		for(AUTO(it, req_headers.get_params.begin()); it != req_headers.get_params.end(); ++it){
+			Protocol::Common_key_value option;
+			option.key   = it->first.get();
+			option.value = STD_MOVE(it->second);
+			foyer_req.params.push_back(STD_MOVE(option));
+		}
+		for(AUTO(it, req_headers.headers.begin()); it != req_headers.headers.end(); ++it){
+			Protocol::Common_key_value option;
+			option.key   = it->first.get();
+			option.value = STD_MOVE(it->second);
+			foyer_req.headers.push_back(STD_MOVE(option));
+		}
 		if((req_headers.verb == Poseidon::Http::verb_put) || (req_headers.verb == Poseidon::Http::verb_post)){
 			foyer_req.entity = STD_MOVE(req_entity);
 		}
@@ -272,7 +297,9 @@ void Client_http_session::on_sync_request(Poseidon::Http::Request_headers req_he
 		LOG_CIRCE_TRACE("Received response: ", foyer_resp);
 
 		resp_headers.status_code = boost::numeric_cast<Poseidon::Http::Status_code>(foyer_resp.status_code);
-		resp_headers.headers     = Protocol::copy_key_values(STD_MOVE_IDN(foyer_resp.headers));
+		for(AUTO(it, foyer_resp.headers.begin()); it != foyer_resp.headers.end(); ++it){
+			resp_headers.headers.set(Poseidon::Rcnts(it->key), STD_MOVE(it->value));
+		}
 		if(req_headers.verb != Poseidon::Http::verb_head){
 			resp_entity = STD_MOVE(foyer_resp.entity);
 		}
@@ -354,10 +381,10 @@ bool Client_http_session::has_been_shutdown() const NOEXCEPT {
 
 	return Poseidon::Http::Session::has_been_shutdown_write();
 }
-bool Client_http_session::shutdown(Poseidon::Web_socket::Status_code status_code, const char *reason) NOEXCEPT {
+bool Client_http_session::shutdown(Poseidon::Websocket::Status_code status_code, const char *reason) NOEXCEPT {
 	PROFILE_ME;
 
-	const AUTO(ws_session, boost::dynamic_pointer_cast<Client_web_socket_session>(get_upgraded_session()));
+	const AUTO(ws_session, boost::dynamic_pointer_cast<Client_websocket_session>(get_upgraded_session()));
 	if(ws_session){
 		return ws_session->shutdown(status_code, reason);
 	}

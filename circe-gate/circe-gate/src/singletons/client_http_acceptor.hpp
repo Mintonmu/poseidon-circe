@@ -17,9 +17,9 @@ private:
 public:
 	static boost::shared_ptr<Client_http_session> get_session(const Poseidon::Uuid &client_uuid);
 	static std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<Client_http_session> > &sessions_ret);
-	static boost::shared_ptr<Client_web_socket_session> get_websocket_session(const Poseidon::Uuid &client_uuid);
-	static std::size_t get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<Client_web_socket_session> > &sessions_ret);
-	static std::size_t clear(Poseidon::Web_socket::Status_code status_code, const char *reason = "") NOEXCEPT;
+	static boost::shared_ptr<Client_websocket_session> get_websocket_session(const Poseidon::Uuid &client_uuid);
+	static std::size_t get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<Client_websocket_session> > &sessions_ret);
+	static std::size_t clear(Poseidon::Websocket::Status_code status_code, const char *reason = "") NOEXCEPT;
 };
 
 }

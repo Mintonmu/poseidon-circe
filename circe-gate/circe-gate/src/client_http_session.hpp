@@ -13,13 +13,13 @@
 namespace Circe {
 namespace Gate {
 
-class Client_web_socket_session;
+class Client_websocket_session;
 
 class Client_http_session : public Poseidon::Http::Session {
-	friend Client_web_socket_session;
+	friend Client_websocket_session;
 
 private:
-	class Web_socket_handshake_job;
+	class Websocket_handshake_job;
 
 private:
 	const Poseidon::Uuid m_client_uuid;
@@ -55,7 +55,7 @@ public:
 	}
 
 	bool has_been_shutdown() const NOEXCEPT;
-	bool shutdown(Poseidon::Web_socket::Status_code status_code = Poseidon::Web_socket::status_internal_error, const char *reason = "") NOEXCEPT;
+	bool shutdown(Poseidon::Websocket::Status_code status_code = Poseidon::Websocket::status_internal_error, const char *reason = "") NOEXCEPT;
 
 	bool send(Poseidon::Http::Response_headers response_headers, Poseidon::Stream_buffer entity);
 	bool send_default_and_shutdown(Poseidon::Http::Status_code status_code, const Poseidon::Option_map &headers = Poseidon::Option_map()) NOEXCEPT;

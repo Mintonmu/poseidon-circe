@@ -17,7 +17,7 @@ namespace Gate {
 
 class Client_http_session;
 
-class Client_web_socket_session : public Poseidon::Web_socket::Session {
+class Client_websocket_session : public Poseidon::Websocket::Session {
 	friend Client_http_session;
 
 private:
@@ -29,18 +29,18 @@ private:
 	// These are accessed only by the primary thread.
 	boost::weak_ptr<Common::Interserver_connection> m_weak_foyer_conn;
 	boost::optional<Poseidon::Uuid> m_box_uuid;
-	boost::optional<std::pair<Poseidon::Web_socket::Status_code, std::string> > m_closure_reason;
+	boost::optional<std::pair<Poseidon::Websocket::Status_code, std::string> > m_closure_reason;
 
 	boost::optional<std::string> m_auth_token;
 
 	mutable Poseidon::Mutex m_delivery_mutex;
 	boost::shared_ptr<Delivery_job> m_delivery_job_spare;
 	bool m_delivery_job_active;
-	boost::container::deque<std::pair<Poseidon::Web_socket::Op_code, Poseidon::Stream_buffer> > m_messages_pending;
+	boost::container::deque<std::pair<Poseidon::Websocket::Op_code, Poseidon::Stream_buffer> > m_messages_pending;
 
 public:
-	explicit Client_web_socket_session(const boost::shared_ptr<Client_http_session> &parent);
-	~Client_web_socket_session() OVERRIDE;
+	explicit Client_websocket_session(const boost::shared_ptr<Client_http_session> &parent);
+	~Client_websocket_session() OVERRIDE;
 
 private:
 	// This function should be only called by the destructor.
@@ -53,8 +53,8 @@ protected:
 	bool on_low_level_message_end(boost::uint64_t whole_size) OVERRIDE;
 
 	// Callbacks run in the primary thread.
-	void on_sync_data_message(Poseidon::Web_socket::Op_code opcode, Poseidon::Stream_buffer payload) OVERRIDE;
-	void on_sync_control_message(Poseidon::Web_socket::Op_code opcode, Poseidon::Stream_buffer payload) OVERRIDE;
+	void on_sync_data_message(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload) OVERRIDE;
+	void on_sync_control_message(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload) OVERRIDE;
 
 public:
 	const Poseidon::Uuid &get_client_uuid() const NOEXCEPT {
@@ -62,9 +62,9 @@ public:
 	}
 
 	bool has_been_shutdown() const NOEXCEPT;
-	bool shutdown(Poseidon::Web_socket::Status_code status_code, const char *reason = "") NOEXCEPT;
+	bool shutdown(Poseidon::Websocket::Status_code status_code, const char *reason = "") NOEXCEPT;
 
-	bool send(Poseidon::Web_socket::Op_code opcode, Poseidon::Stream_buffer payload);
+	bool send(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload);
 };
 
 }

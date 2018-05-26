@@ -6,7 +6,6 @@
 #include "common/interserver_connection.hpp"
 #include "common/define_interserver_servlet_for.hpp"
 #include "protocol/exception.hpp"
-#include "protocol/utilities.hpp"
 #include "protocol/messages_pilot.hpp"
 #include "singletons/compass_repository.hpp"
 

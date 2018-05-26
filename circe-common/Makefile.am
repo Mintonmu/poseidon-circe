@@ -24,14 +24,14 @@ pkginclude_HEADERS =
 
 pkginclude_protocoldir = ${pkgincludedir}/protocol
 pkginclude_protocol_HEADERS =	\
+	../protocol/messages_common.hpp	\
 	../protocol/messages_gate.hpp	\
 	../protocol/messages_foyer.hpp	\
 	../protocol/messages_auth.hpp	\
 	../protocol/messages_box.hpp	\
 	../protocol/messages_pilot.hpp	\
 	../protocol/error_codes.hpp	\
-	../protocol/exception.hpp	\
-	../protocol/utilities.hpp
+	../protocol/exception.hpp
 
 pkginclude_commondir = ${pkgincludedir}/common
 pkginclude_common_HEADERS =	\

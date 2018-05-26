@@ -4,8 +4,8 @@
 #include "precompiled.hpp"
 #include "interserver_connection.hpp"
 #include "interserver_response.hpp"
+#include "protocol/messages_common.hpp"
 #include "protocol/exception.hpp"
-#include "protocol/utilities.hpp"
 #include "mmain.hpp"
 #include <poseidon/tiny_exception.hpp>
 #include <poseidon/socket_base.hpp>
@@ -42,10 +42,7 @@ enum {
 	FIELD_FIXED        (connection_uuid, 16)	\
 	FIELD_VUINT        (timestamp)	\
 	FIELD_FIXED        (checksum_req, 32)	\
-	FIELD_ARRAY        (options_req,	\
-	  FIELD_STRING       (key)	\
-	  FIELD_STRING       (value)	\
-	)	\
+	FIELD_REPEATED     (options_req, Protocol::Common_key_value)	\
 	//
 #include <poseidon/cbpp/message_generator.inl>
 
@@ -53,10 +50,7 @@ enum {
 #define MESSAGE_ID     magic_flag_predefined + 2
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (checksum_resp, 32)	\
-	FIELD_ARRAY        (options_resp,	\
-	  FIELD_STRING       (key)	\
-	  FIELD_STRING       (value)	\
-	)	\
+	FIELD_REPEATED     (options_resp, Protocol::Common_key_value)	\
 	//
 #include <poseidon/cbpp/message_generator.inl>
 
@@ -317,7 +311,12 @@ void Interserver_connection::server_accept_hello(const Poseidon::Uuid &connectio
 	{
 		Server_hello msg;
 		msg.checksum_resp = checksum_resp;
-		Protocol::copy_key_values(msg.options_resp, options_resp);
+		for(AUTO(it, options_resp.begin()); it != options_resp.end(); ++it){
+			Protocol::Common_key_value option;
+			option.key   = it->first.get();
+			option.value = STD_MOVE(it->second);
+			msg.options_resp.push_back(STD_MOVE(option));
+		}
 		LOG_CIRCE_TRACE("Sending server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
 	}
@@ -390,7 +389,11 @@ try {
 		LOG_CIRCE_TRACE("Received client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, Poseidon::Uuid(msg.connection_uuid), msg.timestamp));
 		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_req == checksum_req, Protocol::error_authorization_failure, Poseidon::Rcnts::view("Request checksum failed verification"));
-		server_accept_hello(Poseidon::Uuid(msg.connection_uuid), msg.timestamp, Protocol::copy_key_values(STD_MOVE_IDN(msg.options_req)));
+		Poseidon::Option_map options_req;
+		for(AUTO(it, msg.options_req.begin()); it != msg.options_req.end(); ++it){
+			options_req.append(Poseidon::Rcnts(it->key), STD_MOVE(it->value));
+		}
+		server_accept_hello(Poseidon::Uuid(msg.connection_uuid), msg.timestamp, STD_MOVE(options_req));
 		DEBUG_THROW_ASSERT(is_connection_uuid_set());
 		const AUTO(checksum_seedx, calculate_checksum(m_application_key, SALT_NORMAL_DATA, m_connection_uuid, m_timestamp));
 		require_message_filter()->reseed_decoder_prng(checksum_seedx);
@@ -402,7 +405,11 @@ try {
 		LOG_CIRCE_TRACE("Received server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, m_connection_uuid, m_timestamp));
 		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_resp == checksum_resp, Protocol::error_authorization_failure, Poseidon::Rcnts::view("Response checksum failed verification"));
-		client_accept_hello(Protocol::copy_key_values(STD_MOVE_IDN(msg.options_resp)));
+		Poseidon::Option_map options_resp;
+		for(AUTO(it, msg.options_resp.begin()); it != msg.options_resp.end(); ++it){
+			options_resp.append(Poseidon::Rcnts(it->key), STD_MOVE(it->value));
+		}
+		client_accept_hello(STD_MOVE(options_resp));
 		Poseidon::atomic_store(m_authenticated, true, Poseidon::memory_order_release);
 		return; }
 	}
@@ -556,7 +563,12 @@ void Interserver_connection::layer7_client_say_hello(Poseidon::Option_map option
 		msg.connection_uuid = connection_uuid;
 		msg.timestamp       = timestamp;
 		msg.checksum_req    = checksum_req;
-		Protocol::copy_key_values(msg.options_req, STD_MOVE(options_req));
+		for(AUTO(it, options_req.begin()); it != options_req.end(); ++it){
+			Protocol::Common_key_value option;
+			option.key   = it->first.get();
+			option.value = STD_MOVE(it->second);
+			msg.options_req.push_back(STD_MOVE(option));
+		}
 		LOG_CIRCE_TRACE("Sending client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
 	}

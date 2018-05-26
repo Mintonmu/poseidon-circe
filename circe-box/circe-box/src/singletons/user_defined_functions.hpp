@@ -39,18 +39,18 @@ public:
 		Poseidon::Stream_buffer req_entity);
 
 	static void handle_websocket_establishment(
-		const boost::shared_ptr<Web_socket_shadow_session> &client_session,
+		const boost::shared_ptr<Websocket_shadow_session> &client_session,
 		std::string decoded_uri,
 		Poseidon::Option_map params);
 
 	static void handle_websocket_message(
-		const boost::shared_ptr<Web_socket_shadow_session> &client_session,
-		Poseidon::Web_socket::Op_code opcode,
+		const boost::shared_ptr<Websocket_shadow_session> &client_session,
+		Poseidon::Websocket::Op_code opcode,
 		Poseidon::Stream_buffer payload);
 
 	static void handle_websocket_closure(
-		const boost::shared_ptr<Web_socket_shadow_session> &client_session,
-		Poseidon::Web_socket::Status_code status_code,
+		const boost::shared_ptr<Websocket_shadow_session> &client_session,
+		Poseidon::Websocket::Status_code status_code,
 		const char *reason);
 };
 

@@ -125,7 +125,10 @@ void Interserver_connector::timer_proc(const boost::weak_ptr<Interserver_connect
 			}
 			client = boost::make_shared<Interserver_client>(promised_sock_addr->get(), connector);
 			client->set_no_delay();
-			client->layer7_client_say_hello(VAL_INIT); // TODO: add options.
+			Poseidon::Option_map opt;
+			opt.set(Poseidon::Rcnts::view("meow"), "123");
+			opt.set(Poseidon::Rcnts::view("hello"), "456");
+			client->layer7_client_say_hello(opt); // TODO: add options.
 			Poseidon::Epoll_daemon::add_socket(client, true);
 			connector->m_weak_clients[*host_it] = client;
 		}

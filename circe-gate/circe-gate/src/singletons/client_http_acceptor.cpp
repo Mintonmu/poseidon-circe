@@ -23,7 +23,7 @@ namespace {
 			//
 		}
 		~Specialized_acceptor() OVERRIDE {
-			clear(Poseidon::Web_socket::status_going_away);
+			clear(Poseidon::Websocket::status_going_away);
 		}
 
 	protected:
@@ -71,7 +71,7 @@ namespace {
 			}
 			return count_added;
 		}
-		boost::shared_ptr<Client_web_socket_session> get_websocket_session(const Poseidon::Uuid &client_uuid) const {
+		boost::shared_ptr<Client_websocket_session> get_websocket_session(const Poseidon::Uuid &client_uuid) const {
 			PROFILE_ME;
 
 			const Poseidon::Mutex::Unique_lock lock(m_mutex);
@@ -83,10 +83,10 @@ namespace {
 			if(!http_session){
 				return VAL_INIT;
 			}
-			AUTO(ws_session, boost::dynamic_pointer_cast<Client_web_socket_session>(http_session->get_upgraded_session()));
+			AUTO(ws_session, boost::dynamic_pointer_cast<Client_websocket_session>(http_session->get_upgraded_session()));
 			return STD_MOVE_IDN(ws_session);
 		}
-		std::size_t get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<Client_web_socket_session> > &ws_sessions_ret){
+		std::size_t get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<Client_websocket_session> > &ws_sessions_ret){
 			PROFILE_ME;
 
 			const Poseidon::Mutex::Unique_lock lock(m_mutex);
@@ -97,7 +97,7 @@ namespace {
 				if(!http_session){
 					continue;
 				}
-				AUTO(ws_session, boost::dynamic_pointer_cast<Client_web_socket_session>(http_session->get_upgraded_session()));
+				AUTO(ws_session, boost::dynamic_pointer_cast<Client_websocket_session>(http_session->get_upgraded_session()));
 				if(!ws_session){
 					continue;
 				}
@@ -106,7 +106,7 @@ namespace {
 			}
 			return count_added;
 		}
-		std::size_t clear(Poseidon::Web_socket::Status_code status_code, const char *reason = "") NOEXCEPT {
+		std::size_t clear(Poseidon::Websocket::Status_code status_code, const char *reason = "") NOEXCEPT {
 			PROFILE_ME;
 
 			const Poseidon::Mutex::Unique_lock lock(m_mutex);
@@ -162,7 +162,7 @@ std::size_t Client_http_acceptor::get_all_sessions(boost::container::vector<boos
 	}
 	return acceptor->get_all_sessions(sessions_ret);
 }
-boost::shared_ptr<Client_web_socket_session> Client_http_acceptor::get_websocket_session(const Poseidon::Uuid &client_uuid){
+boost::shared_ptr<Client_websocket_session> Client_http_acceptor::get_websocket_session(const Poseidon::Uuid &client_uuid){
 	PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
@@ -173,7 +173,7 @@ boost::shared_ptr<Client_web_socket_session> Client_http_acceptor::get_websocket
 	}
 	return acceptor->get_websocket_session(client_uuid);
 }
-std::size_t Client_http_acceptor::get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<Client_web_socket_session> > &sessions_ret){
+std::size_t Client_http_acceptor::get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<Client_websocket_session> > &sessions_ret){
 	PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
@@ -184,7 +184,7 @@ std::size_t Client_http_acceptor::get_all_websocket_sessions(boost::container::v
 	}
 	return acceptor->get_all_websocket_sessions(sessions_ret);
 }
-std::size_t Client_http_acceptor::clear(Poseidon::Web_socket::Status_code status_code, const char *reason) NOEXCEPT {
+std::size_t Client_http_acceptor::clear(Poseidon::Websocket::Status_code status_code, const char *reason) NOEXCEPT {
 	PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);

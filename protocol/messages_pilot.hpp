@@ -4,6 +4,7 @@
 #ifndef CIRCE_PROTOCOL_PILOT_HPP_
 #define CIRCE_PROTOCOL_PILOT_HPP_
 
+#include "messages_common.hpp"
 #include <poseidon/cbpp/message_base.hpp>
 
 namespace Circe {

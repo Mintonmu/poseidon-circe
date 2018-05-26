@@ -17,7 +17,7 @@
 namespace Circe {
 namespace Box {
 
-class Web_socket_shadow_session : public virtual Poseidon::Virtual_shared_from_this {
+class Websocket_shadow_session : public virtual Poseidon::Virtual_shared_from_this {
 private:
 	class Shutdown_job;
 	class Delivery_job;
@@ -34,11 +34,11 @@ private:
 	mutable Poseidon::Mutex m_delivery_mutex;
 	boost::shared_ptr<Delivery_job> m_delivery_job_spare;
 	bool m_delivery_job_active;
-	boost::container::deque<std::pair<Poseidon::Web_socket::Op_code, Poseidon::Stream_buffer> > m_messages_pending;
+	boost::container::deque<std::pair<Poseidon::Websocket::Op_code, Poseidon::Stream_buffer> > m_messages_pending;
 
 public:
-	Web_socket_shadow_session(const Poseidon::Uuid &foyer_uuid, const Poseidon::Uuid &gate_uuid, const Poseidon::Uuid &client_uuid, std::string client_ip, std::string auth_token);
-	~Web_socket_shadow_session() OVERRIDE;
+	Websocket_shadow_session(const Poseidon::Uuid &foyer_uuid, const Poseidon::Uuid &gate_uuid, const Poseidon::Uuid &client_uuid, std::string client_ip, std::string auth_token);
+	~Websocket_shadow_session() OVERRIDE;
 
 public:
 	const Poseidon::Uuid &get_foyer_uuid() const {
@@ -59,8 +59,8 @@ public:
 
 	bool has_been_shutdown() const;
 	void mark_shutdown() NOEXCEPT;
-	bool shutdown(Poseidon::Web_socket::Status_code status_code, const char *reason = "") NOEXCEPT;
-	bool send(Poseidon::Web_socket::Op_code opcode, Poseidon::Stream_buffer payload);
+	bool shutdown(Poseidon::Websocket::Status_code status_code, const char *reason = "") NOEXCEPT;
+	bool send(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload);
 };
 
 }

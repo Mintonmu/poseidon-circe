@@ -9,16 +9,16 @@
 namespace Circe {
 namespace Box {
 
-class Web_socket_shadow_session_supervisor {
+class Websocket_shadow_session_supervisor {
 private:
-	Web_socket_shadow_session_supervisor();
+	Websocket_shadow_session_supervisor();
 
 public:
-	static boost::shared_ptr<Web_socket_shadow_session> get_session(const Poseidon::Uuid &client_uuid);
-	static std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<Web_socket_shadow_session> > &sessions_ret);
-	static void attach_session(const boost::shared_ptr<Web_socket_shadow_session> &session);
-	static boost::shared_ptr<Web_socket_shadow_session> detach_session(const Poseidon::Uuid &client_uuid) NOEXCEPT;
-	static std::size_t clear(Poseidon::Web_socket::Status_code status_code, const char *reason = "") NOEXCEPT;
+	static boost::shared_ptr<Websocket_shadow_session> get_session(const Poseidon::Uuid &client_uuid);
+	static std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<Websocket_shadow_session> > &sessions_ret);
+	static void attach_session(const boost::shared_ptr<Websocket_shadow_session> &session);
+	static boost::shared_ptr<Websocket_shadow_session> detach_session(const Poseidon::Uuid &client_uuid) NOEXCEPT;
+	static std::size_t clear(Poseidon::Websocket::Status_code status_code, const char *reason = "") NOEXCEPT;
 };
 
 }
