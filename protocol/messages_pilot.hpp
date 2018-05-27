@@ -32,7 +32,7 @@ enum {
 #define MESSAGE_NAME   Compare_exchange_request
 #define MESSAGE_ID     1101
 #define MESSAGE_FIELDS \
-	FIELD_BLOB         (key)	\
+	FIELD_STRING       (key)	\
 	FIELD_ARRAY        (criteria,	\
 	  FIELD_STRING       (value_cmp)	\
 	  FIELD_STRING       (value_new)	\
@@ -55,7 +55,7 @@ enum {
 #define MESSAGE_NAME   Exchange_request
 #define MESSAGE_ID     1103
 #define MESSAGE_FIELDS \
-	FIELD_BLOB         (key)	\
+	FIELD_STRING       (key)	\
 	FIELD_STRING       (value_new)	\
 	FIELD_VUINT        (lock_disposition)	\
 	//
@@ -74,7 +74,7 @@ enum {
 #define MESSAGE_NAME   Add_watch_request
 #define MESSAGE_ID     1105
 #define MESSAGE_FIELDS \
-	FIELD_BLOB         (key)	\
+	FIELD_STRING       (key)	\
 	//
 #include <poseidon/cbpp/message_generator.inl>
 
@@ -88,7 +88,7 @@ enum {
 #define MESSAGE_NAME   Remove_watch_notification
 #define MESSAGE_ID     1107
 #define MESSAGE_FIELDS \
-	FIELD_BLOB         (key)	\
+	FIELD_STRING       (key)	\
 	FIELD_FIXED        (watcher_uuid, 16)	\
 	//
 #include <poseidon/cbpp/message_generator.inl>

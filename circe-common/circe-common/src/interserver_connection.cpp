@@ -318,7 +318,7 @@ void Interserver_connection::server_accept_hello(const Poseidon::Uuid &connectio
 			msg.options_resp.push_back(STD_MOVE(option));
 		}
 		CIRCE_LOG_TRACE("Sending server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
-		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
+		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), Poseidon::Stream_buffer(msg));
 	}
 	m_connection_uuid = connection_uuid;
 	m_timestamp       = timestamp;
@@ -385,7 +385,8 @@ try {
 
 	switch(magic_number){
 	case Client_hello::id: {
-		Client_hello msg(STD_MOVE(encoded_payload));
+		Client_hello msg;
+		msg.deserialize(encoded_payload);
 		CIRCE_LOG_TRACE("Received client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_req, calculate_checksum(m_application_key, SALT_CLIENT_HELLO, Poseidon::Uuid(msg.connection_uuid), msg.timestamp));
 		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_req == checksum_req, Protocol::error_authorization_failure, Poseidon::Rcnts::view("Request checksum failed verification"));
@@ -401,7 +402,8 @@ try {
 		return; }
 	case Server_hello::id: {
 		POSEIDON_THROW_ASSERT(is_connection_uuid_set());
-		Server_hello msg(STD_MOVE(encoded_payload));
+		Server_hello msg;
+		msg.deserialize(encoded_payload);
 		CIRCE_LOG_TRACE("Received server HELLO: remote = ", get_remote_info(), ", msg = ", msg);
 		const AUTO(checksum_resp, calculate_checksum(m_application_key, SALT_SERVER_HELLO, m_connection_uuid, m_timestamp));
 		CIRCE_PROTOCOL_THROW_UNLESS(msg.checksum_resp == checksum_resp, Protocol::error_authorization_failure, Poseidon::Rcnts::view("Response checksum failed verification"));
@@ -570,7 +572,7 @@ void Interserver_connection::layer7_client_say_hello(Poseidon::Option_map option
 			msg.options_req.push_back(STD_MOVE(option));
 		}
 		CIRCE_LOG_TRACE("Sending client HELLO: remote = ", get_remote_info(), ", msg = ", msg);
-		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), msg);
+		launch_deflate_and_send(boost::numeric_cast<boost::uint16_t>(msg.get_id()), Poseidon::Stream_buffer(msg));
 	}
 	m_connection_uuid = connection_uuid;
 	m_timestamp       = timestamp;
@@ -627,7 +629,7 @@ void Interserver_connection::send_notification(const Poseidon::Cbpp::Message_bas
 	const Poseidon::Recursive_mutex::Unique_lock lock(m_mutex);
 	POSEIDON_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::Rcnts::view("Interserver_connection was lost"));
 	boost::uint16_t magic_number = boost::numeric_cast<boost::uint16_t>(message_id);
-	launch_deflate_and_send(magic_number, msg);
+	launch_deflate_and_send(magic_number, Poseidon::Stream_buffer(msg));
 }
 
 // Non-member functions.

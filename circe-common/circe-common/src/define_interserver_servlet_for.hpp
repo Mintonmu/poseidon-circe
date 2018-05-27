@@ -16,7 +16,8 @@
 			static ::Circe::Common::Interserver_response wrapper_(const ::boost::shared_ptr< ::Circe::Common::Interserver_connection> &conn_, ::boost::uint16_t message_id_, ::Poseidon::Stream_buffer payload_){	\
 				POSEIDON_PROFILE_ME;	\
 				POSEIDON_THROW_ASSERT(message_id_ == Msg_::id);	\
-				AUTO(msg_, static_cast<Msg_>(STD_MOVE(payload_)));	\
+				Msg_ msg_;	\
+				msg_.deserialize(payload_);	\
 				CIRCE_LOG_TRACE("Received request from ", conn_->get_remote_info(), ": ", msg_);	\
 				return callback_(conn_, STD_MOVE(msg_));	\
 			}	\
