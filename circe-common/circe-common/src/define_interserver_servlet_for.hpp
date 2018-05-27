@@ -9,28 +9,27 @@
 
 #define CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(how_, Msg_, conn_param_, msg_param_)	\
 	namespace {	\
-		/* Define the servlet wrapper. We need some local definitions inside it. */	\
-		struct TOKEN_CAT2(Interserver_servlet_wrapper_, __LINE__) {	\
+		struct POSEIDON_LAZY(POSEIDON_CAT2, Interserver_servlet_, __LINE__) {	\
 			/* Declare the user-defined callback. */	\
-			static ::Circe::Common::Interserver_response unwrapped_callback_(const ::boost::shared_ptr< ::Circe::Common::Interserver_connection> &, Msg_);	\
+			static ::Circe::Common::Interserver_response callback_(const ::boost::shared_ptr< ::Circe::Common::Interserver_connection> &, Msg_);	\
 			/* This is the callback that matches `Interserver_servlet_callback`. */	\
-			static ::Circe::Common::Interserver_response callback_(const ::boost::shared_ptr< ::Circe::Common::Interserver_connection> &conn_, ::boost::uint16_t message_id_, ::Poseidon::Stream_buffer payload_){	\
-				PROFILE_ME;	\
-				DEBUG_THROW_ASSERT(message_id_ == Msg_::id);	\
+			static ::Circe::Common::Interserver_response wrapper_(const ::boost::shared_ptr< ::Circe::Common::Interserver_connection> &conn_, ::boost::uint16_t message_id_, ::Poseidon::Stream_buffer payload_){	\
+				POSEIDON_PROFILE_ME;	\
+				POSEIDON_THROW_ASSERT(message_id_ == Msg_::id);	\
 				AUTO(msg_, static_cast<Msg_>(STD_MOVE(payload_)));	\
-				LOG_CIRCE_TRACE("Received request from ", conn_->get_remote_info(), ": ", msg_);	\
-				return unwrapped_callback_(conn_, STD_MOVE(msg_));	\
+				CIRCE_LOG_TRACE("Received request from ", conn_->get_remote_info(), ": ", msg_);	\
+				return callback_(conn_, STD_MOVE(msg_));	\
 			}	\
 		};	\
 		/* Register the wrapped callback upon module load. */	\
-		MODULE_RAII_PRIORITY(handles_, INIT_PRIORITY_LOW){	\
-			LOG_CIRCE_INFO("Registering interserver servlet: ", #Msg_);	\
-			const AUTO(servlet_, ::boost::make_shared< ::Circe::Common::Interserver_servlet_callback>(&TOKEN_CAT2(Interserver_servlet_wrapper_, __LINE__)::callback_));	\
+		POSEIDON_MODULE_RAII_PRIORITY(handles_, ::Poseidon::module_init_priority_low){	\
+			CIRCE_LOG_INFO("Registering interserver servlet: ", #Msg_);	\
+			const AUTO(servlet_, ::boost::make_shared< ::Circe::Common::Interserver_servlet_callback>(&POSEIDON_LAZY(POSEIDON_CAT2, Interserver_servlet_, __LINE__)::wrapper_));	\
 			handles_.push(servlet_);	\
 			static_cast<void>(how_(Msg_::id, servlet_));	\
 		}	\
 	}	\
 	/* The user is responsible for its definition, hence there is no brace after this prototype. */	\
-	::Circe::Common::Interserver_response TOKEN_CAT2(Interserver_servlet_wrapper_, __LINE__)::unwrapped_callback_(const ::boost::shared_ptr< ::Circe::Common::Interserver_connection> & conn_param_, Msg_ msg_param_)
+	::Circe::Common::Interserver_response POSEIDON_LAZY(POSEIDON_CAT2, Interserver_servlet_, __LINE__)::callback_(const ::boost::shared_ptr< ::Circe::Common::Interserver_connection> & conn_param_, Msg_ msg_param_)
 
 #endif

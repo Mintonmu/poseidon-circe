@@ -61,7 +61,7 @@ DEFINE_SERVLET_FOR(Protocol::Box::Websocket_closure_notification, /*connection*/
 		try {
 			User_defined_functions::handle_websocket_closure(shadow_session, boost::numeric_cast<Poseidon::Websocket::Status_code>(ntfy.status_code), ntfy.reason.c_str());
 		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 		}
 	}
 
@@ -76,7 +76,7 @@ DEFINE_SERVLET_FOR(Protocol::Box::Websocket_packed_message_request, /*connection
 				User_defined_functions::handle_websocket_message(shadow_session, boost::numeric_cast<Poseidon::Websocket::Op_code>(it->opcode), STD_MOVE(it->payload));
 			}
 		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 			shadow_session->shutdown(Poseidon::Websocket::status_internal_error, e.what());
 		}
 	}

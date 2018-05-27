@@ -7,7 +7,7 @@
 namespace Circe {
 namespace Box {
 
-DEFINE_MODULE_CONFIG("circe-box.conf")
+POSEIDON_DEFINE_MODULE_CONFIG("circe-box.conf")
 
 }
 }

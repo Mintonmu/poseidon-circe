@@ -22,7 +22,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::Http_request_to_box, connection, req){
 	Box_connector::get_all_clients(servers_avail);
 	CIRCE_PROTOCOL_THROW_UNLESS(servers_avail.size() != 0, Protocol::error_box_connection_lost, Poseidon::Rcnts::view("Connection to box server was lost"));
 	const AUTO(box_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
-	DEBUG_THROW_ASSERT(box_conn);
+	POSEIDON_THROW_ASSERT(box_conn);
 
 	Protocol::Box::Http_request box_req;
 	box_req.gate_uuid   = connection->get_connection_uuid();
@@ -34,10 +34,10 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::Http_request_to_box, connection, req){
 	box_req.params      = STD_MOVE_IDN(req.params);
 	box_req.headers     = STD_MOVE_IDN(req.headers);
 	box_req.entity      = STD_MOVE(req.entity);
-	LOG_CIRCE_TRACE("Sending request: ", box_req);
+	CIRCE_LOG_TRACE("Sending request: ", box_req);
 	Protocol::Box::Http_response box_resp;
 	Common::wait_for_response(box_resp, box_conn->send_request(box_req));
-	LOG_CIRCE_TRACE("Received response: ", box_resp);
+	CIRCE_LOG_TRACE("Received response: ", box_resp);
 
 	Protocol::Foyer::Http_response_from_box resp;
 	resp.box_uuid    = box_conn->get_connection_uuid();
@@ -52,7 +52,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::Websocket_establishment_request_to_box, conn
 	Box_connector::get_all_clients(servers_avail);
 	CIRCE_PROTOCOL_THROW_UNLESS(servers_avail.size() != 0, Protocol::error_box_connection_lost, Poseidon::Rcnts::view("Connection to box server was lost"));
 	const AUTO(box_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
-	DEBUG_THROW_ASSERT(box_conn);
+	POSEIDON_THROW_ASSERT(box_conn);
 
 	Protocol::Box::Websocket_establishment_request box_req;
 	box_req.gate_uuid   = connection->get_connection_uuid();
@@ -61,10 +61,10 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::Websocket_establishment_request_to_box, conn
 	box_req.auth_token  = STD_MOVE(req.auth_token);
 	box_req.decoded_uri = STD_MOVE(req.decoded_uri);
 	box_req.params      = STD_MOVE_IDN(req.params);
-	LOG_CIRCE_TRACE("Sending request: ", box_req);
+	CIRCE_LOG_TRACE("Sending request: ", box_req);
 	Protocol::Box::Websocket_establishment_response box_resp;
 	Common::wait_for_response(box_resp, box_conn->send_request(box_req));
-	LOG_CIRCE_TRACE("Received response: ", box_resp);
+	CIRCE_LOG_TRACE("Received response: ", box_resp);
 
 	Protocol::Foyer::Websocket_establishment_response_from_box resp;
 	resp.box_uuid = box_conn->get_connection_uuid();
@@ -80,7 +80,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::Websocket_closure_notification_to_box, conne
 	box_ntfy.client_uuid = ntfy.client_uuid;
 	box_ntfy.status_code = ntfy.status_code;
 	box_ntfy.reason      = STD_MOVE(ntfy.reason);
-	LOG_CIRCE_TRACE("Sending notification: ", box_ntfy);
+	CIRCE_LOG_TRACE("Sending notification: ", box_ntfy);
 	box_conn->send_notification(box_ntfy);
 
 	return Protocol::error_success;
@@ -94,7 +94,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::Websocket_kill_notification_to_gate, /*conne
 	gate_ntfy.client_uuid = ntfy.client_uuid;
 	gate_ntfy.status_code = ntfy.status_code;
 	gate_ntfy.reason      = STD_MOVE(ntfy.reason);
-	LOG_CIRCE_TRACE("Sending notification: ", gate_ntfy);
+	CIRCE_LOG_TRACE("Sending notification: ", gate_ntfy);
 	gate_conn->send_notification(gate_ntfy);
 
 	return Protocol::error_success;
@@ -113,10 +113,10 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::Websocket_packed_message_request_to_box, con
 		frame.payload = STD_MOVE(it->payload);
 		box_req.messages.push_back(STD_MOVE(frame));
 	}
-	LOG_CIRCE_TRACE("Sending request: ", box_req);
+	CIRCE_LOG_TRACE("Sending request: ", box_req);
 	Protocol::Box::Websocket_packed_message_response box_resp;
 	Common::wait_for_response(box_resp, box_conn->send_request(box_req));
-	LOG_CIRCE_TRACE("Received response: ", box_resp);
+	CIRCE_LOG_TRACE("Received response: ", box_resp);
 
 	Protocol::Foyer::Websocket_packed_message_response_from_box resp;
 	return resp;
@@ -129,10 +129,10 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::Websocket_packed_message_request_to_gate, /*
 	Protocol::Gate::Websocket_packed_message_request gate_req;
 	gate_req.client_uuid = req.client_uuid;
 	gate_req.messages    = STD_MOVE(req.messages);
-	LOG_CIRCE_TRACE("Sending request: ", gate_req);
+	CIRCE_LOG_TRACE("Sending request: ", gate_req);
 	Protocol::Gate::Websocket_packed_message_response gate_resp;
 	Common::wait_for_response(gate_resp, gate_conn->send_request(gate_req));
-	LOG_CIRCE_TRACE("Received response: ", gate_resp);
+	CIRCE_LOG_TRACE("Received response: ", gate_resp);
 
 	Protocol::Foyer::Websocket_packed_message_response_from_gate resp;
 	return resp;
@@ -163,7 +163,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::Websocket_packed_broadcast_notification_to_g
 		}
 		// Ignore all clients on a gate server that could not be found.
 		if(!gate_conn){
-			LOG_CIRCE_TRACE("> Gate server not found: ", gspair.first->first);
+			CIRCE_LOG_TRACE("> Gate server not found: ", gspair.first->first);
 			continue;
 		}
 		gspair.first->second.second.insert(Poseidon::Uuid(qcit->client_uuid));
@@ -190,7 +190,7 @@ DEFINE_SERVLET_FOR(Protocol::Foyer::Websocket_packed_broadcast_notification_to_g
 			}
 			gate_conn->send_notification(gate_ntfy);
 		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 			gate_conn->shutdown(Protocol::error_internal_error, e.what());
 		}
 	}

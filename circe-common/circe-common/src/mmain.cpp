@@ -7,7 +7,7 @@
 namespace Circe {
 namespace Common {
 
-DEFINE_MODULE_CONFIG("circe-common.conf")
+POSEIDON_DEFINE_MODULE_CONFIG("circe-common.conf")
 
 }
 }

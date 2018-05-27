@@ -18,7 +18,7 @@ namespace Gate {
 DEFINE_SERVLET_FOR(Protocol::Gate::Websocket_kill_notification, /*connection*/, ntfy){
 	const AUTO(ws_session, Client_http_acceptor::get_websocket_session(Poseidon::Uuid(ntfy.client_uuid)));
 	if(ws_session){
-		LOG_CIRCE_INFO("Killing client WebSocket session: remote = ", ws_session->get_remote_info(), ", ntfy = ", ntfy);
+		CIRCE_LOG_INFO("Killing client WebSocket session: remote = ", ws_session->get_remote_info(), ", ntfy = ", ntfy);
 		ws_session->shutdown(boost::numeric_cast<Poseidon::Websocket::Status_code>(ntfy.status_code), ntfy.reason.c_str());
 	}
 
@@ -33,7 +33,7 @@ DEFINE_SERVLET_FOR(Protocol::Gate::Websocket_packed_message_request, /*connectio
 				ws_session->send(boost::numeric_cast<Poseidon::Websocket::Op_code>(it->opcode), STD_MOVE(it->payload));
 			}
 		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 			ws_session->shutdown(Poseidon::Websocket::status_internal_error, e.what());
 		}
 	}
@@ -51,7 +51,7 @@ DEFINE_SERVLET_FOR(Protocol::Gate::Websocket_packed_broadcast_notification, /*co
 					ws_session->send(boost::numeric_cast<Poseidon::Websocket::Op_code>(it->opcode), it->payload);
 				}
 			} catch(std::exception &e){
-				LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+				CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 				ws_session->shutdown(Poseidon::Websocket::status_internal_error, e.what());
 			}
 		}

@@ -21,9 +21,9 @@ std::string User_defined_functions::check_http_authentication(
 	Poseidon::Option_map params,                    // These are GET parameters sent by the client (as part of the URI).
 	Poseidon::Option_map req_headers)               // These are HTTP headers sent by the client.
 {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
-	LOG_CIRCE_FATAL("TODO: Check HTTP authentication: ", Poseidon::Http::get_string_from_verb(verb), " ", decoded_uri, "\n", params);
+	CIRCE_LOG_FATAL("TODO: Check HTTP authentication: ", Poseidon::Http::get_string_from_verb(verb), " ", decoded_uri, "\n", params);
 	(void)resp_status_code;
 	(void)resp_headers;
 	(void)client_uuid;
@@ -49,9 +49,9 @@ std::string User_defined_functions::check_websocket_authentication(
 	std::string decoded_uri,                               // This is the request URI sent by the client. GET parameters have been stripped.
 	Poseidon::Option_map params)                           // These are GET parameters sent by the client (as part of the URI).
 {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
-	LOG_CIRCE_FATAL("TODO: Check WebSocket authentication: ", decoded_uri, "\n", params);
+	CIRCE_LOG_FATAL("TODO: Check WebSocket authentication: ", decoded_uri, "\n", params);
 	(void)resp_messages;
 	(void)resp_status_code;
 	(void)resp_reason;

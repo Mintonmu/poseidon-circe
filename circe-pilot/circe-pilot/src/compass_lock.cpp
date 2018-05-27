@@ -16,7 +16,7 @@ Compass_lock::~Compass_lock(){
 }
 
 void Compass_lock::collect_expired_connections() const NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	bool erase_it;
 	for(AUTO(it, m_readers.begin()); it != m_readers.end(); erase_it ? (it = m_readers.erase(it)) : ++it){
@@ -28,21 +28,21 @@ void Compass_lock::collect_expired_connections() const NOEXCEPT {
 }
 
 bool Compass_lock::is_locked_shared() const NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	collect_expired_connections();
 	// Return `true` if and only if there is at least a reader and it is not a writer at the same time.
 	return !m_readers.empty() && m_writers.empty();
 }
 bool Compass_lock::is_locked_shared_by(const Poseidon::Uuid &connection_uuid) NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	collect_expired_connections();
 	// Return `true` if and only if there is such a reader, regardless of other readers or writers if any.
 	return m_readers.find(connection_uuid) != m_readers.end();
 }
 bool Compass_lock::try_lock_shared(const boost::shared_ptr<Common::Interserver_connection> &connection){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	collect_expired_connections();
 	// Allow recursive locking.
@@ -56,7 +56,7 @@ bool Compass_lock::try_lock_shared(const boost::shared_ptr<Common::Interserver_c
 	return true;
 }
 bool Compass_lock::release_lock_shared(const boost::shared_ptr<Common::Interserver_connection> &connection) NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	collect_expired_connections();
 	// Throw an exception if such a reader cannot be found.
@@ -69,21 +69,21 @@ bool Compass_lock::release_lock_shared(const boost::shared_ptr<Common::Interserv
 }
 
 bool Compass_lock::is_locked_exclusive() const NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	collect_expired_connections();
 	// Return `true` if and only if there is a writer.
 	return !m_writers.empty();
 }
 bool Compass_lock::is_locked_exclusive_by(const Poseidon::Uuid &connection_uuid) NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	collect_expired_connections();
 	// Return `true` if and only if there is such a writer, regardless of other readers or writers if any.
 	return m_writers.find(connection_uuid) != m_writers.end();
 }
 bool Compass_lock::try_lock_exclusive(const boost::shared_ptr<Common::Interserver_connection> &connection){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	collect_expired_connections();
 	// Allow recursive locking.
@@ -100,7 +100,7 @@ bool Compass_lock::try_lock_exclusive(const boost::shared_ptr<Common::Interserve
 	return true;
 }
 bool Compass_lock::release_lock_exclusive(const boost::shared_ptr<Common::Interserver_connection> &connection) NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	collect_expired_connections();
 	// Throw an exception if such a writer cannot be found.

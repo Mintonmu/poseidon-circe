@@ -7,7 +7,7 @@
 namespace Circe {
 namespace Pilot {
 
-DEFINE_MODULE_CONFIG("circe-pilot.conf")
+POSEIDON_DEFINE_MODULE_CONFIG("circe-pilot.conf")
 
 }
 }

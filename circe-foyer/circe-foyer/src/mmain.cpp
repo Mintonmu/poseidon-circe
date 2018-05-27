@@ -7,7 +7,7 @@
 namespace Circe {
 namespace Foyer {
 
-DEFINE_MODULE_CONFIG("circe-foyer.conf")
+POSEIDON_DEFINE_MODULE_CONFIG("circe-foyer.conf")
 
 }
 }

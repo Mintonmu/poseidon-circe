@@ -30,10 +30,10 @@ public:
 		: Poseidon::Cbpp::Low_level_client(sock_addr, false), Interserver_connection(connector->m_application_key)
 		, m_weak_connector(connector)
 	{
-		LOG_CIRCE_INFO("Interserver_client constructor: remote = ", Poseidon::Cbpp::Low_level_client::get_remote_info());
+		CIRCE_LOG_INFO("Interserver_client constructor: remote = ", Poseidon::Cbpp::Low_level_client::get_remote_info());
 	}
 	~Interserver_client() OVERRIDE {
-		LOG_CIRCE_INFO("Interserver_client destructor: remote = ", Poseidon::Cbpp::Low_level_client::get_remote_info());
+		CIRCE_LOG_INFO("Interserver_client destructor: remote = ", Poseidon::Cbpp::Low_level_client::get_remote_info());
 	}
 
 protected:
@@ -86,12 +86,12 @@ protected:
 		// There is nothing to do.
 	}
 	Interserver_response layer7_on_sync_message(boost::uint16_t message_id, Poseidon::Stream_buffer payload) FINAL {
-		PROFILE_ME;
+		POSEIDON_PROFILE_ME;
 
 		const AUTO(connector, m_weak_connector.lock());
 		CIRCE_PROTOCOL_THROW_UNLESS(connector, Protocol::error_gone_away, Poseidon::Rcnts::view("The server has been shut down"));
 
-		LOG_CIRCE_TRACE("Dispatching: typeid(*this).name() = ", typeid(*this).name(), ", message_id = ", message_id);
+		CIRCE_LOG_TRACE("Dispatching: typeid(*this).name() = ", typeid(*this).name(), ", message_id = ", message_id);
 		const AUTO(servlet, connector->sync_get_servlet(message_id));
 		CIRCE_PROTOCOL_THROW_UNLESS(servlet, Protocol::error_not_found, Poseidon::Rcnts::view("message_id not handled"));
 		return (*servlet)(virtual_shared_from_this<Interserver_client>(), message_id, STD_MOVE(payload));
@@ -99,7 +99,7 @@ protected:
 };
 
 void Interserver_connector::timer_proc(const boost::weak_ptr<Interserver_connector> &weak_connector){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const AUTO(connector, weak_connector.lock());
 	if(!connector){
@@ -113,14 +113,14 @@ void Interserver_connector::timer_proc(const boost::weak_ptr<Interserver_connect
 			const AUTO(promised_sock_addr, Poseidon::Dns_daemon::enqueue_for_looking_up(*host_it, connector->m_port));
 			lock.unlock();
 			{
-				LOG_CIRCE_DEBUG("Looking up: ", *host_it);
+				CIRCE_LOG_DEBUG("Looking up: ", *host_it);
 				Poseidon::yield(promised_sock_addr);
-				LOG_CIRCE_INFO("Resolved server hostname: ", *host_it, ":", connector->m_port, " as ", Poseidon::Ip_port(promised_sock_addr->get()));
+				CIRCE_LOG_INFO("Resolved server hostname: ", *host_it, ":", connector->m_port, " as ", Poseidon::Ip_port(promised_sock_addr->get()));
 			}
 			lock.lock();
 			client = connector->m_weak_clients[*host_it].lock();
 			if(client){
-				LOG_CIRCE_WARNING("Killing old client: remote = ", client->layer5_get_remote_info());
+				CIRCE_LOG_WARNING("Killing old client: remote = ", client->layer5_get_remote_info());
 				client->Poseidon::Tcp_session_base::force_shutdown();
 			}
 			client = boost::make_shared<Interserver_client>(promised_sock_addr->get(), connector);
@@ -141,26 +141,26 @@ void Interserver_connector::timer_proc(const boost::weak_ptr<Interserver_connect
 Interserver_connector::Interserver_connector(boost::container::vector<std::string> hosts, boost::uint16_t port, std::string application_key)
 	: m_hosts(STD_MOVE(hosts)), m_port(port), m_application_key(STD_MOVE(application_key))
 {
-	DEBUG_THROW_UNLESS(!m_hosts.empty(), Poseidon::Exception, Poseidon::Rcnts::view("No host to connect to"));
-	DEBUG_THROW_UNLESS(m_port != 0, Poseidon::Exception, Poseidon::Rcnts::view("Port number is zero"));
-	LOG_CIRCE_INFO("Interserver_connector constructor: hosts:port = ", Poseidon::implode(',', m_hosts), ':', m_port);
+	POSEIDON_THROW_UNLESS(!m_hosts.empty(), Poseidon::Exception, Poseidon::Rcnts::view("No host to connect to"));
+	POSEIDON_THROW_UNLESS(m_port != 0, Poseidon::Exception, Poseidon::Rcnts::view("Port number is zero"));
+	CIRCE_LOG_INFO("Interserver_connector constructor: hosts:port = ", Poseidon::implode(',', m_hosts), ':', m_port);
 }
 Interserver_connector::~Interserver_connector(){
-	LOG_CIRCE_INFO("Interserver_connector destructor: hosts:port = ", Poseidon::implode(',', m_hosts), ':', m_port);
+	CIRCE_LOG_INFO("Interserver_connector destructor: hosts:port = ", Poseidon::implode(',', m_hosts), ':', m_port);
 	clear(Protocol::error_gone_away);
 }
 
 void Interserver_connector::activate(){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(m_mutex);
-	DEBUG_THROW_UNLESS(!m_timer, Poseidon::Exception, Poseidon::Rcnts::view("Interserver_connector is already activated"));
+	POSEIDON_THROW_UNLESS(!m_timer, Poseidon::Exception, Poseidon::Rcnts::view("Interserver_connector is already activated"));
 	const AUTO(timer, Poseidon::Timer_daemon::register_timer(0, 5000, boost::bind(&timer_proc, virtual_weak_from_this<Interserver_connector>())));
 	m_timer = timer;
 }
 
 boost::shared_ptr<Interserver_connection> Interserver_connector::get_client(const Poseidon::Uuid &connection_uuid) const {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(m_mutex);
 	for(AUTO(it, m_weak_clients.begin()); it != m_weak_clients.end(); ++it){
@@ -172,7 +172,7 @@ boost::shared_ptr<Interserver_connection> Interserver_connector::get_client(cons
 	return VAL_INIT;
 }
 std::size_t Interserver_connector::get_all_clients(boost::container::vector<boost::shared_ptr<Interserver_connection> > &clients_ret) const {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(m_mutex);
 	std::size_t count_added = 0;
@@ -188,7 +188,7 @@ std::size_t Interserver_connector::get_all_clients(boost::container::vector<boos
 	return count_added;
 }
 std::size_t Interserver_connector::safe_broadcast_notification(const Poseidon::Cbpp::Message_base &msg) const NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(m_mutex);
 	std::size_t count_notified = 0;
@@ -198,10 +198,10 @@ std::size_t Interserver_connector::safe_broadcast_notification(const Poseidon::C
 			continue;
 		}
 		try {
-			LOG_CIRCE_DEBUG("Broadcasting notification to interserver client: remote = ", client->layer5_get_remote_info(), ": ", msg);
+			CIRCE_LOG_DEBUG("Broadcasting notification to interserver client: remote = ", client->layer5_get_remote_info(), ": ", msg);
 			client->send_notification(msg);
 		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 			client->layer5_shutdown(Protocol::error_internal_error, e.what());
 		}
 		++count_notified;
@@ -209,7 +209,7 @@ std::size_t Interserver_connector::safe_broadcast_notification(const Poseidon::C
 	return count_notified;
 }
 std::size_t Interserver_connector::clear(long err_code, const char *err_msg) NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(m_mutex);
 	std::size_t count_shutdown = 0;
@@ -218,7 +218,7 @@ std::size_t Interserver_connector::clear(long err_code, const char *err_msg) NOE
 		if(!client){
 			continue;
 		}
-		LOG_CIRCE_DEBUG("Disconnecting interserver client: remote = ", client->layer5_get_remote_info());
+		CIRCE_LOG_DEBUG("Disconnecting interserver client: remote = ", client->layer5_get_remote_info());
 		client->layer5_shutdown(err_code, err_msg);
 		++count_shutdown;
 	}

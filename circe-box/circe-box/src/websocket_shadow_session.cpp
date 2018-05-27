@@ -36,7 +36,7 @@ protected:
 		return m_weak_session;
 	}
 	void perform() FINAL {
-		PROFILE_ME;
+		POSEIDON_PROFILE_ME;
 
 		const AUTO(foyer_conn, m_weak_foyer_conn.lock());
 		if(!foyer_conn){
@@ -51,7 +51,7 @@ protected:
 			foyer_ntfy.reason      = STD_MOVE(m_reason);
 			foyer_conn->send_notification(foyer_ntfy);
 		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 			foyer_conn->shutdown(Protocol::error_internal_error, e.what());
 		}
 	}
@@ -73,7 +73,7 @@ protected:
 		return m_weak_session;
 	}
 	void perform() FINAL {
-		PROFILE_ME;
+		POSEIDON_PROFILE_ME;
 
 		const AUTO(session, m_weak_session.lock());
 		if(!session){
@@ -82,14 +82,14 @@ protected:
 
 		try {
 			const AUTO(foyer_conn, Box_acceptor::get_session(session->m_foyer_uuid));
-			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Websocket::Exception, Poseidon::Websocket::status_going_away, Poseidon::Rcnts::view("Connection to foyer server was lost"));
+			POSEIDON_THROW_UNLESS(foyer_conn, Poseidon::Websocket::Exception, Poseidon::Websocket::status_going_away, Poseidon::Rcnts::view("Connection to foyer server was lost"));
 
 			Poseidon::Mutex::Unique_lock lock(session->m_delivery_mutex);
-			DEBUG_THROW_ASSERT(session->m_delivery_job_active);
+			POSEIDON_THROW_ASSERT(session->m_delivery_job_active);
 			for(;;){
 				VALUE_TYPE(session->m_messages_pending) messages_pending;
 				messages_pending.swap(session->m_messages_pending);
-				LOG_CIRCE_TRACE("Messages pending: session = ", (void *)session.get(), ", count = ", messages_pending.size());
+				CIRCE_LOG_TRACE("Messages pending: session = ", (void *)session.get(), ", count = ", messages_pending.size());
 				if(messages_pending.empty()){
 					break;
 				}
@@ -104,19 +104,19 @@ protected:
 					frame.payload = STD_MOVE(it->second);
 					foyer_req.messages.push_back(STD_MOVE(frame));
 				}
-				LOG_CIRCE_TRACE("Sending request: ", foyer_req);
+				CIRCE_LOG_TRACE("Sending request: ", foyer_req);
 				Protocol::Foyer::Websocket_packed_message_response_from_gate foyer_resp;
 				Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
-				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+				CIRCE_LOG_TRACE("Received response: ", foyer_resp);
 
 				lock.lock();
 			}
 			session->m_delivery_job_active = false;
 		} catch(Poseidon::Websocket::Exception &e){
-			LOG_CIRCE_ERROR("Poseidon::Websocket::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
+			CIRCE_LOG_ERROR("Poseidon::Websocket::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
 			session->shutdown(e.get_status_code(), e.what());
 		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 			session->shutdown(Poseidon::Websocket::status_internal_error, e.what());
 		}
 	}
@@ -126,10 +126,10 @@ Websocket_shadow_session::Websocket_shadow_session(const Poseidon::Uuid &foyer_u
 	: m_foyer_uuid(foyer_uuid), m_gate_uuid(gate_uuid), m_client_uuid(client_uuid), m_client_ip(STD_MOVE(client_ip)), m_auth_token(STD_MOVE(auth_token))
 	, m_shutdown(false)
 {
-	LOG_CIRCE_INFO("Websocket_shadow_session constructor: client_uuid = ", m_client_uuid, ", client_ip = ", m_client_ip);
+	CIRCE_LOG_INFO("Websocket_shadow_session constructor: client_uuid = ", m_client_uuid, ", client_ip = ", m_client_ip);
 }
 Websocket_shadow_session::~Websocket_shadow_session(){
-	LOG_CIRCE_INFO("Websocket_shadow_session destructor: client_uuid = ", m_client_uuid, ", client_ip = ", m_client_ip);
+	CIRCE_LOG_INFO("Websocket_shadow_session destructor: client_uuid = ", m_client_uuid, ", client_ip = ", m_client_ip);
 }
 
 bool Websocket_shadow_session::has_been_shutdown() const {
@@ -139,7 +139,7 @@ void Websocket_shadow_session::mark_shutdown() NOEXCEPT {
 	Poseidon::atomic_store(m_shutdown, true, Poseidon::memory_order_release);
 }
 bool Websocket_shadow_session::shutdown(Poseidon::Websocket::Status_code status_code, const char *reason) NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	bool was_shutdown = Poseidon::atomic_load(m_shutdown, Poseidon::memory_order_acquire);
 	if(!was_shutdown){
@@ -153,18 +153,18 @@ bool Websocket_shadow_session::shutdown(Poseidon::Websocket::Status_code status_
 		try {
 			Poseidon::enqueue(boost::make_shared<Shutdown_job>(virtual_shared_from_this<Websocket_shadow_session>(), foyer_conn, m_gate_uuid, m_client_uuid, status_code, reason));
 		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 			foyer_conn->shutdown(Protocol::error_internal_error, e.what());
 		}
 	}
 	return true;
 }
 bool Websocket_shadow_session::send(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload){
-	PROFILE_ME;
-	LOG_CIRCE_TRACE("Sending message via Websocket_shadow_session: client_ip = ", get_client_ip(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
+	POSEIDON_PROFILE_ME;
+	CIRCE_LOG_TRACE("Sending message via Websocket_shadow_session: client_ip = ", get_client_ip(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
 	if(has_been_shutdown()){
-		LOG_CIRCE_DEBUG("Websocket_shadow_sessio has been shut down: client_ip = ", get_client_ip());
+		CIRCE_LOG_DEBUG("Websocket_shadow_sessio has been shut down: client_ip = ", get_client_ip());
 		return false;
 	}
 

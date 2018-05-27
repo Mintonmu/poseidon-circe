@@ -21,16 +21,16 @@ namespace {
 		Poseidon::Uuid client_uuid;
 		std::pair<Poseidon::Uuid, Poseidon::Uuid> foyer_gate_uuid_pair;
 	};
-	MULTI_INDEX_MAP(Session_container, Session_element,
-		UNIQUE_MEMBER_INDEX(client_uuid)
-		MULTI_MEMBER_INDEX(foyer_gate_uuid_pair)
+	POSEIDON_MULTI_INDEX_MAP(Session_container, Session_element,
+		POSEIDON_UNIQUE_MEMBER_INDEX(client_uuid)
+		POSEIDON_MULTI_MEMBER_INDEX(foyer_gate_uuid_pair)
 	);
 
 	Poseidon::Mutex g_mutex;
 	boost::weak_ptr<Session_container> g_weak_session_container;
 
 	void ping_timer_proc(){
-		PROFILE_ME;
+		POSEIDON_PROFILE_ME;
 
 		const AUTO(session_container, g_weak_session_container.lock());
 		if(!session_container){
@@ -50,22 +50,22 @@ namespace {
 		for(AUTO(it, foyer_gate_uuids_expired.begin()); it != foyer_gate_uuids_expired.end(); erase_it ? (it = foyer_gate_uuids_expired.erase(it)) : ++it){
 			const AUTO(foyer_uuid, it->first);
 			const AUTO(gate_uuid, it->second);
-			LOG_CIRCE_DEBUG("Checking gate: foyer_uuid = ", foyer_uuid, ", gate_uuid = ", gate_uuid);
+			CIRCE_LOG_DEBUG("Checking gate: foyer_uuid = ", foyer_uuid, ", gate_uuid = ", gate_uuid);
 			try {
 				const AUTO(foyer_conn, Box_acceptor::get_session(foyer_uuid));
-				DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Exception, Poseidon::Rcnts::view("Connection to foyer server was lost"));
+				POSEIDON_THROW_UNLESS(foyer_conn, Poseidon::Exception, Poseidon::Rcnts::view("Connection to foyer server was lost"));
 				{
 					Protocol::Foyer::Check_gate_request foyer_req;
 					foyer_req.gate_uuid = gate_uuid;
-					LOG_CIRCE_TRACE("Sending request: ", foyer_req);
+					CIRCE_LOG_TRACE("Sending request: ", foyer_req);
 					Protocol::Foyer::Check_gate_response foyer_resp;
 					Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
-					LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+					CIRCE_LOG_TRACE("Received response: ", foyer_resp);
 				}
-				LOG_CIRCE_DEBUG("Gate is alive: foyer_uuid = ", foyer_uuid, ", gate_uuid = ", gate_uuid);
+				CIRCE_LOG_DEBUG("Gate is alive: foyer_uuid = ", foyer_uuid, ", gate_uuid = ", gate_uuid);
 				erase_it = true;
 			} catch(std::exception &e){
-				LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+				CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 				erase_it = false;
 			}
 		}
@@ -84,38 +84,37 @@ namespace {
 			}
 			for(AUTO(sit, sessions_detached.begin()); sit != sessions_detached.end(); ++sit){
 				const AUTO_REF(session, *sit);
-				LOG_CIRCE_DEBUG("Disconnecting Websocket_shadow_session: client_ip = ", session->get_client_ip());
+				CIRCE_LOG_DEBUG("Disconnecting Websocket_shadow_session: client_ip = ", session->get_client_ip());
 				session->mark_shutdown();
 				try {
 					User_defined_functions::handle_websocket_closure(session, Poseidon::Websocket::status_going_away, "Connection to gate server was lost");
 				} catch(std::exception &e){
-					LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+					CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 				}
 			}
 		}
 	}
 }
 
-MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_ESSENTIAL){
+POSEIDON_MODULE_RAII_PRIORITY(handles, Poseidon::module_init_priority_essential){
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(session_container, boost::make_shared<Session_container>());
 	handles.push(session_container);
 	g_weak_session_container = session_container;
 }
-
-MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
+POSEIDON_MODULE_RAII_PRIORITY(handles, Poseidon::module_init_priority_low){
 	const AUTO(ping_timer_interval, get_config<boost::uint64_t>("websocket_shadow_session_ping_timer_interval", 60000));
 	const AUTO(timer, Poseidon::Timer_daemon::register_timer(0, ping_timer_interval, boost::bind(&ping_timer_proc)));
 	handles.push(timer);
 }
 
 boost::shared_ptr<Websocket_shadow_session> Websocket_shadow_session_supervisor::get_session(const Poseidon::Uuid &client_uuid){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(session_container, g_weak_session_container.lock());
 	if(!session_container){
-		LOG_CIRCE_WARNING("Websocket_shadow_session_supervisor has not been initialized.");
+		CIRCE_LOG_WARNING("Websocket_shadow_session_supervisor has not been initialized.");
 		return VAL_INIT;
 	}
 	const AUTO(it, session_container->find<0>(client_uuid));
@@ -126,12 +125,12 @@ boost::shared_ptr<Websocket_shadow_session> Websocket_shadow_session_supervisor:
 	return STD_MOVE(session);
 }
 std::size_t Websocket_shadow_session_supervisor::get_all_sessions(boost::container::vector<boost::shared_ptr<Websocket_shadow_session> > &sessions_ret){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(session_container, g_weak_session_container.lock());
 	if(!session_container){
-		LOG_CIRCE_WARNING("Websocket_shadow_session_supervisor has not been initialized.");
+		CIRCE_LOG_WARNING("Websocket_shadow_session_supervisor has not been initialized.");
 		return 0;
 	}
 	std::size_t count_added = 0;
@@ -144,25 +143,25 @@ std::size_t Websocket_shadow_session_supervisor::get_all_sessions(boost::contain
 	return count_added;
 }
 void Websocket_shadow_session_supervisor::attach_session(const boost::shared_ptr<Websocket_shadow_session> &session){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(session_container, g_weak_session_container.lock());
 	if(!session_container){
-		LOG_CIRCE_WARNING("Websocket_shadow_session_supervisor has not been initialized.");
-		DEBUG_THROW(Poseidon::Exception, Poseidon::Rcnts::view("Websocket_shadow_session_supervisor has not been initialized"));
+		CIRCE_LOG_WARNING("Websocket_shadow_session_supervisor has not been initialized.");
+		POSEIDON_THROW(Poseidon::Exception, Poseidon::Rcnts::view("Websocket_shadow_session_supervisor has not been initialized"));
 	}
 	Session_element elem = { session, session->get_client_uuid(), std::make_pair(session->get_foyer_uuid(), session->get_gate_uuid()) };
 	const AUTO(pair, session_container->insert(STD_MOVE(elem)));
-	DEBUG_THROW_UNLESS(pair.second, Poseidon::Exception, Poseidon::Rcnts::view("Duplicate Websocket_shadow_session UUID"));
+	POSEIDON_THROW_UNLESS(pair.second, Poseidon::Exception, Poseidon::Rcnts::view("Duplicate Websocket_shadow_session UUID"));
 }
 boost::shared_ptr<Websocket_shadow_session> Websocket_shadow_session_supervisor::detach_session(const Poseidon::Uuid &client_uuid) NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(session_container, g_weak_session_container.lock());
 	if(!session_container){
-		LOG_CIRCE_WARNING("Websocket_shadow_session_supervisor has not been initialized.");
+		CIRCE_LOG_WARNING("Websocket_shadow_session_supervisor has not been initialized.");
 		return VAL_INIT;
 	}
 	const AUTO(it, session_container->find<0>(client_uuid));
@@ -174,18 +173,18 @@ boost::shared_ptr<Websocket_shadow_session> Websocket_shadow_session_supervisor:
 	return STD_MOVE(session);
 }
 std::size_t Websocket_shadow_session_supervisor::clear(Poseidon::Websocket::Status_code status_code, const char *reason) NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(session_container, g_weak_session_container.lock());
 	if(!session_container){
-		LOG_CIRCE_WARNING("Websocket_shadow_session_supervisor has not been initialized.");
+		CIRCE_LOG_WARNING("Websocket_shadow_session_supervisor has not been initialized.");
 		return 0;
 	}
 	std::size_t count_shutdown = 0;
 	for(AUTO(it, session_container->begin()); it != session_container->end(); it = session_container->erase(it)){
 		AUTO(session, it->session);
-		LOG_CIRCE_DEBUG("Disconnecting Websocket_shadow_session: client_ip = ", session->get_client_ip());
+		CIRCE_LOG_DEBUG("Disconnecting Websocket_shadow_session: client_ip = ", session->get_client_ip());
 		session->shutdown(status_code, reason);
 		++count_shutdown;
 	}

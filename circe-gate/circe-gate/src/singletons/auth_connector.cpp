@@ -16,9 +16,7 @@ namespace {
 	public:
 		Specialized_connector(boost::container::vector<std::string> hosts, boost::uint16_t port, std::string application_key)
 			: Common::Interserver_connector(STD_MOVE(hosts), port, STD_MOVE(application_key))
-		{
-			//
-		}
+		{ }
 
 	protected:
 		boost::shared_ptr<const Common::Interserver_servlet_callback> sync_get_servlet(boost::uint16_t message_id) const OVERRIDE {
@@ -30,7 +28,7 @@ namespace {
 	boost::weak_ptr<Specialized_connector> g_weak_connector;
 }
 
-MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
+POSEIDON_MODULE_RAII_PRIORITY(handles, Poseidon::module_init_priority_low){
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(hosts, get_config_all<std::string>("auth_connector_host"));
 	const AUTO(port, get_config<boost::uint16_t>("auth_connector_port"));
@@ -42,45 +40,45 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 }
 
 boost::shared_ptr<Common::Interserver_connection> Auth_connector::get_client(const Poseidon::Uuid &connection_uuid){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
-		LOG_CIRCE_WARNING("Auth_connector has not been initialized.");
+		CIRCE_LOG_WARNING("Auth_connector has not been initialized.");
 		return VAL_INIT;
 	}
 	return connector->get_client(connection_uuid);
 }
 std::size_t Auth_connector::get_all_clients(boost::container::vector<boost::shared_ptr<Common::Interserver_connection> > &clients_ret){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
-		LOG_CIRCE_WARNING("Auth_connector has not been initialized.");
+		CIRCE_LOG_WARNING("Auth_connector has not been initialized.");
 		return 0;
 	}
 	return connector->get_all_clients(clients_ret);
 }
 std::size_t Auth_connector::safe_broadcast_notification(const Poseidon::Cbpp::Message_base &msg) NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
-		LOG_CIRCE_WARNING("Auth_connector has not been initialized.");
+		CIRCE_LOG_WARNING("Auth_connector has not been initialized.");
 		return 0;
 	}
 	return connector->safe_broadcast_notification(msg);
 }
 std::size_t Auth_connector::clear(long err_code, const char *err_msg) NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(connector, g_weak_connector.lock());
 	if(!connector){
-		LOG_CIRCE_WARNING("Auth_connector has not been initialized.");
+		CIRCE_LOG_WARNING("Auth_connector has not been initialized.");
 		return 0;
 	}
 	return connector->clear(err_code, err_msg);

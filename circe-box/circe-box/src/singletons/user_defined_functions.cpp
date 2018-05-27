@@ -31,9 +31,9 @@ void User_defined_functions::handle_http_request(
 	Poseidon::Option_map req_headers,               // These are HTTP headers sent by the client.
 	Poseidon::Stream_buffer req_entity)             // This is the request entity sent by the client.
 {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
-	LOG_CIRCE_FATAL("TODO: Handle HTTP request: ", Poseidon::Http::get_string_from_verb(verb), " ", decoded_uri, "\n", params, "\n", req_entity);
+	CIRCE_LOG_FATAL("TODO: Handle HTTP request: ", Poseidon::Http::get_string_from_verb(verb), " ", decoded_uri, "\n", params, "\n", req_entity);
 
 	if(decoded_uri == "/favicon.ico"){
 		resp_status_code = 404;
@@ -69,9 +69,9 @@ void User_defined_functions::handle_websocket_establishment(
 	std::string decoded_uri,                                            // This is the request URI sent by the client. GET parameters have been stripped.
 	Poseidon::Option_map params)                                        // These are GET parameters sent by the client (as part of the URI).
 {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
-	LOG_CIRCE_FATAL("TODO: Handle WebSocket establishment: ", decoded_uri, "\n", params);
+	CIRCE_LOG_FATAL("TODO: Handle WebSocket establishment: ", decoded_uri, "\n", params);
 	(void)client_session;
 	(void)decoded_uri;
 	(void)params;
@@ -82,9 +82,9 @@ void User_defined_functions::handle_websocket_message(
 	Poseidon::Websocket::Op_code opcode,                                // This is the opcode sent by the client. This may be `Poseidon::Websocket::opcode_data_text` or `Poseidon::Websocket::opcode_data_binary`.
 	Poseidon::Stream_buffer payload)                                    // This is the payload sent by the client. If the opcode claims a text message, the payload will be a valid UTF-8 string.
 {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
-	LOG_CIRCE_FATAL("TODO: Handle WebSocket message: ", opcode, ": ", payload);
+	CIRCE_LOG_FATAL("TODO: Handle WebSocket message: ", opcode, ": ", payload);
 
 //	for(unsigned i = 0; i < 3; ++i){
 //		char str[100];
@@ -118,11 +118,11 @@ void User_defined_functions::handle_websocket_message(
 	q.lock_disposition = Protocol::Pilot::lock_try_acquire_exclusive;
 	boost::container::vector<boost::shared_ptr<Common::Interserver_connection> > c;
 	Pilot_connector::get_all_clients(c);
-	DEBUG_THROW_ASSERT(!c.empty());
-	LOG_CIRCE_FATAL(q);
+	POSEIDON_THROW_ASSERT(!c.empty());
+	CIRCE_LOG_FATAL(q);
 	Protocol::Pilot::Compare_exchange_response r;
 	Common::wait_for_response(r, c.at(0)->send_request(q));
-	LOG_CIRCE_ERROR(r);
+	CIRCE_LOG_ERROR(r);
 
 	(void)client_session;
 	(void)opcode;
@@ -134,9 +134,9 @@ void User_defined_functions::handle_websocket_closure(
 	Poseidon::Websocket::Status_code status_code,                       // This is the status code in the closure frame received from the client, or `Poseidon::Websocket::status_reserved_abnormal` if no closure frame was received.
 	const char *reason)                                                 // This is the payload in the closure frame received from the client, or an unspecified string if no closure frame was received.
 {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
-	LOG_CIRCE_FATAL("TODO: Handle WebSocket closure: ", status_code, ": ", reason);
+	CIRCE_LOG_FATAL("TODO: Handle WebSocket closure: ", status_code, ": ", reason);
 	(void)client_session;
 	(void)status_code;
 	(void)reason;

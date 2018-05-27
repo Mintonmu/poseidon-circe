@@ -15,16 +15,16 @@ namespace Pilot {
 Compass::Compass(const Compass_key &compass_key)
 	: m_compass_key(compass_key)
 {
-	LOG_CIRCE_DEBUG("Compass constructor (to create): compass_key = ", get_compass_key());
+	CIRCE_LOG_DEBUG("Compass constructor (to create): compass_key = ", get_compass_key());
 }
 Compass::Compass(const boost::shared_ptr<ORM_Compass> &dao)
 	: m_compass_key(Compass_key::from_string(dao->compass_key))
 	, m_dao(Poseidon::Mysql::begin_synchronization(dao, false)), m_lock(), m_watcher_map()
 {
-	LOG_CIRCE_DEBUG("Compass constructor (to open): compass_key = ", get_compass_key());
+	CIRCE_LOG_DEBUG("Compass constructor (to open): compass_key = ", get_compass_key());
 }
 Compass::~Compass(){
-	LOG_CIRCE_DEBUG("Compass destructor: compass_key = ", get_compass_key());
+	CIRCE_LOG_DEBUG("Compass destructor: compass_key = ", get_compass_key());
 }
 
 boost::uint64_t Compass::get_last_access_time() const {
@@ -56,7 +56,7 @@ boost::uint64_t Compass::get_version() const {
 }
 void Compass::set_value(std::string value_new){
 	// Mandate exclusive access.
-	DEBUG_THROW_UNLESS(m_lock.is_locked_exclusive(), Poseidon::Exception, Poseidon::Rcnts::view("Exclusive access is required to alter the value of a compass"));
+	POSEIDON_THROW_UNLESS(m_lock.is_locked_exclusive(), Poseidon::Exception, Poseidon::Rcnts::view("Exclusive access is required to alter the value of a compass"));
 	// Collect watchers before modifying the value.
 	boost::container::vector<std::pair<Poseidon::Uuid, boost::shared_ptr<Common::Interserver_connection> > > watchers;
 	m_watcher_map.get_watchers(watchers);
@@ -78,7 +78,7 @@ void Compass::set_value(std::string value_new){
 			ntfy.value_new    = m_dao->value;
 			connection->send_notification(ntfy);
 		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 			connection->shutdown(Protocol::error_internal_error, e.what());
 		}
 	}

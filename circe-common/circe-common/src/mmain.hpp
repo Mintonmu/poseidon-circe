@@ -9,7 +9,7 @@
 namespace Circe {
 namespace Common {
 
-DECLARE_MODULE_CONFIG(get_config)
+POSEIDON_DECLARE_MODULE_CONFIG(get_config)
 
 }
 }

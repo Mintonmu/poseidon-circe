@@ -9,7 +9,7 @@
 namespace Circe {
 namespace Gate {
 
-DECLARE_MODULE_CONFIG(get_config)
+POSEIDON_DECLARE_MODULE_CONFIG(get_config)
 
 }
 }

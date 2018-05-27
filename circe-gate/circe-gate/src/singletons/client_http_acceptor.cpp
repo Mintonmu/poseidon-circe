@@ -19,16 +19,14 @@ namespace {
 	public:
 		Specialized_acceptor(const std::string &bind, boost::uint16_t port, const std::string &cert, const std::string &pkey)
 			: Poseidon::Tcp_server_base(Poseidon::Ip_port(bind.c_str(), port), cert.c_str(), pkey.c_str())
-		{
-			//
-		}
+		{ }
 		~Specialized_acceptor() OVERRIDE {
 			clear(Poseidon::Websocket::status_going_away);
 		}
 
 	protected:
 		boost::shared_ptr<Poseidon::Tcp_session_base> on_client_connect(Poseidon::Move<Poseidon::Unique_file> client) OVERRIDE {
-			PROFILE_ME;
+			POSEIDON_PROFILE_ME;
 
 			AUTO(session, boost::make_shared<Client_http_session>(STD_MOVE(client)));
 			session->set_no_delay();
@@ -38,14 +36,14 @@ namespace {
 				for(AUTO(it, m_weak_sessions.begin()); it != m_weak_sessions.end(); erase_it ? (it = m_weak_sessions.erase(it)) : ++it){
 					erase_it = it->second.expired();
 				}
-				DEBUG_THROW_ASSERT(m_weak_sessions.emplace(session->get_client_uuid(), session).second);
+				POSEIDON_THROW_ASSERT(m_weak_sessions.emplace(session->get_client_uuid(), session).second);
 			}
 			return STD_MOVE_IDN(session);
 		}
 
 	public:
 		boost::shared_ptr<Client_http_session> get_session(const Poseidon::Uuid &client_uuid) const {
-			PROFILE_ME;
+			POSEIDON_PROFILE_ME;
 
 			const Poseidon::Mutex::Unique_lock lock(m_mutex);
 			const AUTO(it, m_weak_sessions.find(client_uuid));
@@ -56,7 +54,7 @@ namespace {
 			return STD_MOVE_IDN(http_session);
 		}
 		std::size_t get_all_sessions(boost::container::vector<boost::shared_ptr<Client_http_session> > &http_sessions_ret){
-			PROFILE_ME;
+			POSEIDON_PROFILE_ME;
 
 			const Poseidon::Mutex::Unique_lock lock(m_mutex);
 			std::size_t count_added = 0;
@@ -72,7 +70,7 @@ namespace {
 			return count_added;
 		}
 		boost::shared_ptr<Client_websocket_session> get_websocket_session(const Poseidon::Uuid &client_uuid) const {
-			PROFILE_ME;
+			POSEIDON_PROFILE_ME;
 
 			const Poseidon::Mutex::Unique_lock lock(m_mutex);
 			const AUTO(it, m_weak_sessions.find(client_uuid));
@@ -87,7 +85,7 @@ namespace {
 			return STD_MOVE_IDN(ws_session);
 		}
 		std::size_t get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<Client_websocket_session> > &ws_sessions_ret){
-			PROFILE_ME;
+			POSEIDON_PROFILE_ME;
 
 			const Poseidon::Mutex::Unique_lock lock(m_mutex);
 			std::size_t count_added = 0;
@@ -107,7 +105,7 @@ namespace {
 			return count_added;
 		}
 		std::size_t clear(Poseidon::Websocket::Status_code status_code, const char *reason = "") NOEXCEPT {
-			PROFILE_ME;
+			POSEIDON_PROFILE_ME;
 
 			const Poseidon::Mutex::Unique_lock lock(m_mutex);
 			std::size_t count_shutdown = 0;
@@ -116,7 +114,7 @@ namespace {
 				if(!http_session){
 					continue;
 				}
-				LOG_CIRCE_DEBUG("Disconnecting client session: remote = ", http_session->get_remote_info());
+				CIRCE_LOG_DEBUG("Disconnecting client session: remote = ", http_session->get_remote_info());
 				http_session->shutdown(status_code, reason);
 				++count_shutdown;
 			}
@@ -128,7 +126,7 @@ namespace {
 	boost::weak_ptr<Specialized_acceptor> g_weak_acceptor;
 }
 
-MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
+POSEIDON_MODULE_RAII_PRIORITY(handles, Poseidon::module_init_priority_low){
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(bind, get_config<std::string>("client_http_acceptor_bind"));
 	const AUTO(port, get_config<boost::uint16_t>("client_http_acceptor_port"));
@@ -141,56 +139,56 @@ MODULE_RAII_PRIORITY(handles, INIT_PRIORITY_LOW){
 }
 
 boost::shared_ptr<Client_http_session> Client_http_acceptor::get_session(const Poseidon::Uuid &client_uuid){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
-		LOG_CIRCE_WARNING("Client_http_acceptor has not been initialized.");
+		CIRCE_LOG_WARNING("Client_http_acceptor has not been initialized.");
 		return VAL_INIT;
 	}
 	return acceptor->get_session(client_uuid);
 }
 std::size_t Client_http_acceptor::get_all_sessions(boost::container::vector<boost::shared_ptr<Client_http_session> > &sessions_ret){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
-		LOG_CIRCE_WARNING("Client_http_acceptor has not been initialized.");
+		CIRCE_LOG_WARNING("Client_http_acceptor has not been initialized.");
 		return 0;
 	}
 	return acceptor->get_all_sessions(sessions_ret);
 }
 boost::shared_ptr<Client_websocket_session> Client_http_acceptor::get_websocket_session(const Poseidon::Uuid &client_uuid){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
-		LOG_CIRCE_WARNING("Client_http_acceptor has not been initialized.");
+		CIRCE_LOG_WARNING("Client_http_acceptor has not been initialized.");
 		return VAL_INIT;
 	}
 	return acceptor->get_websocket_session(client_uuid);
 }
 std::size_t Client_http_acceptor::get_all_websocket_sessions(boost::container::vector<boost::shared_ptr<Client_websocket_session> > &sessions_ret){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
-		LOG_CIRCE_WARNING("Client_http_acceptor has not been initialized.");
+		CIRCE_LOG_WARNING("Client_http_acceptor has not been initialized.");
 		return 0;
 	}
 	return acceptor->get_all_websocket_sessions(sessions_ret);
 }
 std::size_t Client_http_acceptor::clear(Poseidon::Websocket::Status_code status_code, const char *reason) NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const Poseidon::Mutex::Unique_lock lock(g_mutex);
 	const AUTO(acceptor, g_weak_acceptor.lock());
 	if(!acceptor){
-		LOG_CIRCE_WARNING("Client_http_acceptor has not been initialized.");
+		CIRCE_LOG_WARNING("Client_http_acceptor has not been initialized.");
 		return 0;
 	}
 	return acceptor->clear(status_code, reason);

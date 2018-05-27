@@ -7,7 +7,7 @@
 namespace Circe {
 namespace Gate {
 
-DEFINE_MODULE_CONFIG("circe-gate.conf")
+POSEIDON_DEFINE_MODULE_CONFIG("circe-gate.conf")
 
 }
 }

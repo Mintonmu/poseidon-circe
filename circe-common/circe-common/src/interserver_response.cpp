@@ -18,13 +18,13 @@ Interserver_response::Interserver_response(long err_code, std::string err_msg)
 	: m_err_code(err_code), m_err_msg(STD_MOVE(err_msg))
 	, m_message_id(), m_payload()
 {
-	LOG_CIRCE_TRACE("Constructing Interserver_response without a payload: err_code = ", get_err_code(), ", err_msg = ", get_err_msg());
+	CIRCE_LOG_TRACE("Constructing Interserver_response without a payload: err_code = ", get_err_code(), ", err_msg = ", get_err_msg());
 }
 Interserver_response::Interserver_response(const Poseidon::Cbpp::Message_base &msg)
 	: m_err_code(Protocol::error_success), m_err_msg()
 	, m_message_id(msg.get_id()), m_payload(msg)
 {
-	LOG_CIRCE_TRACE("Constructing Interserver_response from message: msg = ", msg);
+	CIRCE_LOG_TRACE("Constructing Interserver_response from message: msg = ", msg);
 }
 Interserver_response::~Interserver_response(){
 	//

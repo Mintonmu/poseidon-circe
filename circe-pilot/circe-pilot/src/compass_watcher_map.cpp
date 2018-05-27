@@ -16,7 +16,7 @@ Compass_watcher_map::~Compass_watcher_map(){
 }
 
 std::size_t Compass_watcher_map::get_watchers(boost::container::vector<std::pair<Poseidon::Uuid, boost::shared_ptr<Common::Interserver_connection> > > &watchers_ret) const {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	std::size_t count_collected = 0;
 	watchers_ret.reserve(watchers_ret.size() + m_watchers.size());
@@ -32,7 +32,7 @@ std::size_t Compass_watcher_map::get_watchers(boost::container::vector<std::pair
 	return count_collected;
 }
 Poseidon::Uuid Compass_watcher_map::add_watcher(const boost::shared_ptr<Common::Interserver_connection> &connection){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	bool erase_it;
 	for(AUTO(it, m_watchers.begin()); it != m_watchers.end(); erase_it ? (it = m_watchers.erase(it)) : ++it){
@@ -40,11 +40,11 @@ Poseidon::Uuid Compass_watcher_map::add_watcher(const boost::shared_ptr<Common::
 	}
 	const AUTO(watcher_uuid, Poseidon::Uuid::random());
 	const AUTO(pair, m_watchers.emplace(watcher_uuid, connection));
-	DEBUG_THROW_ASSERT(pair.second);
+	POSEIDON_THROW_ASSERT(pair.second);
 	return watcher_uuid;
 }
 bool Compass_watcher_map::remove_watcher(const Poseidon::Uuid &watcher_uuid) NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const AUTO(it, m_watchers.find(watcher_uuid));
 	if(it == m_watchers.end()){

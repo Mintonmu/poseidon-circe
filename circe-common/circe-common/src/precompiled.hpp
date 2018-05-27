@@ -25,14 +25,13 @@
 #include <poseidon/mutex.hpp>
 #include <poseidon/recursive_mutex.hpp>
 
-#define LOG_CIRCE_EXPLICIT(level_, ...)      LOG_EXPLICIT(0x4000 | (level_), __VA_ARGS__)
-
-#define LOG_CIRCE_FATAL(...)        LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_fatal,   __VA_ARGS__)
-#define LOG_CIRCE_ERROR(...)        LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_error,   __VA_ARGS__)
-#define LOG_CIRCE_WARNING(...)      LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_warning, __VA_ARGS__)
-#define LOG_CIRCE_INFO(...)         LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_info,    __VA_ARGS__)
-#define LOG_CIRCE_DEBUG(...)        LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_debug,   __VA_ARGS__)
-#define LOG_CIRCE_TRACE(...)        LOG_CIRCE_EXPLICIT(::Poseidon::Logger::level_trace,   __VA_ARGS__)
+#define CIRCE_LOG(lv_, ...)      POSEIDON_CHECK_AND_LOG((lv_) | 0x8000, __VA_ARGS__)
+#define CIRCE_LOG_FATAL(...)     CIRCE_LOG(::Poseidon::Logger::level_fatal,   __VA_ARGS__)
+#define CIRCE_LOG_ERROR(...)     CIRCE_LOG(::Poseidon::Logger::level_error,   __VA_ARGS__)
+#define CIRCE_LOG_WARNING(...)   CIRCE_LOG(::Poseidon::Logger::level_warning, __VA_ARGS__)
+#define CIRCE_LOG_INFO(...)      CIRCE_LOG(::Poseidon::Logger::level_info,    __VA_ARGS__)
+#define CIRCE_LOG_DEBUG(...)     CIRCE_LOG(::Poseidon::Logger::level_debug,   __VA_ARGS__)
+#define CIRCE_LOG_TRACE(...)     CIRCE_LOG(::Poseidon::Logger::level_trace,   __VA_ARGS__)
 
 namespace Circe {
 	//

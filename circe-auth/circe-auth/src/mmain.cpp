@@ -7,7 +7,7 @@
 namespace Circe {
 namespace Auth {
 
-DEFINE_MODULE_CONFIG("circe-auth.conf")
+POSEIDON_DEFINE_MODULE_CONFIG("circe-auth.conf")
 
 }
 }

@@ -36,7 +36,7 @@ protected:
 		return m_weak_parent;
 	}
 	void perform() FINAL {
-		PROFILE_ME;
+		POSEIDON_PROFILE_ME;
 
 		const AUTO(ws_session, m_weak_ws_session.lock());
 		if(!ws_session){
@@ -45,14 +45,14 @@ protected:
 
 		try {
 			const AUTO(foyer_conn, ws_session->m_weak_foyer_conn.lock());
-			DEBUG_THROW_UNLESS(foyer_conn, Poseidon::Websocket::Exception, Poseidon::Websocket::status_going_away, Poseidon::Rcnts::view("Connection to foyer server was lost"));
+			POSEIDON_THROW_UNLESS(foyer_conn, Poseidon::Websocket::Exception, Poseidon::Websocket::status_going_away, Poseidon::Rcnts::view("Connection to foyer server was lost"));
 
 			Poseidon::Mutex::Unique_lock lock(ws_session->m_delivery_mutex);
-			DEBUG_THROW_ASSERT(ws_session->m_delivery_job_active);
+			POSEIDON_THROW_ASSERT(ws_session->m_delivery_job_active);
 			for(;;){
 				VALUE_TYPE(ws_session->m_messages_pending) messages_pending;
 				messages_pending.swap(ws_session->m_messages_pending);
-				LOG_CIRCE_TRACE("Messages pending: ws_session = ", (void *)ws_session.get(), ", count = ", messages_pending.size());
+				CIRCE_LOG_TRACE("Messages pending: ws_session = ", (void *)ws_session.get(), ", count = ", messages_pending.size());
 				if(messages_pending.empty()){
 					break;
 				}
@@ -67,19 +67,19 @@ protected:
 					frame.payload = STD_MOVE(it->second);
 					foyer_req.messages.push_back(STD_MOVE(frame));
 				}
-				LOG_CIRCE_TRACE("Sending request: ", foyer_req);
+				CIRCE_LOG_TRACE("Sending request: ", foyer_req);
 				Protocol::Foyer::Websocket_packed_message_response_from_box foyer_resp;
 				Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
-				LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+				CIRCE_LOG_TRACE("Received response: ", foyer_resp);
 
 				lock.lock();
 			}
 			ws_session->m_delivery_job_active = false;
 		} catch(Poseidon::Websocket::Exception &e){
-			LOG_CIRCE_ERROR("Poseidon::Websocket::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
+			CIRCE_LOG_ERROR("Poseidon::Websocket::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
 			ws_session->shutdown(e.get_status_code(), e.what());
 		} catch(std::exception &e){
-			LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 			ws_session->shutdown(Poseidon::Websocket::status_internal_error, e.what());
 		}
 	}
@@ -89,15 +89,15 @@ Client_websocket_session::Client_websocket_session(const boost::shared_ptr<Clien
 	: Poseidon::Websocket::Session(parent)
 	, m_client_uuid(parent->m_client_uuid)
 {
-	LOG_CIRCE_DEBUG("Client_websocket_session constructor: remote = ", get_remote_info());
+	CIRCE_LOG_DEBUG("Client_websocket_session constructor: remote = ", get_remote_info());
 }
 Client_websocket_session::~Client_websocket_session(){
 	notify_foyer_about_closure();
-	LOG_CIRCE_DEBUG("Client_websocket_session destructor: remote = ", get_remote_info());
+	CIRCE_LOG_DEBUG("Client_websocket_session destructor: remote = ", get_remote_info());
 }
 
 void Client_websocket_session::notify_foyer_about_closure() const NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const AUTO(foyer_conn, m_weak_foyer_conn.lock());
 	if(!foyer_conn){
@@ -113,23 +113,23 @@ void Client_websocket_session::notify_foyer_about_closure() const NOEXCEPT {
 		foyer_ntfy.reason      = reason_ptr ? reason_ptr->second : "No closure frame received";
 		foyer_conn->send_notification(foyer_ntfy);
 	} catch(std::exception &e){
-		LOG_CIRCE_ERROR("std::exception thrown: what = ", e.what());
+		CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 		foyer_conn->shutdown(Protocol::error_internal_error, e.what());
 	}
 }
 
 void Client_websocket_session::sync_authenticate(const std::string &decoded_uri, const Poseidon::Option_map &params)
 try {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const AUTO(websocket_enabled, get_config<bool>("client_websocket_enabled", false));
-	DEBUG_THROW_UNLESS(websocket_enabled, Poseidon::Websocket::Exception, Poseidon::Websocket::status_going_away, Poseidon::Rcnts::view("WebSocket is not enabled"));
+	POSEIDON_THROW_UNLESS(websocket_enabled, Poseidon::Websocket::Exception, Poseidon::Websocket::status_going_away, Poseidon::Rcnts::view("WebSocket is not enabled"));
 
 	boost::container::vector<boost::shared_ptr<Common::Interserver_connection> > servers_avail;
 	Auth_connector::get_all_clients(servers_avail);
-	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Websocket::Exception, Poseidon::Websocket::status_going_away, Poseidon::Rcnts::view("No auth server is available"));
+	POSEIDON_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Websocket::Exception, Poseidon::Websocket::status_going_away, Poseidon::Rcnts::view("No auth server is available"));
 	const AUTO(auth_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
-	DEBUG_THROW_ASSERT(auth_conn);
+	POSEIDON_THROW_ASSERT(auth_conn);
 
 	Protocol::Auth::Websocket_authentication_request auth_req;
 	auth_req.client_uuid = m_client_uuid;
@@ -141,21 +141,21 @@ try {
 		option.value = STD_MOVE(it->second);
 		auth_req.params.push_back(STD_MOVE(option));
 	}
-	LOG_CIRCE_TRACE("Sending request: ", auth_req);
+	CIRCE_LOG_TRACE("Sending request: ", auth_req);
 	Protocol::Auth::Websocket_authentication_response auth_resp;
 	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
-	LOG_CIRCE_TRACE("Received response: ", auth_resp);
+	CIRCE_LOG_TRACE("Received response: ", auth_resp);
 	for(AUTO(it, auth_resp.messages.begin()); it != auth_resp.messages.end(); ++it){
 		send(boost::numeric_cast<Poseidon::Websocket::Op_code>(it->opcode), STD_MOVE(it->payload));
 	}
-	DEBUG_THROW_UNLESS(!auth_resp.auth_token.empty(), Poseidon::Websocket::Exception, boost::numeric_cast<Poseidon::Websocket::Status_code>(auth_resp.status_code), Poseidon::Rcnts(auth_resp.reason));
-	LOG_CIRCE_DEBUG("Auth server has allowed WebSocket client: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
+	POSEIDON_THROW_UNLESS(!auth_resp.auth_token.empty(), Poseidon::Websocket::Exception, boost::numeric_cast<Poseidon::Websocket::Status_code>(auth_resp.status_code), Poseidon::Rcnts(auth_resp.reason));
+	CIRCE_LOG_DEBUG("Auth server has allowed WebSocket client: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 
 	servers_avail.clear();
 	Foyer_connector::get_all_clients(servers_avail);
-	DEBUG_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Websocket::Exception, Poseidon::Websocket::status_going_away, Poseidon::Rcnts::view("No foyer server is available"));
+	POSEIDON_THROW_UNLESS(servers_avail.size() != 0, Poseidon::Websocket::Exception, Poseidon::Websocket::status_going_away, Poseidon::Rcnts::view("No foyer server is available"));
 	const AUTO(foyer_conn, servers_avail.at(Poseidon::random_uint32() % servers_avail.size()));
-	DEBUG_THROW_ASSERT(foyer_conn);
+	POSEIDON_THROW_ASSERT(foyer_conn);
 
 	Protocol::Foyer::Websocket_establishment_request_to_box foyer_req;
 	foyer_req.client_uuid = m_client_uuid;
@@ -168,15 +168,15 @@ try {
 		option.value = STD_MOVE(it->second);
 		foyer_req.params.push_back(STD_MOVE(option));
 	}
-	LOG_CIRCE_TRACE("Sending request: ", foyer_req);
+	CIRCE_LOG_TRACE("Sending request: ", foyer_req);
 	Protocol::Foyer::Websocket_establishment_response_from_box foyer_resp;
 	Common::wait_for_response(foyer_resp, foyer_conn->send_request(foyer_req));
-	LOG_CIRCE_TRACE("Received response: ", foyer_resp);
+	CIRCE_LOG_TRACE("Received response: ", foyer_resp);
 	m_weak_foyer_conn = foyer_conn;
 	m_box_uuid        = Poseidon::Uuid(foyer_resp.box_uuid);
 
-	DEBUG_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::Rcnts::view("Connection has been shut down"));
-	LOG_CIRCE_DEBUG("Established Websocket_connection: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
+	POSEIDON_THROW_UNLESS(!has_been_shutdown(), Poseidon::Exception, Poseidon::Rcnts::view("Connection has been shut down"));
+	CIRCE_LOG_DEBUG("Established Websocket_connection: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
 	m_auth_token = STD_MOVE_IDN(auth_resp.auth_token);
 } catch(...){
 	Ip_ban_list::accumulate_auth_failure(get_remote_info().ip());
@@ -184,11 +184,11 @@ try {
 }
 
 bool Client_websocket_session::on_low_level_message_end(boost::uint64_t whole_size){
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	const AUTO(exempt_private, get_config<bool>("client_generic_exempt_private_addresses", true));
 	if(exempt_private && Poseidon::Sock_addr(get_remote_info()).is_private()){
-		LOG_CIRCE_DEBUG("Client exempted: ", get_remote_info());
+		CIRCE_LOG_DEBUG("Client exempted: ", get_remote_info());
 	} else {
 		Ip_ban_list::accumulate_websocket_request(get_remote_info().ip());
 	}
@@ -197,8 +197,8 @@ bool Client_websocket_session::on_low_level_message_end(boost::uint64_t whole_si
 }
 
 void Client_websocket_session::on_sync_data_message(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload){
-	PROFILE_ME;
-	LOG_CIRCE_DEBUG("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
+	POSEIDON_PROFILE_ME;
+	CIRCE_LOG_DEBUG("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
 	const Poseidon::Mutex::Unique_lock lock(m_delivery_mutex);
 	if(!m_delivery_job_spare){
@@ -211,13 +211,13 @@ void Client_websocket_session::on_sync_data_message(Poseidon::Websocket::Op_code
 	}
 	// Enqueue the message if the new fiber has been created successfully.
 	const AUTO(max_requests_pending, get_config<boost::uint64_t>("client_websocket_max_requests_pending", 100));
-	DEBUG_THROW_UNLESS(m_messages_pending.size() < max_requests_pending, Poseidon::Websocket::Exception, Poseidon::Websocket::status_going_away, Poseidon::Rcnts::view("Max number of requests pending exceeded"));
-	LOG_CIRCE_TRACE("Enqueueing message: opcode = ", opcode, ", payload.size() = ", payload.size());
+	POSEIDON_THROW_UNLESS(m_messages_pending.size() < max_requests_pending, Poseidon::Websocket::Exception, Poseidon::Websocket::status_going_away, Poseidon::Rcnts::view("Max number of requests pending exceeded"));
+	CIRCE_LOG_TRACE("Enqueueing message: opcode = ", opcode, ", payload.size() = ", payload.size());
 	m_messages_pending.emplace_back(opcode, STD_MOVE(payload));
 }
 void Client_websocket_session::on_sync_control_message(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload){
-	PROFILE_ME;
-	LOG_CIRCE_TRACE("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
+	POSEIDON_PROFILE_ME;
+	CIRCE_LOG_TRACE("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
 	if(opcode == Poseidon::Websocket::opcode_close){
 		char data[125];
@@ -236,27 +236,27 @@ void Client_websocket_session::on_sync_control_message(Poseidon::Websocket::Op_c
 	}
 
 	if(opcode == Poseidon::Websocket::opcode_pong){
-		LOG_CIRCE_TRACE("Received PONG from client: remote = ", get_remote_info(), ", payload = ", payload);
+		CIRCE_LOG_TRACE("Received PONG from client: remote = ", get_remote_info(), ", payload = ", payload);
 	}
 
 	Poseidon::Websocket::Session::on_sync_control_message(opcode, STD_MOVE(payload));
 }
 
 bool Client_websocket_session::has_been_shutdown() const NOEXCEPT {
-	PROFILE_ME;
+	POSEIDON_PROFILE_ME;
 
 	return Poseidon::Websocket::Session::has_been_shutdown_write();
 }
 bool Client_websocket_session::shutdown(Poseidon::Websocket::Status_code status_code, const char *reason) NOEXCEPT {
-	PROFILE_ME;
-	LOG_CIRCE_DEBUG("Shutting down WebSocket connection: remote = ", get_remote_info(), ", status_code = ", status_code, ", reason = ", reason);
+	POSEIDON_PROFILE_ME;
+	CIRCE_LOG_DEBUG("Shutting down WebSocket connection: remote = ", get_remote_info(), ", status_code = ", status_code, ", reason = ", reason);
 
 	return Poseidon::Websocket::Session::shutdown(status_code, reason);
 }
 
 bool Client_websocket_session::send(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload){
-	PROFILE_ME;
-	LOG_CIRCE_TRACE("Sending WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
+	POSEIDON_PROFILE_ME;
+	CIRCE_LOG_TRACE("Sending WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
 	return Poseidon::Websocket::Session::send(opcode, STD_MOVE(payload), false);
 }
