@@ -146,7 +146,7 @@ try {
 	Common::wait_for_response(auth_resp, auth_conn->send_request(auth_req));
 	CIRCE_LOG_TRACE("Received response: ", auth_resp);
 	for(AUTO(it, auth_resp.messages.begin()); it != auth_resp.messages.end(); ++it){
-		send(boost::numeric_cast<Poseidon::Websocket::Op_code>(it->opcode), STD_MOVE(it->payload));
+		send(boost::numeric_cast<Poseidon::Websocket::Opcode>(it->opcode), STD_MOVE(it->payload));
 	}
 	POSEIDON_THROW_UNLESS(!auth_resp.auth_token.empty(), Poseidon::Websocket::Exception, boost::numeric_cast<Poseidon::Websocket::Status_code>(auth_resp.status_code), Poseidon::Rcnts(auth_resp.reason));
 	CIRCE_LOG_DEBUG("Auth server has allowed WebSocket client: remote = ", get_remote_info(), ", auth_token = ", auth_resp.auth_token);
@@ -196,7 +196,7 @@ bool Client_websocket_session::on_low_level_message_end(boost::uint64_t whole_si
 	return Poseidon::Websocket::Session::on_low_level_message_end(whole_size);
 }
 
-void Client_websocket_session::on_sync_data_message(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload){
+void Client_websocket_session::on_sync_data_message(Poseidon::Websocket::Opcode opcode, Poseidon::Stream_buffer payload){
 	POSEIDON_PROFILE_ME;
 	CIRCE_LOG_DEBUG("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
@@ -215,7 +215,7 @@ void Client_websocket_session::on_sync_data_message(Poseidon::Websocket::Op_code
 	CIRCE_LOG_TRACE("Enqueueing message: opcode = ", opcode, ", payload.size() = ", payload.size());
 	m_messages_pending.emplace_back(opcode, STD_MOVE(payload));
 }
-void Client_websocket_session::on_sync_control_message(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload){
+void Client_websocket_session::on_sync_control_message(Poseidon::Websocket::Opcode opcode, Poseidon::Stream_buffer payload){
 	POSEIDON_PROFILE_ME;
 	CIRCE_LOG_TRACE("Received WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 
@@ -254,7 +254,7 @@ bool Client_websocket_session::shutdown(Poseidon::Websocket::Status_code status_
 	return Poseidon::Websocket::Session::shutdown(status_code, reason);
 }
 
-bool Client_websocket_session::send(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload){
+bool Client_websocket_session::send(Poseidon::Websocket::Opcode opcode, Poseidon::Stream_buffer payload){
 	POSEIDON_PROFILE_ME;
 	CIRCE_LOG_TRACE("Sending WebSocket message: remote = ", get_remote_info(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 

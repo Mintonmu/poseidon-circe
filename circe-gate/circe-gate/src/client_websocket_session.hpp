@@ -36,7 +36,7 @@ private:
 	mutable Poseidon::Mutex m_delivery_mutex;
 	boost::shared_ptr<Delivery_job> m_delivery_job_spare;
 	bool m_delivery_job_active;
-	boost::container::deque<std::pair<Poseidon::Websocket::Op_code, Poseidon::Stream_buffer> > m_messages_pending;
+	boost::container::deque<std::pair<Poseidon::Websocket::Opcode, Poseidon::Stream_buffer> > m_messages_pending;
 
 public:
 	explicit Client_websocket_session(const boost::shared_ptr<Client_http_session> &parent);
@@ -53,8 +53,8 @@ protected:
 	bool on_low_level_message_end(boost::uint64_t whole_size) OVERRIDE;
 
 	// Callbacks run in the primary thread.
-	void on_sync_data_message(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload) OVERRIDE;
-	void on_sync_control_message(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload) OVERRIDE;
+	void on_sync_data_message(Poseidon::Websocket::Opcode opcode, Poseidon::Stream_buffer payload) OVERRIDE;
+	void on_sync_control_message(Poseidon::Websocket::Opcode opcode, Poseidon::Stream_buffer payload) OVERRIDE;
 
 public:
 	const Poseidon::Uuid &get_client_uuid() const NOEXCEPT {
@@ -64,7 +64,7 @@ public:
 	bool has_been_shutdown() const NOEXCEPT;
 	bool shutdown(Poseidon::Websocket::Status_code status_code, const char *reason = "") NOEXCEPT;
 
-	bool send(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload);
+	bool send(Poseidon::Websocket::Opcode opcode, Poseidon::Stream_buffer payload);
 };
 
 }

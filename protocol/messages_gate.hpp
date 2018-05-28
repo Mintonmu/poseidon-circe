@@ -15,7 +15,7 @@ namespace Gate {
 #define MESSAGE_ID     1101
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
-	FIELD_VUINT        (status_code)	\
+	FIELD_VINT         (status_code)	\
 	FIELD_STRING       (reason)	\
 	//
 #include <poseidon/cbpp/message_generator.inl>

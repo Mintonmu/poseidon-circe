@@ -45,7 +45,7 @@ public:
 
 	static void handle_websocket_message(
 		const boost::shared_ptr<Websocket_shadow_session> &client_session,
-		Poseidon::Websocket::Op_code opcode,
+		Poseidon::Websocket::Opcode opcode,
 		Poseidon::Stream_buffer payload);
 
 	static void handle_websocket_closure(

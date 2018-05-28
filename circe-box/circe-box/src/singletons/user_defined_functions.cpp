@@ -79,7 +79,7 @@ void User_defined_functions::handle_websocket_establishment(
 
 void User_defined_functions::handle_websocket_message(
 	const boost::shared_ptr<Websocket_shadow_session> &client_session,  // This is the session cast by the WebSocket connection on the gate server.
-	Poseidon::Websocket::Op_code opcode,                                // This is the opcode sent by the client. This may be `Poseidon::Websocket::opcode_data_text` or `Poseidon::Websocket::opcode_data_binary`.
+	Poseidon::Websocket::Opcode opcode,                                // This is the opcode sent by the client. This may be `Poseidon::Websocket::opcode_data_text` or `Poseidon::Websocket::opcode_data_binary`.
 	Poseidon::Stream_buffer payload)                                    // This is the payload sent by the client. If the opcode claims a text message, the payload will be a valid UTF-8 string.
 {
 	POSEIDON_PROFILE_ME;

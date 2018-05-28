@@ -30,7 +30,7 @@ DEFINE_SERVLET_FOR(Protocol::Gate::Websocket_packed_message_request, /*connectio
 	if(ws_session){
 		try {
 			for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
-				ws_session->send(boost::numeric_cast<Poseidon::Websocket::Op_code>(it->opcode), STD_MOVE(it->payload));
+				ws_session->send(boost::numeric_cast<Poseidon::Websocket::Opcode>(it->opcode), STD_MOVE(it->payload));
 			}
 		} catch(std::exception &e){
 			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
@@ -48,7 +48,7 @@ DEFINE_SERVLET_FOR(Protocol::Gate::Websocket_packed_broadcast_notification, /*co
 		if(ws_session){
 			try {
 				for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
-					ws_session->send(boost::numeric_cast<Poseidon::Websocket::Op_code>(it->opcode), it->payload);
+					ws_session->send(boost::numeric_cast<Poseidon::Websocket::Opcode>(it->opcode), it->payload);
 				}
 			} catch(std::exception &e){
 				CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());

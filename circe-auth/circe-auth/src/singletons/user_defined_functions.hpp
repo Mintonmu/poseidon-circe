@@ -37,7 +37,7 @@ public:
 
 	static std::string check_websocket_authentication(
 		// Output parameters
-		boost::container::deque<std::pair<Poseidon::Websocket::Op_code,
+		boost::container::deque<std::pair<Poseidon::Websocket::Opcode,
 			Poseidon::Stream_buffer> > &resp_messages,
 		Poseidon::Websocket::Status_code &resp_status_code,
 		std::string &resp_reason,

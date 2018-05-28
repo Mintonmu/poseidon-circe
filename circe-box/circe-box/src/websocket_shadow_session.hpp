@@ -34,7 +34,7 @@ private:
 	mutable Poseidon::Mutex m_delivery_mutex;
 	boost::shared_ptr<Delivery_job> m_delivery_job_spare;
 	bool m_delivery_job_active;
-	boost::container::deque<std::pair<Poseidon::Websocket::Op_code, Poseidon::Stream_buffer> > m_messages_pending;
+	boost::container::deque<std::pair<Poseidon::Websocket::Opcode, Poseidon::Stream_buffer> > m_messages_pending;
 
 public:
 	Websocket_shadow_session(const Poseidon::Uuid &foyer_uuid, const Poseidon::Uuid &gate_uuid, const Poseidon::Uuid &client_uuid, std::string client_ip, std::string auth_token);
@@ -60,7 +60,7 @@ public:
 	bool has_been_shutdown() const;
 	void mark_shutdown() NOEXCEPT;
 	bool shutdown(Poseidon::Websocket::Status_code status_code, const char *reason = "") NOEXCEPT;
-	bool send(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload);
+	bool send(Poseidon::Websocket::Opcode opcode, Poseidon::Stream_buffer payload);
 };
 
 }

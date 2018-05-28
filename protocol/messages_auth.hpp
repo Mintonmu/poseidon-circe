@@ -16,7 +16,7 @@ namespace Auth {
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (client_uuid, 16)	\
 	FIELD_STRING       (client_ip)	\
-	FIELD_VUINT        (verb)	\
+	FIELD_VINT         (verb)	\
 	FIELD_STRING       (decoded_uri)	\
 	FIELD_REPEATED     (params, Common_key_value)	\
 	FIELD_REPEATED     (headers, Common_key_value)	\
@@ -27,7 +27,7 @@ namespace Auth {
 #define MESSAGE_ID     1802
 #define MESSAGE_FIELDS \
 	FIELD_STRING       (auth_token)	\
-	FIELD_VUINT        (status_code)	\
+	FIELD_VINT         (status_code)	\
 	FIELD_REPEATED     (headers, Common_key_value)	\
 	//
 #include <poseidon/cbpp/message_generator.inl>
@@ -47,7 +47,7 @@ namespace Auth {
 #define MESSAGE_FIELDS \
 	FIELD_REPEATED     (messages, Common_websocket_frame)	\
 	FIELD_STRING       (auth_token)	\
-	FIELD_VUINT        (status_code)	\
+	FIELD_VINT         (status_code)	\
 	FIELD_STRING       (reason)	\
 	//
 #include <poseidon/cbpp/message_generator.inl>

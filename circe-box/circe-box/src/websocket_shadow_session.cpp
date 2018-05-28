@@ -159,7 +159,7 @@ bool Websocket_shadow_session::shutdown(Poseidon::Websocket::Status_code status_
 	}
 	return true;
 }
-bool Websocket_shadow_session::send(Poseidon::Websocket::Op_code opcode, Poseidon::Stream_buffer payload){
+bool Websocket_shadow_session::send(Poseidon::Websocket::Opcode opcode, Poseidon::Stream_buffer payload){
 	POSEIDON_PROFILE_ME;
 	CIRCE_LOG_TRACE("Sending message via Websocket_shadow_session: client_ip = ", get_client_ip(), ", opcode = ", opcode, ", payload.size() = ", payload.size());
 

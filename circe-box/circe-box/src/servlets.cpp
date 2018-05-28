@@ -73,7 +73,7 @@ DEFINE_SERVLET_FOR(Protocol::Box::Websocket_packed_message_request, /*connection
 	if(shadow_session){
 		try {
 			for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
-				User_defined_functions::handle_websocket_message(shadow_session, boost::numeric_cast<Poseidon::Websocket::Op_code>(it->opcode), STD_MOVE(it->payload));
+				User_defined_functions::handle_websocket_message(shadow_session, boost::numeric_cast<Poseidon::Websocket::Opcode>(it->opcode), STD_MOVE(it->payload));
 			}
 		} catch(std::exception &e){
 			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());

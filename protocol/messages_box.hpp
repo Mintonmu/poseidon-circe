@@ -18,7 +18,7 @@ namespace Box {
 	FIELD_FIXED        (client_uuid, 16)	\
 	FIELD_STRING       (client_ip)	\
 	FIELD_STRING       (auth_token)	\
-	FIELD_VUINT        (verb)	\
+	FIELD_VINT         (verb)	\
 	FIELD_STRING       (decoded_uri)	\
 	FIELD_REPEATED     (params, Common_key_value)	\
 	FIELD_REPEATED     (headers, Common_key_value)	\
@@ -29,7 +29,7 @@ namespace Box {
 #define MESSAGE_NAME   Http_response
 #define MESSAGE_ID     1902
 #define MESSAGE_FIELDS \
-	FIELD_VUINT        (status_code)	\
+	FIELD_VINT         (status_code)	\
 	FIELD_REPEATED     (headers, Common_key_value)	\
 	FIELD_FLEXIBLE     (entity)	\
 	//
@@ -58,7 +58,7 @@ namespace Box {
 #define MESSAGE_FIELDS \
 	FIELD_FIXED        (gate_uuid, 16)	\
 	FIELD_FIXED        (client_uuid, 16)	\
-	FIELD_VUINT        (status_code)	\
+	FIELD_VINT         (status_code)	\
 	FIELD_STRING       (reason)	\
 	//
 #include <poseidon/cbpp/message_generator.inl>

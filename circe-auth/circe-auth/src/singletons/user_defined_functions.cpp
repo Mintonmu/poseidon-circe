@@ -39,7 +39,7 @@ std::string User_defined_functions::check_http_authentication(
 // If an empty token is returned, the client will be sent the WebSocket closure frame specified here and consequently shut down.
 std::string User_defined_functions::check_websocket_authentication(
 	// Output parameters
-	boost::container::deque<std::pair<Poseidon::Websocket::Op_code,
+	boost::container::deque<std::pair<Poseidon::Websocket::Opcode,
 		Poseidon::Stream_buffer> > &resp_messages,         // These messages are sent to the client before anything else, including the closure frame should an empty token be returned.
 	Poseidon::Websocket::Status_code &resp_status_code,    // This status code is sent to the client if an empty token is returned and ignored otherwise.
 	std::string &resp_reason,                              // This string is encapsulated in the closure frame if an empty token is returned and ignored otherwise.

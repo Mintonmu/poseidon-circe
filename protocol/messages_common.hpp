@@ -20,7 +20,7 @@ namespace Protocol {
 #define MESSAGE_NAME   Common_websocket_frame
 #define MESSAGE_ID     0
 #define MESSAGE_FIELDS \
-	FIELD_VUINT        (opcode)	\
+	FIELD_VINT         (opcode)	\
 	FIELD_FLEXIBLE     (payload)	\
 	//
 #include <poseidon/cbpp/message_generator.inl>

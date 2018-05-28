@@ -39,7 +39,7 @@ DEFINE_SERVLET_FOR(Protocol::Auth::Http_authentication_request, /*connection*/, 
 }
 
 DEFINE_SERVLET_FOR(Protocol::Auth::Websocket_authentication_request, /*connection*/, req){
-	boost::container::deque<std::pair<Poseidon::Websocket::Op_code, Poseidon::Stream_buffer> > resp_messages;
+	boost::container::deque<std::pair<Poseidon::Websocket::Opcode, Poseidon::Stream_buffer> > resp_messages;
 	Poseidon::Websocket::Status_code resp_status_code = Poseidon::Websocket::status_internal_error;
 	std::string resp_reason;
 	Poseidon::Option_map params;
