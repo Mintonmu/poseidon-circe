@@ -42,7 +42,7 @@ void Compass::update_last_access_time(){
 	Compass_repository::update_compass_indices(this);
 }
 
-const std::string &Compass::get_value() const {
+const std::string & Compass::get_value() const {
 	if(!m_dao){
 		return Poseidon::empty_string();
 	}

@@ -50,7 +50,7 @@ protected:
 	void on_sync_request(Poseidon::Http::Request_headers req_headers, Poseidon::Stream_buffer req_entity) OVERRIDE;
 
 public:
-	const Poseidon::Uuid &get_client_uuid() const {
+	const Poseidon::Uuid & get_client_uuid() const {
 		return m_client_uuid;
 	}
 

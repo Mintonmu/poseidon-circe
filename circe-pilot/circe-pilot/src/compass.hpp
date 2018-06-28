@@ -29,7 +29,7 @@ public:
 	~Compass() OVERRIDE;
 
 public:
-	const Compass_key &get_compass_key() const {
+	const Compass_key & get_compass_key() const {
 		return m_compass_key;
 	}
 
@@ -37,7 +37,7 @@ public:
 	boost::uint64_t get_last_access_time() const;
 	void update_last_access_time();
 
-	const std::string &get_value() const;
+	const std::string & get_value() const;
 	boost::uint64_t get_version() const;
 	void set_value(std::string value_new);
 

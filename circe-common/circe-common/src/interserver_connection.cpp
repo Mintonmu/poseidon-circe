@@ -581,11 +581,11 @@ void Interserver_connection::layer7_client_say_hello(Poseidon::Option_map option
 bool Interserver_connection::has_authenticated() const {
 	return Poseidon::atomic_load(m_authenticated, Poseidon::memory_order_consume);
 }
-const Poseidon::Uuid &Interserver_connection::get_connection_uuid() const {
+const Poseidon::Uuid & Interserver_connection::get_connection_uuid() const {
 	POSEIDON_THROW_UNLESS(is_connection_uuid_set(), Poseidon::Exception, Poseidon::Rcnts::view("Interserver_connection has not been fully established"));
 	return m_connection_uuid;
 }
-const std::string &Interserver_connection::get_option(const char *key) const {
+const std::string & Interserver_connection::get_option(const char *key) const {
 	POSEIDON_THROW_UNLESS(is_connection_uuid_set(), Poseidon::Exception, Poseidon::Rcnts::view("Interserver_connection has not been fully established"));
 	return m_options.get(key);
 }

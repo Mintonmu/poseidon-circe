@@ -41,19 +41,19 @@ public:
 	~Websocket_shadow_session() OVERRIDE;
 
 public:
-	const Poseidon::Uuid &get_foyer_uuid() const {
+	const Poseidon::Uuid & get_foyer_uuid() const {
 		return m_foyer_uuid;
 	}
-	const Poseidon::Uuid &get_gate_uuid() const {
+	const Poseidon::Uuid & get_gate_uuid() const {
 		return m_gate_uuid;
 	}
-	const Poseidon::Uuid &get_client_uuid() const {
+	const Poseidon::Uuid & get_client_uuid() const {
 		return m_client_uuid;
 	}
-	const std::string &get_client_ip() const {
+	const std::string & get_client_ip() const {
 		return m_client_ip;
 	}
-	const std::string &get_auth_token() const {
+	const std::string & get_auth_token() const {
 		return m_auth_token;
 	}
 

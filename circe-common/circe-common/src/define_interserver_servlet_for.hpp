@@ -25,7 +25,7 @@
 		/* Register the wrapped callback upon module load. */	\
 		POSEIDON_MODULE_RAII_PRIORITY(handles_, ::Poseidon::module_init_priority_low){	\
 			CIRCE_LOG_INFO("Registering interserver servlet: ", #Msg_);	\
-			const AUTO(servlet_, ::boost::make_shared< ::Circe::Common::Interserver_servlet_callback>(&POSEIDON_LAZY(POSEIDON_CAT2, Interserver_servlet_, __LINE__)::wrapper_));	\
+			const AUTO(servlet_, ::boost::make_shared< ::Circe::Common::Interserver_servlet_callback>(& POSEIDON_LAZY(POSEIDON_CAT2, Interserver_servlet_, __LINE__)::wrapper_));	\
 			handles_.push(servlet_);	\
 			static_cast<void>(how_(Msg_::id, servlet_));	\
 		}	\

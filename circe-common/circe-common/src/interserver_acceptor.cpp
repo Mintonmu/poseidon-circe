@@ -60,10 +60,10 @@ protected:
 	}
 
 	// Interserver_connection
-	const Poseidon::Ip_port &layer5_get_remote_info() const NOEXCEPT FINAL {
+	const Poseidon::Ip_port & layer5_get_remote_info() const NOEXCEPT FINAL {
 		return Poseidon::Cbpp::Low_level_session::get_remote_info();
 	}
-	const Poseidon::Ip_port &layer5_get_local_info() const NOEXCEPT FINAL {
+	const Poseidon::Ip_port & layer5_get_local_info() const NOEXCEPT FINAL {
 		return Poseidon::Cbpp::Low_level_session::get_local_info();
 	}
 	bool layer5_has_been_shutdown() const NOEXCEPT FINAL {

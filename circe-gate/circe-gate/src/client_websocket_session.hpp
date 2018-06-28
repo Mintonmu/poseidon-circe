@@ -57,7 +57,7 @@ protected:
 	void on_sync_control_message(Poseidon::Websocket::Opcode opcode, Poseidon::Stream_buffer payload) OVERRIDE;
 
 public:
-	const Poseidon::Uuid &get_client_uuid() const NOEXCEPT {
+	const Poseidon::Uuid & get_client_uuid() const NOEXCEPT {
 		return m_client_uuid;
 	}
 

@@ -37,10 +37,10 @@ public:
 	void set_err_code(long err_code){
 		m_err_code = err_code;
 	}
-	const std::string &get_err_msg() const NOEXCEPT {
+	const std::string & get_err_msg() const NOEXCEPT {
 		return m_err_msg;
 	}
-	std::string &get_err_msg() NOEXCEPT {
+	std::string & get_err_msg() NOEXCEPT {
 		return m_err_msg;
 	}
 	void set_err_msg(std::string err_msg){
@@ -53,10 +53,10 @@ public:
 	void set_message_id(boost::uint64_t message_id){
 		m_message_id = message_id;
 	}
-	const Poseidon::Stream_buffer &get_payload() const NOEXCEPT {
+	const Poseidon::Stream_buffer & get_payload() const NOEXCEPT {
 		return m_payload;
 	}
-	Poseidon::Stream_buffer &get_payload() NOEXCEPT {
+	Poseidon::Stream_buffer & get_payload() NOEXCEPT {
 		return m_payload;
 	}
 	void set_payload(Poseidon::Stream_buffer payload){

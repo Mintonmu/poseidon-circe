@@ -80,8 +80,8 @@ private:
 	void deflate_and_send(boost::uint16_t magic_number, Poseidon::Stream_buffer &magic_payload);
 
 protected:
-	virtual const Poseidon::Ip_port &layer5_get_remote_info() const NOEXCEPT = 0;
-	virtual const Poseidon::Ip_port &layer5_get_local_info() const NOEXCEPT = 0;
+	virtual const Poseidon::Ip_port & layer5_get_remote_info() const NOEXCEPT = 0;
+	virtual const Poseidon::Ip_port & layer5_get_local_info() const NOEXCEPT = 0;
 	virtual bool layer5_has_been_shutdown() const NOEXCEPT = 0;
 	virtual bool layer5_shutdown(long err_code, const char *err_msg) NOEXCEPT = 0;
 	virtual void layer4_force_shutdown() NOEXCEPT = 0;
@@ -102,13 +102,13 @@ protected:
 public:
 	bool has_authenticated() const;
 	// These functions throw an exception if the connection UUID has not been set.
-	const Poseidon::Uuid &get_connection_uuid() const;
-	const std::string &get_option(const char *key) const;
+	const Poseidon::Uuid & get_connection_uuid() const;
+	const std::string & get_option(const char *key) const;
 
-	const Poseidon::Ip_port &get_remote_info() const NOEXCEPT {
+	const Poseidon::Ip_port & get_remote_info() const NOEXCEPT {
 		return layer5_get_remote_info();
 	}
-	const Poseidon::Ip_port &get_local_info() const NOEXCEPT {
+	const Poseidon::Ip_port & get_local_info() const NOEXCEPT {
 		return layer5_get_local_info();
 	}
 	bool has_been_shutdown() const NOEXCEPT {
