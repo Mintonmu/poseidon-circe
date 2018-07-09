@@ -14,9 +14,8 @@
 namespace Circe {
 namespace Box {
 
-void User_defined_functions::handle_http_request(
+Poseidon::Http::Status_code User_defined_functions::handle_http_request(
 	// Output parameters
-	Poseidon::Http::Status_code &resp_status_code,  // This status code is sent to the client intactly.
 	Poseidon::Option_map &resp_headers,             // These HTTP headers are sent to the client.
 	                                                // The 'Content-Length', 'Connection' and 'Access-Control-*' headers are set by the gate server and shall not be specified here.
 	                                                // The gate server compresses HTTP responses as needed. Setting 'Content-Encoding' to 'identity' explicitly suppresses HTTP compression.
@@ -36,11 +35,9 @@ void User_defined_functions::handle_http_request(
 	CIRCE_LOG_FATAL("TODO: Handle HTTP request: ", Poseidon::Http::get_string_from_verb(verb), " ", decoded_uri, "\n", params, "\n", req_entity);
 
 	if(decoded_uri == "/favicon.ico"){
-		resp_status_code = 404;
-		return;
+		return 404;
 	}
 
-	resp_status_code = 200;
 	resp_headers.set(Poseidon::Rcnts::view("Content-Type"), "text/html");
 	resp_entity.put("<html>");
 	resp_entity.put("  <head>");
@@ -51,7 +48,6 @@ void User_defined_functions::handle_http_request(
 	resp_entity.put("  </body>");
 	resp_entity.put("</html>");
 
-	(void)resp_status_code;
 	(void)resp_headers;
 	(void)resp_entity;
 	(void)client_uuid;
@@ -62,6 +58,7 @@ void User_defined_functions::handle_http_request(
 	(void)params;
 	(void)req_headers;
 	(void)req_entity;
+	return 200;
 }
 
 void User_defined_functions::handle_websocket_establishment(
@@ -79,7 +76,8 @@ void User_defined_functions::handle_websocket_establishment(
 
 void User_defined_functions::handle_websocket_message(
 	const boost::shared_ptr<Websocket_shadow_session> &client_session,  // This is the session cast by the WebSocket connection on the gate server.
-	Poseidon::Websocket::Opcode opcode,                                // This is the opcode sent by the client. This may be `Poseidon::Websocket::opcode_data_text` or `Poseidon::Websocket::opcode_data_binary`.
+	Poseidon::Websocket::Opcode opcode,                                 // This is the opcode sent by the client. This may be `Poseidon::Websocket::opcode_data_text` or
+	                                                                    // `Poseidon::Websocket::opcode_data_binary`.
 	Poseidon::Stream_buffer payload)                                    // This is the payload sent by the client. If the opcode claims a text message, the payload will be a valid UTF-8 string.
 {
 	POSEIDON_PROFILE_ME;
@@ -131,8 +129,9 @@ void User_defined_functions::handle_websocket_message(
 
 void User_defined_functions::handle_websocket_closure(
 	const boost::shared_ptr<Websocket_shadow_session> &client_session,  // This is the session cast by the WebSocket connection on the gate server.
-	Poseidon::Websocket::Status_code status_code,                       // This is the status code in the closure frame received from the client, or `Poseidon::Websocket::status_reserved_abnormal` if no closure frame was received.
-	const char *reason)                                                 // This is the payload in the closure frame received from the client, or an unspecified string if no closure frame was received.
+	Poseidon::Websocket::Status_code status_code,                       // This is the status code in the closure frame received from the client or
+	                                                                    // `Poseidon::Websocket::status_reserved_abnormal` if no closure frame was received.
+	const char *reason)                                                 // This is the payload in the closure frame received from the client or an unspecified string if no closure frame was received.
 {
 	POSEIDON_PROFILE_ME;
 

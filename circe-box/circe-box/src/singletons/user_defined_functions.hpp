@@ -23,9 +23,8 @@ private:
 	User_defined_functions();
 
 public:
-	static void handle_http_request(
+	static Poseidon::Http::Status_code handle_http_request(
 		// Output parameters
-		Poseidon::Http::Status_code &resp_status_code,
 		Poseidon::Option_map &resp_headers,
 		Poseidon::Stream_buffer &resp_entity,
 		// Input parameters

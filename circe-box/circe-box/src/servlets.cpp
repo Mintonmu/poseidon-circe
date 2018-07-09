@@ -16,7 +16,7 @@ namespace Circe {
 namespace Box {
 
 DEFINE_SERVLET_FOR(Protocol::Box::Http_request, /*connection*/, req){
-	Poseidon::Http::Status_code resp_status_code = Poseidon::Http::status_service_unavailable;
+	Poseidon::Http::Status_code resp_status_code;
 	Poseidon::Option_map resp_headers, params, headers;
 	Poseidon::Stream_buffer resp_entity;
 	for(AUTO(it, req.params.begin()); it != req.params.end(); ++it){
@@ -25,7 +25,7 @@ DEFINE_SERVLET_FOR(Protocol::Box::Http_request, /*connection*/, req){
 	for(AUTO(it, req.headers.begin()); it != req.headers.end(); ++it){
 		headers.append(Poseidon::Rcnts(it->key), STD_MOVE(it->value));
 	}
-	User_defined_functions::handle_http_request(resp_status_code, resp_headers, resp_entity, Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip),
+	resp_status_code = User_defined_functions::handle_http_request(resp_headers, resp_entity, Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip),
 		STD_MOVE(req.auth_token), boost::numeric_cast<Poseidon::Http::Verb>(req.verb), STD_MOVE(req.decoded_uri), STD_MOVE(params), STD_MOVE(headers), STD_MOVE(req.entity));
 
 	Protocol::Box::Http_response resp;
