@@ -15,7 +15,7 @@ namespace Error_codes {
 	enum {
 		error_success                              = Poseidon::Cbpp::status_ok,                    //   0
 		error_internal_error                       = Poseidon::Cbpp::status_internal_error,        //  -1
-		error_end_of_stream                        = Poseidon::Cbpp::status_internal_error,        //  -2
+		error_end_of_stream                        = Poseidon::Cbpp::status_end_of_stream,         //  -2
 		error_not_found                            = Poseidon::Cbpp::status_not_found,             //  -3
 		error_request_too_large                    = Poseidon::Cbpp::status_request_too_large,     //  -4
 		error_bad_request                          = Poseidon::Cbpp::status_bad_request,           //  -5
