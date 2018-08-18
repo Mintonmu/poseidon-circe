@@ -1,6 +1,4 @@
-#!/bin/bash
-
-set -e
+#!/bin/bash -e
 
 _output="etc/circe/circe.sql"
 _conf="etc/circe/main.conf"
