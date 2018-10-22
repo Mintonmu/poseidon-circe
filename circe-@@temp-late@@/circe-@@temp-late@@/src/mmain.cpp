@@ -7,7 +7,7 @@
 namespace Circe {
 namespace @@Temp_late@@ {
 
-DEFINE_MODULE_CONFIG("circe-@@temp-late@@.conf")
+POSEIDON_DEFINE_MODULE_CONFIG("circe-@@temp-late@@.conf")
 
 }
 }
