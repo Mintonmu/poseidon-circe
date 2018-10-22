@@ -9,6 +9,8 @@
 #include "protocol/messages_box.hpp"
 #include "singletons/websocket_shadow_session_supervisor.hpp"
 #include "singletons/user_defined_functions.hpp"
+#include <poseidon/http/exception.hpp>
+#include <poseidon/websocket/exception.hpp>
 
 #define DEFINE_SERVLET_FOR(...)   CIRCE_DEFINE_INTERSERVER_SERVLET_FOR(::Circe::Box::Servlet_container::insert_servlet, __VA_ARGS__)
 
@@ -25,9 +27,18 @@ DEFINE_SERVLET_FOR(Protocol::Box::Http_request, /*connection*/, req){
 	for(AUTO(it, req.headers.begin()); it != req.headers.end(); ++it){
 		headers.append(Poseidon::Rcnts(it->key), STD_MOVE(it->value));
 	}
-	resp_status_code = User_defined_functions::handle_http_request(resp_headers, resp_entity, Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip),
-		STD_MOVE(req.auth_token), boost::numeric_cast<Poseidon::Http::Verb>(req.verb), STD_MOVE(req.decoded_uri), STD_MOVE(params), STD_MOVE(headers), STD_MOVE(req.entity));
-
+	try {
+		resp_status_code = User_defined_functions::handle_http_request(resp_headers, resp_entity, Poseidon::Uuid(req.client_uuid), STD_MOVE(req.client_ip),
+			STD_MOVE(req.auth_token), boost::numeric_cast<Poseidon::Http::Verb>(req.verb), STD_MOVE(req.decoded_uri), STD_MOVE(params), STD_MOVE(headers), STD_MOVE(req.entity));
+	} catch(Poseidon::Http::Exception &e) {
+		CIRCE_LOG_INFO("Poseidon::Http::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
+		resp_status_code = e.get_status_code();
+		resp_headers.set(Poseidon::Rcnts::view("Connection"), "Close");
+	} catch(std::exception &e) {
+		CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
+		resp_status_code = Poseidon::Http::status_internal_server_error;
+		resp_headers.set(Poseidon::Rcnts::view("Connection"), "Close");
+	}
 	Protocol::Box::Http_response resp;
 	resp.status_code = resp_status_code;
 	for(AUTO(it, resp_headers.begin());  it != resp_headers.end(); ++it){
@@ -47,8 +58,16 @@ DEFINE_SERVLET_FOR(Protocol::Box::Websocket_establishment_request, connection, r
 	for(AUTO(it, req.params.begin()); it != req.params.end(); ++it){
 		params.append(Poseidon::Rcnts(it->key), STD_MOVE(it->value));
 	}
-	User_defined_functions::handle_websocket_establishment(shadow_session, STD_MOVE(req.decoded_uri), STD_MOVE(params));
-	Websocket_shadow_session_supervisor::attach_session(shadow_session);
+	try {
+		User_defined_functions::handle_websocket_establishment(shadow_session, STD_MOVE(req.decoded_uri), STD_MOVE(params));
+		Websocket_shadow_session_supervisor::attach_session(shadow_session);
+	} catch(Poseidon::Websocket::Exception &e) {
+		CIRCE_LOG_INFO("Poseidon::Websocket::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
+		shadow_session->shutdown(e.get_status_code(), e.what());
+	} catch(std::exception &e){
+		CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
+		shadow_session->shutdown(Poseidon::Websocket::status_internal_error, e.what());
+	}
 
 	Protocol::Box::Websocket_establishment_response resp;
 	return resp;
@@ -75,6 +94,9 @@ DEFINE_SERVLET_FOR(Protocol::Box::Websocket_packed_message_request, /*connection
 			for(AUTO(it, req.messages.begin()); it != req.messages.end(); ++it){
 				User_defined_functions::handle_websocket_message(shadow_session, boost::numeric_cast<Poseidon::Websocket::Opcode>(it->opcode), STD_MOVE(it->payload));
 			}
+		} catch(Poseidon::Websocket::Exception &e) {
+			CIRCE_LOG_INFO("Poseidon::Websocket::Exception thrown: status_code = ", e.get_status_code(), ", what = ", e.what());
+			shadow_session->shutdown(e.get_status_code(), e.what());
 		} catch(std::exception &e){
 			CIRCE_LOG_ERROR("std::exception thrown: what = ", e.what());
 			shadow_session->shutdown(Poseidon::Websocket::status_internal_error, e.what());
